@@ -11,8 +11,6 @@ public class Utente {
     private String dataNascita;
     private String genere;
 
-// piscione
-
 
     public Utente() {
     }
