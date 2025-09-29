@@ -1,0 +1,34 @@
+# Compiled class files
+*.class
+
+# Package Files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Eclipse specific files
+bin/
+target/
+.metadata
+.project
+.classpath
+.settings/
+
+# IDE files
+.idea/
+*.iml
+*.iws
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Other
+*.tmp
+*.bak
