@@ -14,13 +14,7 @@ public class Utente {
     public Utente() {
     }
 
-    public Utente(String nome,
-                  String cognome,
-                  String matricola,
-                  String username,
-                  String password,
-                  String dataNascita,
-                  String genere) {
+    public Utente(String nome,String cognome,String matricola,String username,String password,String dataNascita,String genere) {
         this.nome = nome;
         this.cognome = cognome;
         this.matricola = matricola;
