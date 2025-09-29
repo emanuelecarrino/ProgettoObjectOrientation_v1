@@ -11,10 +11,6 @@ public class Utente {
     private String dataNascita;
     private String genere;
 
-
-// cacchino v2
-
-
     public Utente() {
     }
 
