@@ -23,17 +23,6 @@ public class Utente {
         this.genere = genere;
     }
 
-    public Utente(Controller controller, String nome, String cognome, String matricola, String username, String password, String dataNascita, String genere) {
-        this.controller = controller;
-        this.nome = nome;
-        this.cognome = cognome;
-        this.matricola = matricola;
-        this.username = username;
-        this.password = password;
-        this.dataNascita = dataNascita;
-        this.genere = genere;
-    }
-
     public String getNome() { 
         return nome; 
     }
