@@ -1,0 +1,109 @@
+package main;
+
+
+
+public class Utente {
+    private String nome;
+    private String cognome;
+    private String matricola;
+    private String username;
+    private String password;
+    private String dataNascita;
+    private String genere;
+    private Controller controller;
+
+
+    public Utente(String nome, String cognome, String matricola, String username, String password, String dataNascita, String genere) {
+        this.nome = nome;
+        this.cognome = cognome;
+        this.matricola = matricola;
+        this.username = username;
+        this.password = password;
+        this.dataNascita = dataNascita;
+        this.genere = genere;
+    }
+
+    public Utente(Controller controller, String nome, String cognome, String matricola, String username, String password, String dataNascita, String genere) {
+        this.controller = controller;
+        this.nome = nome;
+        this.cognome = cognome;
+        this.matricola = matricola;
+        this.username = username;
+        this.password = password;
+        this.dataNascita = dataNascita;
+        this.genere = genere;
+    }
+
+    public String getNome() { 
+        return nome; 
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getCognome() { 
+        return cognome; 
+    }
+
+    public void setCognome(String cognome) { 
+        this.cognome = cognome; 
+    }
+
+    public String getMatricola() { 
+        return matricola; 
+    }
+
+    public void setMatricola(String matricola) { 
+        this.matricola = matricola; 
+    }
+
+    public String getUsername() { 
+        return username; 
+    }
+
+    public void setUsername(String username) { 
+        this.username = username; 
+    }
+
+    public String getPassword() { 
+        return password; 
+    }
+
+    public void setPassword(String password) { 
+        this.password = password; 
+    }
+
+    public String getDataNascita() { 
+        return dataNascita; 
+    }
+
+    public void setDataNascita(String dataNascita) { 
+        this.dataNascita = dataNascita; 
+    }
+
+    public String getGenere() { 
+        return genere; 
+    }
+
+    public void setGenere(String genere) { 
+        this.genere = genere; 
+    }
+
+    public boolean cambiaPassword(String passwordAttuale, String nuovaPassword) {
+        if (password != null && password.equals(passwordAttuale)) {
+            this.password = nuovaPassword;
+            return true;
+        }
+        return false;
+    }
+
+    public Controller getController() {
+        return controller;
+    }
+
+    public void setController(Controller controller) {
+        this.controller = controller;
+    }
+
+}
