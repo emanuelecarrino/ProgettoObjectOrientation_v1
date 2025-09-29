@@ -1,6 +1,6 @@
 package main;
 
-
+import java.util.Objects;
 
 public class Utente {
     private String nome;
@@ -10,10 +10,17 @@ public class Utente {
     private String password;
     private String dataNascita;
     private String genere;
-    private Controller controller;
 
+    public Utente() {
+    }
 
-    public Utente(String nome, String cognome, String matricola, String username, String password, String dataNascita, String genere) {
+    public Utente(String nome,
+                  String cognome,
+                  String matricola,
+                  String username,
+                  String password,
+                  String dataNascita,
+                  String genere) {
         this.nome = nome;
         this.cognome = cognome;
         this.matricola = matricola;
@@ -23,76 +30,82 @@ public class Utente {
         this.genere = genere;
     }
 
-    public String getNome() { 
-        return nome; 
+    public String getNome() {
+        return nome;
     }
 
     public void setNome(String nome) {
         this.nome = nome;
     }
 
-    public String getCognome() { 
-        return cognome; 
+    public String getCognome() {
+        return cognome;
     }
 
-    public void setCognome(String cognome) { 
-        this.cognome = cognome; 
+    public void setCognome(String cognome) {
+        this.cognome = cognome;
     }
 
-    public String getMatricola() { 
-        return matricola; 
+    public String getMatricola() {
+        return matricola;
     }
 
-    public void setMatricola(String matricola) { 
-        this.matricola = matricola; 
+    public void setMatricola(String matricola) {
+        this.matricola = matricola;
     }
 
-    public String getUsername() { 
-        return username; 
+    public String getUsername() {
+        return username;
     }
 
-    public void setUsername(String username) { 
-        this.username = username; 
+    public void setUsername(String username) {
+        this.username = username;
     }
 
-    public String getPassword() { 
-        return password; 
+    public String getPassword() {
+        return password;
     }
 
-    public void setPassword(String password) { 
-        this.password = password; 
+    public void setPassword(String password) {
+        this.password = password;
     }
 
-    public String getDataNascita() { 
-        return dataNascita; 
+    public String getDataNascita() {
+        return dataNascita;
     }
 
-    public void setDataNascita(String dataNascita) { 
-        this.dataNascita = dataNascita; 
+    public void setDataNascita(String dataNascita) {
+        this.dataNascita = dataNascita;
     }
 
-    public String getGenere() { 
-        return genere; 
+    public String getGenere() {
+        return genere;
     }
 
-    public void setGenere(String genere) { 
-        this.genere = genere; 
+    public void setGenere(String genere) {
+        this.genere = genere;
     }
 
     public boolean cambiaPassword(String passwordAttuale, String nuovaPassword) {
-        if (password != null && password.equals(passwordAttuale)) {
-            this.password = nuovaPassword;
-            return true;
+        if (passwordAttuale == null || nuovaPassword == null) {
+            return false;
         }
-        return false;
+        if (!Objects.equals(this.password, passwordAttuale)) {
+            return false;
+        }
+        this.password = nuovaPassword;
+        return true;
     }
 
-    public Controller getController() {
-        return controller;
+    @Override
+    public String toString() {
+        return "Utente{"
+                + "nome='" + nome + '\''
+                + ", cognome='" + cognome + '\''
+                + ", matricola='" + matricola + '\''
+                + ", username='" + username + '\''
+                + ", dataNascita='" + dataNascita + '\''
+                + ", genere='" + genere + '\''
+                + '}';
     }
-
-    public void setController(Controller controller) {
-        this.controller = controller;
-    }
-
 }
