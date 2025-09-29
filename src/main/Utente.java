@@ -86,26 +86,4 @@ public class Utente {
         this.genere = genere;
     }
 
-    public boolean cambiaPassword(String passwordAttuale, String nuovaPassword) {
-        if (passwordAttuale == null || nuovaPassword == null) {
-            return false;
-        }
-        if (!Objects.equals(this.password, passwordAttuale)) {
-            return false;
-        }
-        this.password = nuovaPassword;
-        return true;
-    }
-
-    @Override
-    public String toString() {
-        return "Utente{"
-                + "nome='" + nome + '\''
-                + ", cognome='" + cognome + '\''
-                + ", matricola='" + matricola + '\''
-                + ", username='" + username + '\''
-                + ", dataNascita='" + dataNascita + '\''
-                + ", genere='" + genere + '\''
-                + '}';
-    }
 }
