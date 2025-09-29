@@ -1,28 +1,30 @@
 package dto;
 
-import java.util.Objects;
 
-public class Utente {
+public class UtenteDTO {
+    
     private String nome;
     private String cognome;
+    private String email;
     private String matricola;
     private String username;
     private String password;
     private String dataNascita;
     private String genere;
 
-    public Utente() {
-    }
 
-    public Utente(String nome,String cognome,String matricola,String username,String password,String dataNascita,String genere) {
+    public UtenteDTO(String nome,String cognome,String matricola,String username,String password,String dataNascita,String genere) {
         this.nome = nome;
         this.cognome = cognome;
+        this.email = email;
         this.matricola = matricola;
         this.username = username;
         this.password = password;
         this.dataNascita = dataNascita;
         this.genere = genere;
     }
+
+
     public String getNome() {
         return nome;
     }
