@@ -1,8 +1,10 @@
 package dto;
 
-import java.util.Date;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class AnnuncioDTO {
     private String ID_Annuncio;
@@ -10,15 +12,15 @@ public class AnnuncioDTO {
     private String descrizione;
     private StatoAnnuncioDTO stato;
     private CategoriaAnnuncioDTO categoria;
-    private Date dataPubblicazione;
+    private LocalDate dataPubblicazione;
     private UtenteDTO creatore;
     private OggettoDTO oggetto;        
     private final ArrayList<OffertaDTO> offerteRicevute;
     private TipoAnnuncioDTO tipo;        
-    private float prezzoVendita;        
+    private BigDecimal prezzoVendita;        
 
 
-    public AnnuncioDTO(String ID_Annuncio, String titolo, String descrizione, StatoAnnuncioDTO stato, CategoriaAnnuncioDTO categoria, Date dataPubblicazione, UtenteDTO creatore, OggettoDTO oggetto, TipoAnnuncioDTO tipo, float prezzoVendita) {
+    public AnnuncioDTO(String ID_Annuncio, String titolo, String descrizione, StatoAnnuncioDTO stato, CategoriaAnnuncioDTO categoria, LocalDate dataPubblicazione, UtenteDTO creatore, OggettoDTO oggetto, TipoAnnuncioDTO tipo, BigDecimal prezzoVendita) {
         
 
         this.ID_Annuncio = ID_Annuncio;
@@ -92,19 +94,19 @@ public class AnnuncioDTO {
         this.oggetto = oggetto;
     }
 
-    public float getPrezzoVendita(){
+    public BigDecimal getPrezzoVendita(){
         return prezzoVendita;
     }
 
-    public void setPrezzoVendita(float prezzoVendita){
+    public void setPrezzoVendita(BigDecimal prezzoVendita){
         this.prezzoVendita = prezzoVendita;
     }
 
-    public Date getDataPubblicazione(){
+    public LocalDate getDataPubblicazione(){
         return dataPubblicazione;
     }
 
-    public void setDataPubblicazione(Date dataPubblicazione){
+    public void setDataPubblicazione(LocalDate dataPubblicazione){
         this.dataPubblicazione = dataPubblicazione;
     }
 
@@ -114,6 +116,11 @@ public class AnnuncioDTO {
 
     public TipoAnnuncioDTO getTipoAnnuncio(){
         return tipo;
+    }
+
+
+    public ArrayList<OffertaDTO> getOfferteRicevute() {
+        return offerteRicevute;
     }
 
 }
