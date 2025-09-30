@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 public class AnnuncioDTO {
     private String ID_Annuncio;
@@ -14,15 +13,12 @@ public class AnnuncioDTO {
     private CategoriaAnnuncioDTO categoria;
     private LocalDate dataPubblicazione;
     private UtenteDTO creatore;
-    private OggettoDTO oggetto;        
-    private final ArrayList<OffertaDTO> offerteRicevute;
+    private OggettoDTO oggetto;
     private TipoAnnuncioDTO tipo;        
     private BigDecimal prezzoVendita;        
 
 
     public AnnuncioDTO(String ID_Annuncio, String titolo, String descrizione, StatoAnnuncioDTO stato, CategoriaAnnuncioDTO categoria, LocalDate dataPubblicazione, UtenteDTO creatore, OggettoDTO oggetto, TipoAnnuncioDTO tipo, BigDecimal prezzoVendita) {
-        
-
         this.ID_Annuncio = ID_Annuncio;
         this.titolo = titolo;
         this.descrizione = descrizione;
@@ -31,7 +27,6 @@ public class AnnuncioDTO {
         this.dataPubblicazione = dataPubblicazione;
         this.creatore = creatore;
         this.oggetto = oggetto;
-        this.offerteRicevute = new ArrayList<>();
         this.tipo = tipo;
         this.prezzoVendita = prezzoVendita;
 
@@ -117,12 +112,6 @@ public class AnnuncioDTO {
     public TipoAnnuncioDTO getTipoAnnuncio(){
         return tipo;
     }
-
-
-    public ArrayList<OffertaDTO> getOfferteRicevute() {
-        return offerteRicevute;
-    }
-
 }
 
 

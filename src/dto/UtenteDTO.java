@@ -16,8 +16,6 @@ public class UtenteDTO {
     private String password;
     private String dataNascita;
     private String genere;
-    private ArrayList<AnnuncioDTO> annunciCreati;
-    private ArrayList<OggettoDTO> oggettiPosseduti;
 
 
     public UtenteDTO(String nome,String cognome, String email, String matricola,String username,String password,String dataNascita,String genere) {
@@ -29,9 +27,6 @@ public class UtenteDTO {
         this.password = password;
         this.dataNascita = dataNascita;
         this.genere = genere;
-        this.annunciCreati = new ArrayList<>();
-        this.oggettiPosseduti = new ArrayList<>();
-
     }
 
 
@@ -97,15 +92,6 @@ public class UtenteDTO {
 
     public void setGenere(String genere) {
         this.genere = genere;
-    }
-
-    public ArrayList<AnnuncioDTO> getAnnunci(){
-        return annunciCreati;
-    }
-
-
-    public ArrayList<OggettoDTO> getOggetti(){
-        return oggettiPosseduti;
     }
 
 
