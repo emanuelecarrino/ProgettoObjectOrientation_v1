@@ -13,7 +13,7 @@ public class UtenteDTO {
     private String genere;
 
 
-    public UtenteDTO(String nome,String cognome,String matricola,String username,String password,String dataNascita,String genere) {
+    public UtenteDTO(String nome,String cognome, String email, String matricola,String username,String password,String dataNascita,String genere) {
         this.nome = nome;
         this.cognome = cognome;
         this.email = email;
