@@ -78,8 +78,4 @@ public class OggettoDTO {
     public void setProprietario(UtenteDTO proprietario) { 
         this.proprietario = proprietario;
     }
-
-
-
-   
 }
