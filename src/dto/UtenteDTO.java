@@ -41,6 +41,14 @@ public class UtenteDTO {
         this.cognome = cognome;
     }
 
+    public String getEmail(){
+        return email;
+    }
+
+    public void setEmail(String email){
+        this.email = email;
+    }
+
     public String getMatricola() {
         return matricola;
     }
