@@ -286,42 +286,24 @@ public class UtenteDAO {
 
     
     public void deleteUtente(UtenteDTO utente){
-        
-        
-        
         //Controlla argomento null
         if (utente == null) throw new IllegalArgumentException("Utente null");
-
-        //Controlla esistenza utente
-        String sql = "SELECT Matricola FROM Utente WHERE Matricola = ?";
-        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, utente.getMatricola());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return; 
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore verifica esistenza utente " + utente.getMatricola(), e);
-        }
         
-        sql = """
-            DELETE *
+        //Esegui delete
+        String sql = """
+            DELETE 
             FROM Utente
             WHERE Matricola = ?
             """;
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
-            
-
+            ps.setString(1, utente.getMatricola());
+            int esiste = ps.executeUpdate();
+            if (esiste == 0) {
+                throw new IllegalArgumentException("Utente inesistente");
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Errore eliminazione utente " + utente.getMatricola(), e);
         }
-
-        
-        
-        
-
-
     }
 
 
