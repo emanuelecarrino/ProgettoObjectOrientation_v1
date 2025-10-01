@@ -42,29 +42,19 @@ public class AnnuncioDAO {
             ps.setString(5, annuncio.getCategoria().name());
             ps.setString(6, annuncio.getStato().name());
             ps.setString(7, annuncio.getTipoAnnuncio().name());
-
-
             if (annuncio.getTipoAnnuncio() == TipoAnnuncioDTO.VENDITA) {
                 ps.setBigDecimal(8, annuncio.getPrezzoVendita());
             } else {
                 ps.setNull(8, java.sql.Types.DECIMAL);
             }
-
             ps.setString(9, annuncio.getIdOggetto());
-           
             if (annuncio.getCreatore() != null) {
-            
                 ps.setString(10, annuncio.getCreatore());
-            
             }
-
             ps.executeUpdate();
-
-           
         } catch (SQLException e) {
             throw new RuntimeException("Errore inserimento annuncio " + annuncio.getIdAnnuncio(), e);
         }
-
     }
 
 
@@ -259,7 +249,7 @@ public class AnnuncioDAO {
         return risultati;
     }
 
-
+    //boolean?
     public boolean updateAnnuncio(AnnuncioDTO annuncio) {
         if (annuncio == null) throw new IllegalArgumentException("Annuncio aggiornato null");
         if (annuncio.getIdAnnuncio() == null || annuncio.getIdAnnuncio().trim().isEmpty())
