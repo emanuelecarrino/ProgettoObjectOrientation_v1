@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import dto.OggettoDTO;
 
 public class AnnuncioDTO {
     private String ID_Annuncio;
@@ -12,13 +13,13 @@ public class AnnuncioDTO {
     private StatoAnnuncioDTO stato;
     private CategoriaAnnuncioDTO categoria;
     private LocalDate dataPubblicazione;
-    private UtenteDTO creatore;
-    private OggettoDTO oggetto;
+    private String creatore;
+    private String ID_Oggetto;
     private TipoAnnuncioDTO tipo;        
     private BigDecimal prezzoVendita;        
 
 
-    public AnnuncioDTO(String ID_Annuncio, String titolo, String descrizione, StatoAnnuncioDTO stato, CategoriaAnnuncioDTO categoria, LocalDate dataPubblicazione, UtenteDTO creatore, OggettoDTO oggetto, TipoAnnuncioDTO tipo, BigDecimal prezzoVendita) {
+    public AnnuncioDTO(String ID_Annuncio, String titolo, String descrizione, StatoAnnuncioDTO stato, CategoriaAnnuncioDTO categoria, LocalDate dataPubblicazione, String creatore, String ID_Oggetto, TipoAnnuncioDTO tipo, BigDecimal prezzoVendita) {
         this.ID_Annuncio = ID_Annuncio;
         this.titolo = titolo;
         this.descrizione = descrizione;
@@ -26,7 +27,7 @@ public class AnnuncioDTO {
         this.categoria = categoria;
         this.dataPubblicazione = dataPubblicazione;
         this.creatore = creatore;
-        this.oggetto = oggetto;
+        this.ID_Oggetto = ID_Oggetto;
         this.tipo = tipo;
         this.prezzoVendita = prezzoVendita;
 
@@ -73,20 +74,20 @@ public class AnnuncioDTO {
         this.categoria = categoria;
     }
 
-    public UtenteDTO getCreatore() {
+    public String getCreatore() {
         return creatore;
     }
 
-    public void setCreatore(UtenteDTO creatore) {
+    public void setCreatore(String creatore) {
         this.creatore = creatore;
     }
 
-    public OggettoDTO getOggetto() {
-        return oggetto;
+    public String getIdOggetto() {
+        return ID_Oggetto;
     }
 
-    public void setOggetto(OggettoDTO oggetto) {
-        this.oggetto = oggetto;
+    public void setOggetto(String ID_Oggetto) {
+        this.ID_Oggetto = ID_Oggetto;
     }
 
     public BigDecimal getPrezzoVendita(){

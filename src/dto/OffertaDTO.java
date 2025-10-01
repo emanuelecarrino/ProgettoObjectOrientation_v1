@@ -1,15 +1,15 @@
 package dto;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 public class OffertaDTO {
     protected String ID_Offerta;
     protected float prezzoOfferta;
     protected String commento;
-    protected Date dataOfferta;
+    protected LocalDate dataOfferta;
     protected StatoOffertaDTO stato;
 
-    public OffertaDTO(String ID_Offerta, float prezzoOfferta, String commento, Date dataOfferta, StatoOffertaDTO stato){
+    public OffertaDTO(String ID_Offerta, float prezzoOfferta, String commento, LocalDate dataOfferta, StatoOffertaDTO stato){
         this.ID_Offerta = ID_Offerta;
         this.prezzoOfferta = prezzoOfferta;
         this.commento = commento;

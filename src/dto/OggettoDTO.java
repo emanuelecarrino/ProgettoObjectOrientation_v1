@@ -10,10 +10,10 @@ public class OggettoDTO {
     private String condizione;       
     private String dimensione;       
     private Float peso;            
-    private UtenteDTO proprietario;  
+    private String proprietario;  
 
 
-    public OggettoDTO(String ID_Oggetto, String nome, int numProprietari, String condizione, String dimensione, Float peso, UtenteDTO proprietario) {
+    public OggettoDTO(String ID_Oggetto, String nome, int numProprietari, String condizione, String dimensione, Float peso, String proprietario) {
         this.ID_Oggetto = ID_Oggetto;
         this.nome = nome;
         this.numProprietari = numProprietari;
@@ -71,11 +71,11 @@ public class OggettoDTO {
         this.peso = peso; 
     }
 
-    public UtenteDTO getProprietario() { 
+    public String getProprietario() { 
         return proprietario; 
     }
     
-    public void setProprietario(UtenteDTO proprietario) { 
+    public void setProprietario(String proprietario) { 
         this.proprietario = proprietario;
     }
 }

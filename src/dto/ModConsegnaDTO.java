@@ -1,28 +1,28 @@
 package dto;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 public class ModConsegnaDTO {
-    private AnnuncioDTO annuncio;   
+    private String ID_Annuncio;   
     private String sedeUni;         
     private String note;            
     private String fasciaOraria;    
-    private Date data;             
+    private LocalDate data;             
 
-    public ModConsegnaDTO(AnnuncioDTO annuncio, String sedeUni, String note, String fasciaOraria, Date data) {
-        this.annuncio = annuncio;
+    public ModConsegnaDTO(String annuncio, String sedeUni, String note, String fasciaOraria, LocalDate data) {
+        this.ID_Annuncio = annuncio;
         this.sedeUni = sedeUni;
         this.note = note;
         this.fasciaOraria = fasciaOraria;
         this.data = data;
     }
 
-    public AnnuncioDTO getAnnuncio() {
-        return annuncio;
+    public String getAnnuncio() {
+        return ID_Annuncio;
     }
 
-    public void setAnnuncio(AnnuncioDTO annuncio) {
-        this.annuncio = annuncio;
+    public void setAnnuncio(String annuncio) {
+        this.ID_Annuncio = annuncio;
     }
 
     public String getSedeUni() {
@@ -49,11 +49,11 @@ public class ModConsegnaDTO {
         this.fasciaOraria = fasciaOraria;
     }
 
-    public Date getData() {
+    public LocalDate getData() {
         return data;
     }
 
-    public void setData(Date data) {
+    public void setData(LocalDate data) {
         this.data = data;
     }
 }

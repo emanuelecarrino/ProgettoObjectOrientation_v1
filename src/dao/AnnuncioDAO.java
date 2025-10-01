@@ -50,12 +50,13 @@ public class AnnuncioDAO {
                 ps.setNull(8, java.sql.Types.DECIMAL);
             }
 
-            ps.setString(9, annuncio.getOggetto().getIdOggetto());
-            String matricolaCreatore = null;
+            ps.setString(9, annuncio.getIdOggetto());
+           
             if (annuncio.getCreatore() != null) {
-                matricolaCreatore = annuncio.getCreatore().getMatricola();
+            
+                ps.setString(10, annuncio.getCreatore());
+            
             }
-            ps.setString(10, matricolaCreatore);
 
             ps.executeUpdate();
 
@@ -67,7 +68,7 @@ public class AnnuncioDAO {
     }
 
 
-    public ArrayList<AnnuncioDTO> findByTipo(TipoAnnuncioDTO tipo){
+    public List<AnnuncioDTO> getAnnunciByTipo(TipoAnnuncioDTO tipo){
         if (tipo == null) throw new IllegalArgumentException("Tipo null");
 
         String sql = """
@@ -84,7 +85,7 @@ public class AnnuncioDAO {
             ps.setString(1, tipo.name());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    String id = rs.getString("ID_Annuncio");
+                    String ID_Annuncio = rs.getString("ID_Annuncio");
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
@@ -92,11 +93,9 @@ public class AnnuncioDAO {
                     StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
                     TipoAnnuncioDTO tipoRow = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
-                    String idOggetto = rs.getString("FK_Oggetto");
-                    String matricola = rs.getString("FK_Utente");
-                    OggettoDTO oggetto = new OggettoDTO(idOggetto, null, 0, null, null, null, null);
-                    UtenteDTO creatore = new UtenteDTO(null, null, null, matricola, null, null, null, null);
-                    risultati.add(new AnnuncioDTO(id, titolo, descrizione, stato, categoria, dataPub, creatore, oggetto, tipoRow, prezzo));
+                    String ID_Oggetto = rs.getString("FK_Oggetto");
+                    String creatore = rs.getString("FK_Utente");
+                    risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipoRow, prezzo));
                 }
             }
         } catch (SQLException e) {
@@ -107,7 +106,7 @@ public class AnnuncioDAO {
 
 
 
-    public ArrayList<AnnuncioDTO> findByCategoria(CategoriaAnnuncioDTO categoria){
+    public List<AnnuncioDTO> getAnnunciByCategoria(CategoriaAnnuncioDTO categoria){
         if (categoria == null) throw new IllegalArgumentException("Tipo null");
 
         String sql = """
@@ -119,24 +118,23 @@ public class AnnuncioDAO {
             """;
 
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
+        
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, categoria.name());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    String id = rs.getString("ID_Annuncio");
+                    String ID_Annuncio = rs.getString("ID_Annuncio");
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
                     CategoriaAnnuncioDTO cat = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
                     StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
-                    TipoAnnuncioDTO tipoRow = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+                    TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
-                    String idOggetto = rs.getString("FK_Oggetto");
-                    String matricola = rs.getString("FK_Utente");
-                    OggettoDTO oggetto = new OggettoDTO(idOggetto, null, 0, null, null, null, null);
-                    UtenteDTO creatore = new UtenteDTO(null, null, null, matricola, null, null, null, null);
-                    risultati.add(new AnnuncioDTO(id, titolo, descrizione, stato, categoria, dataPub, creatore, oggetto, tipoRow, prezzo));
+                    String ID_Oggetto = rs.getString("FK_Oggetto");
+                    String creatore = rs.getString("FK_Utente");
+                    risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));
                 }
             }
         } catch (SQLException e) {
@@ -147,7 +145,7 @@ public class AnnuncioDAO {
 
 
 
-    public ArrayList<AnnuncioDTO> findByTitolo(String ricerca) {
+    public List<AnnuncioDTO> getAnnunciByTitolo(String ricerca) {
         if (ricerca == null) throw new IllegalArgumentException("Ricerca null");
         String trimmed = ricerca.trim();
         if (trimmed.isEmpty()) throw new IllegalArgumentException("Ricerca vuota");
@@ -167,7 +165,7 @@ public class AnnuncioDAO {
             ps.setString(1, pattern);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    String id = rs.getString("ID_Annuncio");
+                    String ID_Annuncio = rs.getString("ID_Annuncio");
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
@@ -175,11 +173,9 @@ public class AnnuncioDAO {
                     StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
                     TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
-                    String idOggetto = rs.getString("FK_Oggetto");
-                    String matricola = rs.getString("FK_Utente");
-                    OggettoDTO oggetto = new OggettoDTO(idOggetto, null, 0, null, null, null, null);
-                    UtenteDTO creatore = new UtenteDTO(null, null, null, matricola, null, null, null, null);
-                    risultati.add(new AnnuncioDTO(id, titolo, descrizione, stato, categoria, dataPub, creatore, oggetto, tipo, prezzo));
+                    String ID_Oggetto = rs.getString("FK_Oggetto");
+                    String creatore = rs.getString("FK_Utente");
+                    risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));
                 }
             }
         } catch (SQLException e) {
@@ -190,51 +186,46 @@ public class AnnuncioDAO {
 
 
 
-    public ArrayList<AnnuncioDTO> findByPrezzo(BigDecimal prezzoMin, BigDecimal prezzoMax) {
-        if (prezzoMin == null && prezzoMax == null) throw new IllegalArgumentException("Prezzo null");
-        if (prezzoMin.signum() < 0 && prezzoMax.signum() < 0) throw new IllegalArgumentException("Prezzo negativo");
+    public List<AnnuncioDTO> getAnnunciByPrezzoMax(BigDecimal prezzoMax) {
+        if (prezzoMax == null) throw new IllegalArgumentException("Prezzo massimo null");
+        if (prezzoMax.signum() < 0) throw new IllegalArgumentException("Prezzo massimo negativo");
 
         String sql = """
             SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
                    Categoria, Stato, Tipo, PrezzoVendita,
                    FK_Oggetto, FK_Utente
             FROM Annuncio
-            WHERE PrezzoVendita > ? AND PrezzoVendita < ?
+            WHERE PrezzoVendita <= ?
             """;
 
-    ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
+        ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setBigDecimal(1, prezzoMin);
-            ps.setBigDecimal(2, prezzoMax);
+            ps.setBigDecimal(1, prezzoMax);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    String id = rs.getString("ID_Annuncio");
+                    String ID_Annuncio = rs.getString("ID_Annuncio");
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
                     CategoriaAnnuncioDTO categoria = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
                     StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
                     TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
-                    BigDecimal prezzoDb = rs.getBigDecimal("PrezzoVendita");
-                    String idOggetto = rs.getString("FK_Oggetto");
-                    String matricola = rs.getString("FK_Utente");
-                    OggettoDTO oggetto = new OggettoDTO(idOggetto, null, 0, null, null, null, null);
-                    UtenteDTO creatore = new UtenteDTO(null, null, null, matricola, null, null, null, null);
-                    risultati.add(new AnnuncioDTO(id, titolo, descrizione, stato, categoria, dataPub, creatore, oggetto, tipo, prezzoDb));
+                    BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
+                    String ID_Oggetto = rs.getString("FK_Oggetto");
+                    String creatore = rs.getString("FK_Utente");
+                    risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca annunci per prezzo tra " + prezzoMin + " e " + prezzoMax  , e);
+            throw new RuntimeException("Errore ricerca annunci per prezzo <= " + prezzoMax, e);
         }
         return risultati;
     }
 
 
-    public ArrayList<AnnuncioDTO> findByCreatore(UtenteDTO utente){
-        if (utente == null) throw new IllegalArgumentException("Utente null");
-        String matricola = utente.getMatricola();
-        if (matricola == null || matricola.trim().isEmpty())
+    public List<AnnuncioDTO> getAnnunciByCreatore(String creatore){
+        if (creatore == null || creatore.trim().isEmpty()) 
             throw new IllegalArgumentException("Matricola utente mancante");
 
         String sql = """
@@ -248,10 +239,10 @@ public class AnnuncioDAO {
     ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, matricola);
+            ps.setString(1, creatore);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    String id = rs.getString("ID_Annuncio");
+                    String ID_Annuncio = rs.getString("ID_Annuncio");
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
@@ -259,14 +250,11 @@ public class AnnuncioDAO {
                     StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
                     TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
-                    String idOggetto = rs.getString("FK_Oggetto");
-                    // Riutilizziamo lo stesso utente passato (riduce oggetti superflui)
-                    OggettoDTO oggetto = new OggettoDTO(idOggetto, null, 0, null, null, null, null);
-                    risultati.add(new AnnuncioDTO(id, titolo, descrizione, stato, categoria, dataPub, utente, oggetto, tipo, prezzo));
-                }
+                    String ID_Oggetto = rs.getString("FK_Oggetto");
+                    risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));                }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca annunci per creatore " + matricola, e);
+            throw new RuntimeException("Errore ricerca annunci per creatore " + creatore, e);
         }
         return risultati;
     }
@@ -277,15 +265,15 @@ public class AnnuncioDAO {
         if (annuncio.getIdAnnuncio() == null || annuncio.getIdAnnuncio().trim().isEmpty())
             throw new IllegalArgumentException("ID annuncio mancante");
 
-        // Prima recuperiamo dal DB il tipo e i campi non modificabili per decidere le regole.
-        final String selectSql = "SELECT Tipo FROM Annuncio WHERE ID_Annuncio = ?";
+
+        String sql = "SELECT Tipo FROM Annuncio WHERE ID_Annuncio = ?";
         TipoAnnuncioDTO tipoEsistente;
         try (Connection con = getConnection();
-             PreparedStatement psSel = con.prepareStatement(selectSql)) {
-            psSel.setString(1, annuncio.getIdAnnuncio());
-            try (ResultSet rs = psSel.executeQuery()) {
+            PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, annuncio.getIdAnnuncio());
+            try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
-                    return false; // annuncio non trovato
+                    return false;
                 }
                 tipoEsistente = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
             }
@@ -293,7 +281,6 @@ public class AnnuncioDAO {
             throw new RuntimeException("Errore lettura tipo annuncio " + annuncio.getIdAnnuncio(), e);
         }
 
-        // Validazioni campi modificabili
         String titolo = annuncio.getTitolo();
         if (titolo == null || titolo.trim().isEmpty())
             throw new IllegalArgumentException("Titolo obbligatorio");
@@ -301,8 +288,9 @@ public class AnnuncioDAO {
             throw new IllegalArgumentException("Categoria obbligatoria");
         if (annuncio.getStato() == null)
             throw new IllegalArgumentException("Stato obbligatorio");
-        if (annuncio.getOggetto() == null || annuncio.getOggetto().getIdOggetto() == null)
+        if (annuncio.getIdOggetto() == null)
             throw new IllegalArgumentException("Oggetto obbligatorio");
+
 
         BigDecimal prezzo = annuncio.getPrezzoVendita();
         switch (tipoEsistente) {
@@ -311,34 +299,33 @@ public class AnnuncioDAO {
                     throw new IllegalArgumentException("Prezzo non valido per VENDITA");
             }
             case SCAMBIO, REGALO -> {
-                // Forziamo a null indipendentemente da ciò che arriva
                 prezzo = null;
             }
         }
 
-        // Costruiamo la UPDATE. Non permettiamo cambio del Tipo / Creatore / DataPubblicazione.
-        final String updateSql = """
+
+        sql = """
             UPDATE Annuncio
             SET Titolo = ?, Descrizione = ?, Categoria = ?, Stato = ?, PrezzoVendita = ?, FK_Oggetto = ?
             WHERE ID_Annuncio = ?
             """;
 
         try (Connection con = getConnection();
-             PreparedStatement psUp = con.prepareStatement(updateSql)) {
-            psUp.setString(1, titolo);
-            psUp.setString(2, annuncio.getDescrizione());
-            psUp.setString(3, annuncio.getCategoria().name());
-            psUp.setString(4, annuncio.getStato().name());
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, titolo);
+            ps.setString(2, annuncio.getDescrizione());
+            ps.setString(3, annuncio.getCategoria().name());
+            ps.setString(4, annuncio.getStato().name());
             if (prezzo != null) {
-                psUp.setBigDecimal(5, prezzo);
+                ps.setBigDecimal(5, prezzo);
             } else {
-                psUp.setNull(5, Types.DECIMAL);
+                ps.setNull(5, Types.DECIMAL);
             }
-            psUp.setString(6, annuncio.getOggetto().getIdOggetto());
-            psUp.setString(7, annuncio.getIdAnnuncio());
+            ps.setString(6, annuncio.getIdOggetto());
+            ps.setString(7, annuncio.getIdAnnuncio());
 
-            int updated = psUp.executeUpdate();
-            return updated > 0;
+
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException("Errore aggiornamento annuncio " + annuncio.getIdAnnuncio(), e);
         }
@@ -361,7 +348,7 @@ public class AnnuncioDAO {
         }
     }
 
-
+    
     private void validaInserimento(AnnuncioDTO annuncio) {
         
         if (annuncio == null) throw new IllegalArgumentException("Annuncio Null");
@@ -369,8 +356,8 @@ public class AnnuncioDAO {
         if (titolo == null || titolo.trim().isEmpty()) throw new IllegalArgumentException("Titolo obbligatorio");
         if (annuncio.getCategoria() == null) throw new IllegalArgumentException("Categoria obbligatoria");
         if (annuncio.getTipoAnnuncio() == null) throw new IllegalArgumentException("Tipo obbligatorio");
-        if (annuncio.getOggetto().getIdOggetto() == null) throw new IllegalArgumentException("Oggetto mancante");
-        if (annuncio.getCreatore() == null || annuncio.getCreatore().getMatricola() == null)
+        if (annuncio.getIdOggetto() == null) throw new IllegalArgumentException("Oggetto mancante");
+        if (annuncio.getCreatore() == null || annuncio.getCreatore() == null)
             throw new IllegalArgumentException("Utente mancante");
         if (annuncio.getDataPubblicazione() == null) throw new IllegalArgumentException("Data pubblicazione mancante");
 
