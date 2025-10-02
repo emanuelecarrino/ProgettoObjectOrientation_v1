@@ -4,7 +4,9 @@ import dao.UtenteDAO;
 import dao.OggettoDAO;
 import dao.AnnuncioDAO;
 import dao.OffertaDAO;
+import dao.ModConsegnaDAO;
 import exception.*;
+import dto.ModConsegnaDTO;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -26,6 +28,7 @@ public class Controller {
 	private final OggettoDAO oggettoDAO = new OggettoDAO();
 	private final AnnuncioDAO annuncioDAO = new AnnuncioDAO();
 	private final OffertaDAO offertaDAO = new OffertaDAO();
+	private final ModConsegnaDAO modConsegnaDAO = new ModConsegnaDAO();
 
 
 
@@ -138,8 +141,8 @@ public class Controller {
 				if (conflict != null) throw new DuplicateResourceException("Username già esistente");
 			}
 
-			boolean ok = utenteDAO.updateUtente(utente);
-			if (!ok) throw new NotFoundException("Utente non trovato");
+			boolean aggiornamentoUtenteRiuscito = utenteDAO.updateUtente(utente);
+			if (!aggiornamentoUtenteRiuscito) throw new NotFoundException("Utente non trovato");
 		} catch (DuplicateResourceException | ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -154,8 +157,8 @@ public class Controller {
 	public void eliminaUtente(String matricola) throws ApplicationException {
 		try {
 			if (isBlank(matricola)) throw new ValidationException("Errore su Matricola");
-			boolean deleted = utenteDAO.deleteUtenteByMatricola(matricola.trim());
-			if (!deleted) throw new NotFoundException("Utente non trovato");
+			boolean eliminazioneUtenteRiuscita = utenteDAO.deleteUtenteByMatricola(matricola.trim());
+			if (!eliminazioneUtenteRiuscita) throw new NotFoundException("Utente non trovato");
 		} catch (NotFoundException | ValidationException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -198,6 +201,11 @@ public class Controller {
 	private boolean isUniqueViolation(SQLException ex){
 		return "23505".equals(ex.getSQLState());
 	}
+
+
+
+
+
 
 
 
@@ -369,8 +377,8 @@ public class Controller {
 					prezzoFinale
 			);
 
-			boolean ok = annuncioDAO.updateAnnuncio(utente);
-			if (!ok) throw new NotFoundException("Annuncio non trovato");
+			boolean aggiornamentoAnnuncioRiuscito = annuncioDAO.updateAnnuncio(utente);
+			if (!aggiornamentoAnnuncioRiuscito) throw new NotFoundException("Annuncio non trovato");
 			return utente;
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
@@ -387,8 +395,8 @@ public class Controller {
 	public void eliminaAnnuncio(String ID_Annuncio) throws ApplicationException {
 		try {
 			if (isBlank(ID_Annuncio)) throw new ValidationException("Errore su ID_Annuncio");
-			boolean deleted = annuncioDAO.deleteAnnuncioById(ID_Annuncio.trim());
-			if (!deleted) throw new NotFoundException("Annuncio non trovato");
+			boolean eliminazioneAnnuncioRiuscita = annuncioDAO.deleteAnnuncioById(ID_Annuncio.trim());
+			if (!eliminazioneAnnuncioRiuscita) throw new NotFoundException("Annuncio non trovato");
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -401,6 +409,17 @@ public class Controller {
 	private String generaIdAnnuncio(){
 		return "ANN-" + UUID.randomUUID().toString();
 	}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -441,10 +460,10 @@ public class Controller {
 			if (isBlank(condizioni)) throw new ValidationException("Errore su Condizioni");
 			if (isBlank(dimensione)) throw new ValidationException("Errore su Dimensione");
 			if (peso != null && peso < 0) throw new ValidationException("Errore su Peso_Kg");
-			OggettoDTO oggetto = new OggettoDTO(esistente.getIdOggetto(), nuovoNome.trim(), numProprietari, condizioni, dimensione, peso, esistente.getProprietario());
-			boolean ok = oggettoDAO.updateOggetto(oggetto);
-			if (!ok) throw new NotFoundException("Oggetto non trovato");
-			return oggetto;
+			OggettoDTO oggettoAggiornato = new OggettoDTO(esistente.getIdOggetto(), nuovoNome.trim(), numProprietari, condizioni, dimensione, peso, esistente.getProprietario());
+			boolean aggiornamentoOggettoRiuscito = oggettoDAO.updateOggetto(oggettoAggiornato);
+			if (!aggiornamentoOggettoRiuscito) throw new NotFoundException("Oggetto non trovato");
+			return oggettoAggiornato;
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -457,8 +476,8 @@ public class Controller {
 	public void eliminaOggetto(String ID_Oggetto) throws ApplicationException {
 		try {
 			if (isBlank(ID_Oggetto)) throw new ValidationException("Errore su ID_Oggetto");
-			boolean deleted = oggettoDAO.deleteOggettoById(ID_Oggetto.trim());
-			if (!deleted) throw new NotFoundException("Oggetto non trovato");
+			boolean eliminazioneOggettoRiuscita = oggettoDAO.deleteOggettoById(ID_Oggetto.trim());
+			if (!eliminazioneOggettoRiuscita) throw new NotFoundException("Oggetto non trovato");
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -493,9 +512,9 @@ public class Controller {
 	public OggettoDTO trovaOggettoPerId(String ID_Oggetto) throws ApplicationException {
 		try {
 			if (isBlank(ID_Oggetto)) throw new ValidationException("Errore su ID_Oggetto");
-			OggettoDTO o = oggettoDAO.getOggettiById(ID_Oggetto.trim());
-			if (o == null) throw new NotFoundException("Oggetto non trovato");
-			return o;
+			OggettoDTO oggettoRecuperato = oggettoDAO.getOggettiById(ID_Oggetto.trim());
+			if (oggettoRecuperato == null) throw new NotFoundException("Oggetto non trovato");
+			return oggettoRecuperato;
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -530,6 +549,131 @@ public class Controller {
 
 
 
+
+
+
+
+
+
+
+
+	// ================== METODI MODCONSEGNA ==================
+
+	public ModConsegnaDTO creaModConsegna(String ID_Annuncio, String sedeUni, String note, String fasciaOraria, LocalDate data) throws ApplicationException {
+		try {
+			if (isBlank(ID_Annuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			if (isBlank(sedeUni)) throw new ValidationException("Errore su SedeUni");
+			if (isBlank(fasciaOraria)) throw new ValidationException("Errore su FasciaOraria");
+			if (data == null) throw new ValidationException("Errore su Data");
+			// opzionale: verifica esistenza annuncio
+			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(ID_Annuncio.trim());
+			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
+			// opzionale: se vuoi impedire più modalità per stesso annuncio
+			// if (modConsegnaDAO.getConsegnaByAnnuncio(ID_Annuncio.trim()) != null) throw new ValidationException("Consegna già definita");
+			String ID_Consegna = generaIdConsegna();
+			String notePulite = null;
+			if (note != null) {
+				notePulite = note.trim();
+			}
+			ModConsegnaDTO nuovaConsegna = new ModConsegnaDTO(ID_Consegna, ID_Annuncio.trim(), sedeUni.trim(), notePulite, fasciaOraria.trim(), data);
+			modConsegnaDAO.insertModConsegna(nuovaConsegna);
+			return nuovaConsegna;
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore creazione consegna", sql);
+		}
+	}
+
+	public ModConsegnaDTO trovaConsegnaPerId(String ID_Consegna) throws ApplicationException {
+		try {
+			if (isBlank(ID_Consegna)) throw new ValidationException("Errore su ID_Consegna");
+			ModConsegnaDTO consegna = modConsegnaDAO.getConsegnaById(ID_Consegna.trim());
+			if (consegna == null) throw new NotFoundException("Consegna non trovata");
+			return consegna;
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore recupero consegna", sql);
+		}
+	}
+
+	public ModConsegnaDTO trovaConsegnaPerAnnuncio(String ID_Annuncio) throws ApplicationException {
+		try {
+			if (isBlank(ID_Annuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			ModConsegnaDTO consegna = modConsegnaDAO.getConsegnaByAnnuncio(ID_Annuncio.trim());
+			if (consegna == null) throw new NotFoundException("Consegna non trovata");
+			return consegna;
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore recupero consegna", sql);
+		}
+	}
+
+	public ModConsegnaDTO aggiornaConsegna(String ID_Consegna, String nuovaSedeUni, String nuoveNote, String nuovaFasciaOraria, LocalDate nuovaData) throws ApplicationException {
+		try {
+			if (isBlank(ID_Consegna)) throw new ValidationException("Errore su ID_Consegna");
+			ModConsegnaDTO esistente = modConsegnaDAO.getConsegnaById(ID_Consegna.trim());
+			if (esistente == null) throw new NotFoundException("Consegna non trovata");
+			if (isBlank(nuovaSedeUni)) throw new ValidationException("Errore su SedeUni");
+			if (isBlank(nuovaFasciaOraria)) throw new ValidationException("Errore su FasciaOraria");
+			if (nuovaData == null) throw new ValidationException("Errore su Data");
+			String nuoveNoteTrim = null;
+			if (nuoveNote != null) {
+				nuoveNoteTrim = nuoveNote.trim();
+			}
+			ModConsegnaDTO consegnaAggiornata = new ModConsegnaDTO(
+					esistente.getIdConsegna(),
+					esistente.getIdAnnuncio(),
+					nuovaSedeUni.trim(),
+					nuoveNoteTrim,
+					nuovaFasciaOraria.trim(),
+					nuovaData
+			);
+			boolean aggiornamentoRiuscito = modConsegnaDAO.updateModConsegna(consegnaAggiornata);
+			if (!aggiornamentoRiuscito) throw new NotFoundException("Consegna non trovata");
+			return consegnaAggiornata;
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore aggiornamento consegna", sql);
+		}
+	}
+
+	public void eliminaConsegna(String ID_Consegna) throws ApplicationException {
+		try {
+			if (isBlank(ID_Consegna)) throw new ValidationException("Errore su ID_Consegna");
+			boolean eliminazioneRiuscita = modConsegnaDAO.deleteModConsegnaById(ID_Consegna.trim());
+			if (!eliminazioneRiuscita) throw new NotFoundException("Consegna non trovata");
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore eliminazione consegna", sql);
+		}
+	}
+
+	private String generaIdConsegna() {
+		return "CON-" + UUID.randomUUID().toString();
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	// ================== METODI OFFERTA ==================
 
 	public OffertaDTO creaOfferta(String ID_Annuncio, String offerente, Float prezzo, String commento, TipoOffertaDTO tipo, String ID_OggettoOfferto) throws ApplicationException {
@@ -540,43 +684,37 @@ public class Controller {
 			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(ID_Annuncio.trim());
 			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
 			if (annuncio.getStato() != StatoAnnuncioDTO.ATTIVO) throw new ValidationException("Annuncio non attivo");
+			
 			// Prevent owner from offering on own announcement (se desiderato)
 			if (annuncio.getCreatore() != null && annuncio.getCreatore().equals(offerente)) {
 				throw new ValidationException("Utente proprietario non può fare offerta");
 			}
-			float prezzoVal = 0f;
+			float prezzoOffertaValore = 0f;
 			if (tipo == TipoOffertaDTO.VENDITA) {
 				if (prezzo == null) throw new ValidationException("Errore su PrezzoOfferta");
 				if (prezzo <= 0f) throw new ValidationException("Errore su PrezzoOfferta");
-				prezzoVal = prezzo;
+				prezzoOffertaValore = prezzo;
 			} else if (tipo == TipoOffertaDTO.SCAMBIO) {
 				if (isBlank(ID_OggettoOfferto)) throw new ValidationException("Errore su ID_OggettoOfferto");
 				// opzionale: verificare che l'oggetto esista e appartenga all'offerente
-				OggettoDTO ogg = oggettoDAO.getOggettiById(ID_OggettoOfferto.trim());
-				if (ogg == null) throw new NotFoundException("Oggetto offerto non trovato");
-				if (!offerente.equals(ogg.getProprietario())) throw new AuthenticationException("Non sei proprietario dell'oggetto offerto");
+				OggettoDTO oggettoOfferto = oggettoDAO.getOggettiById(ID_OggettoOfferto.trim());
+				if (oggettoOfferto == null) throw new NotFoundException("Oggetto offerto non trovato");
+				if (!offerente.equals(oggettoOfferto.getProprietario())) throw new AuthenticationException("Non sei proprietario dell'oggetto offerto");
 			}
-			String commentoPulito = null;
+			String commentoNew = null;
 			if (commento != null) {
-				commentoPulito = commento.trim();
+				commentoNew = commento.trim();
 			}
-			String oggettoOffertoPulito = null;
+			String oggettoOffertoNew = null;
 			if (ID_OggettoOfferto != null) {
-				oggettoOffertoPulito = ID_OggettoOfferto.trim();
+				oggettoOffertoNew = ID_OggettoOfferto.trim();
 			}
-			OffertaDTO nuova = new OffertaDTO(
-				"OFF-" + UUID.randomUUID(),
-				prezzoVal,
-				commentoPulito,
-				LocalDate.now(),
-				StatoOffertaDTO.ATTESA,
-				offerente.trim(),
-				tipo,
-				ID_Annuncio.trim(),
-				oggettoOffertoPulito
-			);
-			offertaDAO.insertOfferta(nuova);
-			return nuova;
+
+			OffertaDTO offertaCreata = new OffertaDTO("OFF-" + UUID.randomUUID(), prezzoOffertaValore, commentoNew, LocalDate.now(), StatoOffertaDTO.ATTESA, 
+			offerente.trim(), tipo, ID_Annuncio.trim(), oggettoOffertoNew);
+
+			offertaDAO.insertOfferta(offertaCreata);
+			return offertaCreata;
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -595,21 +733,21 @@ public class Controller {
 		}
 	}
 
-	public OffertaDTO accettaOfferta(String ID_Offerta, String utenteCheAccetta) throws ApplicationException {
+	public OffertaDTO accettaOfferta(String ID_Offerta, String utente) throws ApplicationException {
 		try {
 			if (isBlank(ID_Offerta)) throw new ValidationException("Errore su ID_Offerta");
-			if (isBlank(utenteCheAccetta)) throw new ValidationException("Errore su FK_Utente");
-			OffertaDTO offerta = offertaDAO.getOffertaById(ID_Offerta.trim());
-			if (offerta == null) throw new NotFoundException("Offerta non trovata");
-			if (offerta.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non in stato Attesa");
-			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(offerta.getIdAnnuncio());
+			if (isBlank(utente)) throw new ValidationException("Errore su FK_Utente");
+			OffertaDTO offertaDaAccettare = offertaDAO.getOffertaById(ID_Offerta.trim());
+			if (offertaDaAccettare == null) throw new NotFoundException("Offerta non trovata");
+			if (offertaDaAccettare.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non in stato Attesa");
+			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(offertaDaAccettare.getIdAnnuncio());
 			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
-			if (!utenteCheAccetta.equals(annuncio.getCreatore())) throw new AuthenticationException("Non autorizzato");
+			if (!utente.equals(annuncio.getCreatore())) throw new AuthenticationException("Non autorizzato");
 			if (annuncio.getStato() != StatoAnnuncioDTO.ATTIVO) throw new ValidationException("Annuncio non attivo");
-			boolean ok = offertaDAO.updateStatoOfferta(offerta.getIdOfferta(), StatoOffertaDTO.ATTESA, StatoOffertaDTO.ACCETTATA);
-			if (!ok) throw new ValidationException("Offerta già aggiornata");
-			// Trigger DB gestirà rifiuto altre offerte
-			return offertaDAO.getOffertaById(offerta.getIdOfferta());
+			boolean aggiornamentoStatoAccettazione = offertaDAO.updateStatoOfferta(offertaDaAccettare.getIdOfferta(), StatoOffertaDTO.ATTESA, StatoOffertaDTO.ACCETTATA);
+			if (!aggiornamentoStatoAccettazione) throw new ValidationException("Offerta già aggiornata");
+
+			return offertaDAO.getOffertaById(offertaDaAccettare.getIdOfferta());
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -619,19 +757,19 @@ public class Controller {
 
 
 
-	public OffertaDTO rifiutaOfferta(String ID_Offerta, String utenteCheRifiuta) throws ApplicationException {
+	public OffertaDTO rifiutaOfferta(String ID_Offerta, String utente) throws ApplicationException {
 		try {
 			if (isBlank(ID_Offerta)) throw new ValidationException("Errore su ID_Offerta");
-			if (isBlank(utenteCheRifiuta)) throw new ValidationException("Errore su FK_Utente");
-			OffertaDTO offerta = offertaDAO.getOffertaById(ID_Offerta.trim());
-			if (offerta == null) throw new NotFoundException("Offerta non trovata");
-			if (offerta.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non in stato Attesa");
-			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(offerta.getIdAnnuncio());
+			if (isBlank(utente)) throw new ValidationException("Errore su FK_Utente");
+			OffertaDTO offertaDaRifiutare = offertaDAO.getOffertaById(ID_Offerta.trim());
+			if (offertaDaRifiutare == null) throw new NotFoundException("Offerta non trovata");
+			if (offertaDaRifiutare.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non in stato Attesa");
+			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(offertaDaRifiutare.getIdAnnuncio());
 			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
-			if (!utenteCheRifiuta.equals(annuncio.getCreatore())) throw new AuthenticationException("Non autorizzato");
-			boolean ok = offertaDAO.updateStatoOfferta(offerta.getIdOfferta(), StatoOffertaDTO.ATTESA, StatoOffertaDTO.RIFIUTATA);
-			if (!ok) throw new ValidationException("Offerta già aggiornata");
-			return offertaDAO.getOffertaById(offerta.getIdOfferta());
+			if (!utente.equals(annuncio.getCreatore())) throw new AuthenticationException("Non autorizzato");
+			boolean aggiornamentoStatoRifiuto = offertaDAO.updateStatoOfferta(offertaDaRifiutare.getIdOfferta(), StatoOffertaDTO.ATTESA, StatoOffertaDTO.RIFIUTATA);
+			if (!aggiornamentoStatoRifiuto) throw new ValidationException("Offerta già aggiornata");
+			return offertaDAO.getOffertaById(offertaDaRifiutare.getIdOfferta());
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -646,12 +784,12 @@ public class Controller {
 		try {
 			if (isBlank(ID_Offerta)) throw new ValidationException("Errore su ID_Offerta");
 			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
-			OffertaDTO offerta = offertaDAO.getOffertaById(ID_Offerta.trim());
-			if (offerta == null) throw new NotFoundException("Offerta non trovata");
-			if (!offerente.equals(offerta.getOfferente())) throw new AuthenticationException("Non autorizzato");
-			if (offerta.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non ritirabile");
-			boolean deleted = offertaDAO.deleteOffertaById(offerta.getIdOfferta());
-			if (!deleted) throw new NotFoundException("Offerta non trovata");
+			OffertaDTO offertaDaRitirare = offertaDAO.getOffertaById(ID_Offerta.trim());
+			if (offertaDaRitirare == null) throw new NotFoundException("Offerta non trovata");
+			if (!offerente.equals(offertaDaRitirare.getOfferente())) throw new AuthenticationException("Non autorizzato");
+			if (offertaDaRitirare.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non ritirabile");
+			boolean eliminazioneOffertaRiuscita = offertaDAO.deleteOffertaById(offertaDaRitirare.getIdOfferta());
+			if (!eliminazioneOffertaRiuscita) throw new NotFoundException("Offerta non trovata");
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -661,61 +799,54 @@ public class Controller {
 
 
 
-	
+
 
 	// Aggiorna i contenuti dell'offerta (prezzo proposto o oggetto offerto) solo se in stato ATTESA
+
 	public OffertaDTO aggiornaOfferta(String ID_Offerta, String offerente, Float nuovoPrezzo, String nuovoIdOggettoOfferto, String nuovoCommento) throws ApplicationException {
 		try {
 			if (isBlank(ID_Offerta)) throw new ValidationException("Errore su ID_Offerta");
 			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
-			OffertaDTO esistente = offertaDAO.getOffertaById(ID_Offerta.trim());
-			if (esistente == null) throw new NotFoundException("Offerta non trovata");
-			if (!offerente.equals(esistente.getOfferente())) throw new AuthenticationException("Non autorizzato");
-			if (esistente.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non modificabile");
+			OffertaDTO offertaDaAggiornare = offertaDAO.getOffertaById(ID_Offerta.trim());
+			if (offertaDaAggiornare == null) throw new NotFoundException("Offerta non trovata");
+			if (!offerente.equals(offertaDaAggiornare.getOfferente())) throw new AuthenticationException("Non autorizzato");
+			if (offertaDaAggiornare.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non modificabile");
 
 			// Validazioni per tipo di offerta
-			TipoOffertaDTO tipo = esistente.getTipo();
-			float prezzoFinale = esistente.getPrezzoOfferta();
-			String idOggettoOffertoFinale = esistente.getIdOggettoOfferto();
+			TipoOffertaDTO tipoOfferta = offertaDaAggiornare.getTipo();
+			float prezzoFinale = offertaDaAggiornare.getPrezzoOfferta();
+			String idOggettoOffertoFinale = offertaDaAggiornare.getIdOggettoOfferto();
 
-			if (tipo == TipoOffertaDTO.VENDITA) {
+			if (tipoOfferta == TipoOffertaDTO.VENDITA) {
 				if (nuovoPrezzo != null) {
 					if (nuovoPrezzo <= 0f) throw new ValidationException("Errore su PrezzoOfferta");
 					prezzoFinale = nuovoPrezzo;
 				}
 				// Se è VENDITA non si cambia / usa oggetto offerto
-			} else if (tipo == TipoOffertaDTO.SCAMBIO) {
-				if (nuovoIdOggettoOfferto != null) {
-					if (isBlank(nuovoIdOggettoOfferto)) throw new ValidationException("Errore su ID_OggettoOfferto");
-					OggettoDTO ogg = oggettoDAO.getOggettiById(nuovoIdOggettoOfferto.trim());
-					if (ogg == null) throw new NotFoundException("Oggetto offerto non trovato");
-					if (!offerente.equals(ogg.getProprietario())) throw new AuthenticationException("Non sei proprietario dell'oggetto offerto");
-					idOggettoOffertoFinale = nuovoIdOggettoOfferto.trim();
-				}
-				// Per SCAMBIO ignoriamo eventuale nuovoPrezzo
-			} else { // REGALO o altri tipi
-				// Nessun campo specifico modificabile
+
+			} else if (tipoOfferta == TipoOffertaDTO.SCAMBIO) {
+
+					if (nuovoIdOggettoOfferto != null) {
+						if (isBlank(nuovoIdOggettoOfferto)) throw new ValidationException("Errore su ID_OggettoOfferto");
+						OggettoDTO oggettoOffertoNuovo = oggettoDAO.getOggettiById(nuovoIdOggettoOfferto.trim());
+						if (oggettoOffertoNuovo == null) throw new NotFoundException("Oggetto offerto non trovato");
+						if (!offerente.equals(oggettoOffertoNuovo.getProprietario())) throw new AuthenticationException("Non sei proprietario dell'oggetto offerto");
+						idOggettoOffertoFinale = nuovoIdOggettoOfferto.trim();
+					}
 			}
 
 			// Commento opzionale
-			String commentoFinale = esistente.getCommento();
+			String commentoModificato = offertaDaAggiornare.getCommento();
 			if (nuovoCommento != null) {
-				commentoFinale = nuovoCommento.trim();
+				commentoModificato = nuovoCommento.trim();
 			}
 
-			OffertaDTO aggiornataDTO = new OffertaDTO(
-					esistente.getIdOfferta(),
-					prezzoFinale,
-					commentoFinale,
-					esistente.getDataOfferta(),
-					esistente.getStato(),
-					esistente.getOfferente(),
-					esistente.getTipo(),
-					esistente.getIdAnnuncio(),
-					idOggettoOffertoFinale
-			);
-			boolean updated = offertaDAO.updateOfferta(aggiornataDTO);
-			if (!updated) throw new ValidationException("Offerta non aggiornabile");
+			OffertaDTO aggiornataDTO = new OffertaDTO(offertaDaAggiornare.getIdOfferta(), prezzoFinale, commentoModificato, offertaDaAggiornare.getDataOfferta(),
+			offertaDaAggiornare.getStato(), offertaDaAggiornare.getOfferente(), offertaDaAggiornare.getTipo(), offertaDaAggiornare.getIdAnnuncio(), idOggettoOffertoFinale);
+			
+			boolean aggiornamentoContenutoRiuscito = offertaDAO.updateOfferta(aggiornataDTO);
+
+			if (!aggiornamentoContenutoRiuscito) throw new ValidationException("Offerta non aggiornabile");
 			return offertaDAO.getOffertaById(aggiornataDTO.getIdOfferta());
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;

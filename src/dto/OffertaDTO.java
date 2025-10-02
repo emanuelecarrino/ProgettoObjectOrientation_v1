@@ -11,20 +11,11 @@ public class OffertaDTO {
     private StatoOffertaDTO stato;
     private final String offerente;
     private final TipoOffertaDTO tipo;
-    // FK verso Annuncio (assunzione: la tabella Offerta ha FK_Annuncio)
-    private final String idAnnuncio;
-    // FK opzionale verso l'Oggetto offerto in caso di SCAMBIO
-    private final String idOggettoOfferto;
+    private final String ID_Annuncio;
+    private String ID_OggettoOfferto;
 
-    public OffertaDTO(String idOfferta,
-                      float prezzoOfferta,
-                      String commento,
-                      LocalDate dataOfferta,
-                      StatoOffertaDTO stato,
-                      String offerente,
-                      TipoOffertaDTO tipo,
-                      String idAnnuncio,
-                      String idOggettoOfferto) {
+    public OffertaDTO(String idOfferta, float prezzoOfferta, String commento, LocalDate dataOfferta, 
+    StatoOffertaDTO stato, String offerente, TipoOffertaDTO tipo, String ID_Annuncio, String ID_OggettoOfferto) {
         this.idOfferta = idOfferta;
         this.prezzoOfferta = prezzoOfferta;
         this.commento = commento;
@@ -32,8 +23,8 @@ public class OffertaDTO {
         this.stato = stato;
         this.offerente = offerente;
         this.tipo = tipo;
-        this.idAnnuncio = idAnnuncio;
-        this.idOggettoOfferto = idOggettoOfferto;
+        this.ID_Annuncio = ID_Annuncio;
+        this.ID_OggettoOfferto = ID_OggettoOfferto;
     }
 
     public String getIdOfferta(){
@@ -77,10 +68,10 @@ public class OffertaDTO {
     }
 
     public String getIdAnnuncio() {
-        return idAnnuncio;
+        return ID_Annuncio;
     }
 
     public String getIdOggettoOfferto() {
-        return idOggettoOfferto;
+        return ID_OggettoOfferto;
     }
 }

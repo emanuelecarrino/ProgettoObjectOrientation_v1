@@ -3,21 +3,32 @@ package dto;
 import java.time.LocalDate;
 
 public class ModConsegnaDTO {
+    private String ID_Consegna;
     private String ID_Annuncio;   
     private String sedeUni;         
     private String note;            
     private String fasciaOraria;    
     private LocalDate data;             
 
-    public ModConsegnaDTO(String annuncio, String sedeUni, String note, String fasciaOraria, LocalDate data) {
-        this.ID_Annuncio = annuncio;
+    public ModConsegnaDTO(String ID_Consegna, String ID_Annuncio, String sedeUni, String note, String fasciaOraria, LocalDate data) {
+        this.ID_Consegna = ID_Consegna;
+        this.ID_Annuncio = ID_Annuncio;
         this.sedeUni = sedeUni;
         this.note = note;
         this.fasciaOraria = fasciaOraria;
         this.data = data;
     }
 
-    public String getAnnuncio() {
+
+    public String getIdConsegna(){
+        return ID_Consegna;
+    }
+
+    public void setIdConsegna(String ID_Consegna){
+        this.ID_Consegna = ID_Consegna;
+    }
+
+    public String getIdAnnuncio() {
         return ID_Annuncio;
     }
 

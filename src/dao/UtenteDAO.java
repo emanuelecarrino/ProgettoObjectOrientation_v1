@@ -51,7 +51,7 @@ public class UtenteDAO {
 
     public UtenteDTO getUtenteByUsername(String username) throws SQLException {
         String sql = """
-            SELECT Nome, Cognome, Email, Matricola, Username, Password, DataNascita, Genere
+            SELECT *
             FROM Utente
             WHERE Username = ?
             """;

@@ -52,9 +52,7 @@ public class AnnuncioDAO {
 
     public List<AnnuncioDTO> getAnnunciByTipo(TipoAnnuncioDTO tipo) throws SQLException {
         String sql = """
-            SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
-                   Categoria, Stato, Tipo, PrezzoVendita,
-                   FK_Oggetto, FK_Utente
+            SELECT *
             FROM Annuncio
             WHERE Tipo = ?
             """;
@@ -84,9 +82,7 @@ public class AnnuncioDAO {
 
     public List<AnnuncioDTO> getAnnunciByCategoria(CategoriaAnnuncioDTO categoria) throws SQLException {
         String sql = """
-            SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
-                   Categoria, Stato, Tipo, PrezzoVendita,
-                   FK_Oggetto, FK_Utente
+            SELECT *
             FROM Annuncio
             WHERE Categoria = ?
             """;
@@ -117,9 +113,7 @@ public class AnnuncioDAO {
     public List<AnnuncioDTO> getAnnunciByTitolo(String ricerca) throws SQLException {
         String trimmed = ricerca; // validazione spostata al Controller
         String sql = """
-            SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
-                   Categoria, Stato, Tipo, PrezzoVendita,
-                   FK_Oggetto, FK_Utente
+            SELECT *
             FROM Annuncio
             WHERE LOWER(Titolo) LIKE ?
             """;
@@ -150,9 +144,7 @@ public class AnnuncioDAO {
 
     public List<AnnuncioDTO> getAnnunciByPrezzoMax(BigDecimal prezzoMax) throws SQLException {
         String sql = """
-            SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
-                   Categoria, Stato, Tipo, PrezzoVendita,
-                   FK_Oggetto, FK_Utente
+            SELECT *
             FROM Annuncio
             WHERE PrezzoVendita <= ?
             """;
@@ -181,9 +173,7 @@ public class AnnuncioDAO {
 
     public List<AnnuncioDTO> getAnnunciByCreatore(String creatore) throws SQLException {
         String sql = """
-            SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
-                   Categoria, Stato, Tipo, PrezzoVendita,
-                   FK_Oggetto, FK_Utente
+            SELECT *
             FROM Annuncio
             WHERE FK_Utente = ?
             """;
@@ -243,9 +233,7 @@ public class AnnuncioDAO {
     // Recupero annuncio completo per ID 
     public AnnuncioDTO getAnnuncioById(String idAnnuncio) throws SQLException {
         String sql = """
-            SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
-                   Categoria, Stato, Tipo, PrezzoVendita,
-                   FK_Oggetto, FK_Utente
+            SELECT *
             FROM Annuncio
             WHERE ID_Annuncio = ?
             """;

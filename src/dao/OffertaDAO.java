@@ -4,7 +4,6 @@ import dto.OffertaDTO;
 import dto.StatoOffertaDTO;
 import dto.TipoOffertaDTO;
 import dto.DB_Connection;
-
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -48,11 +47,13 @@ public class OffertaDAO {
 
 
     public OffertaDTO getOffertaById(String ID_Offerta) throws SQLException {
-        final String sql = """
-            SELECT ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, FK_OggettoOfferto
+
+        String sql = """
+            SELECT *
             FROM Offerta
             WHERE ID_Offerta = ?
             """;
+
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, ID_Offerta);
             try (ResultSet rs = ps.executeQuery()) {
@@ -70,15 +71,18 @@ public class OffertaDAO {
         }
     }
 
+
+
     public List<OffertaDTO> getOfferteByAnnuncio(String ID_Annuncio) throws SQLException {
 
-        final String sql = """
-            SELECT ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, FK_OggettoOfferto
+        String sql = """
+            SELECT *
             FROM Offerta
             WHERE FK_Annuncio = ?
             ORDER BY DataOfferta ASC
             """;
-        ArrayList<OffertaDTO> list = new ArrayList<>();
+
+        ArrayList<OffertaDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, ID_Annuncio);
             try (ResultSet rs = ps.executeQuery()) {
@@ -91,21 +95,23 @@ public class OffertaDAO {
                     TipoOffertaDTO tipo = TipoOffertaDTO.valueOf(rs.getString("Tipo"));
                     String offerente = rs.getString("FK_Utente");
                     String ID_OggettoOfferto = rs.getString("FK_OggettoOfferto");
-                    list.add(new OffertaDTO(ID_Offerta, prezzo, commento, data, stato, offerente, tipo, ID_Annuncio, ID_OggettoOfferto));
+                    risultati.add(new OffertaDTO(ID_Offerta, prezzo, commento, data, stato, offerente, tipo, ID_Annuncio, ID_OggettoOfferto));
                 }
             }
         }
-        return list;
+        return risultati;
     }
 
 
 
     public boolean updateStatoOfferta(String ID_Offerta, StatoOffertaDTO statoCorrente, StatoOffertaDTO statoNuovo) throws SQLException {
-        final String sql = """
+        
+        String sql = """
             UPDATE Offerta
             SET Stato = ?
             WHERE ID_Offerta = ? AND Stato = ?
             """;
+
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, statoNuovo.name());
             ps.setString(2, ID_Offerta);
@@ -116,14 +122,16 @@ public class OffertaDAO {
 
 
 
-    // Aggiorna prezzo, commento e oggetto offerto SOLO se stato è ancora ATTESA; accetta direttamente l'istanza OffertaDTO
+    // Aggiorna prezzo, commento e oggetto offerto SOLO se stato è ancora ATTESA
     
     public boolean updateOfferta(OffertaDTO offerta) throws SQLException {
-        final String sql = """
+        
+        String sql = """
             UPDATE Offerta
             SET PrezzoOfferta = ?, Commento = ?, FK_OggettoOfferto = ?
             WHERE ID_Offerta = ? AND Stato = 'ATTESA'
             """;
+
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setFloat(1, offerta.getPrezzoOfferta());
             ps.setString(2, offerta.getCommento());
@@ -141,10 +149,12 @@ public class OffertaDAO {
 
 
     public boolean deleteOffertaById(String ID_Offerta) throws SQLException {
-        final String sql = """
+
+        String sql = """
             DELETE FROM Offerta
             WHERE ID_Offerta = ?
             """;
+
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, ID_Offerta);
             return ps.executeUpdate() > 0;
