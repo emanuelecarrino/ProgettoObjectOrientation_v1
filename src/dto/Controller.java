@@ -1,0 +1,731 @@
+package dto;
+
+import dao.UtenteDAO;
+import dao.OggettoDAO;
+import dao.AnnuncioDAO;
+import dao.OffertaDAO;
+import exception.*;
+
+import java.sql.SQLException;
+import java.util.List;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+import java.util.ArrayList;
+
+/**
+ * Controller applicativo: centralizza la gestione delle eccezioni provenienti dai DAO
+ * (che propagano SQLException e IllegalArgumentException) e le traduce in eccezioni
+ * di dominio custom per i layer superiori (UI / API).
+ */
+
+
+public class Controller {
+
+	private final UtenteDAO utenteDAO = new UtenteDAO();
+	private final OggettoDAO oggettoDAO = new OggettoDAO();
+	private final AnnuncioDAO annuncioDAO = new AnnuncioDAO();
+	private final OffertaDAO offertaDAO = new OffertaDAO();
+
+
+
+
+
+
+
+
+
+
+	// ================== METODI UTENTE  ==================
+
+
+
+
+
+	// Registrazione nuovo utente con controlli di unicità applicativi prima dell'inserimento
+	public void registraNuovoUtente(String nome, String cognome, String email, String matricola, String username, 
+                                    String password, String dataNascita, String genere) throws ApplicationException {
+	
+
+            try {
+			// Controlli base (potresti rafforzarli con regex/email ecc.)
+			if (isBlank(nome)) throw new ValidationException("Errore su Nome");
+			if (isBlank(cognome)) throw new ValidationException("Errore su Cognome");
+			if (isBlank(email)) throw new ValidationException("Errore su Email");
+			if (isBlank(matricola)) throw new ValidationException("Errore su Matricola");
+			if (isBlank(username)) throw new ValidationException("Errore su Username");
+			if (isBlank(password)) throw new ValidationException("Errore su Password");
+			if (isBlank(dataNascita)) throw new ValidationException("Errore su DataNascita");
+
+			// Unicità lato applicazione (riduce eccezioni SQL da unique violation)
+
+			if (utenteDAO.getUtenteByUsername(username) != null)
+				throw new DuplicateResourceException("Username già esistente");
+			if (utenteDAO.getUtenteByEmail(email) != null)
+				throw new DuplicateResourceException("Email già esistente");
+			if (utenteDAO.getUtenteByMatricola(matricola) != null)
+				throw new DuplicateResourceException("Matricola già esistente");
+
+			UtenteDTO nuovo = new UtenteDTO(nome, cognome, email, matricola, username, password, dataNascita, genere);
+			utenteDAO.insertUtente(nuovo);
+		} catch (DuplicateResourceException | ValidationException e) {
+			throw e; 
+		} catch (SQLException sql) {
+			if (isUniqueViolation(sql)) {
+				throw new DuplicateResourceException("Violazione unicità (inserimento)");
+			}
+			throw new PersistenceException("Errore persistenza registrazione", sql);
+		} catch (IllegalArgumentException x) {
+			throw new ValidationException(x.getMessage());
+		}
+	}
+
+
+
+
+
+	// Login semplice per username + password (o email + password se rilevi @)
+
+
+	public UtenteDTO login(String userOrEmail, String password) throws ApplicationException {
+		try {
+			if (isBlank(userOrEmail)) throw new ValidationException("Errore su Username");
+			if (isBlank(password)) throw new ValidationException("Errore su Password");
+			UtenteDTO utente;
+			if (userOrEmail.contains("@")) {
+				utente = utenteDAO.getUtenteByEmail(userOrEmail);
+			} else {
+				utente = utenteDAO.getUtenteByUsername(userOrEmail);
+			}
+			if (utente == null) throw new AuthenticationException("Credenziali errate");
+			if (!password.equals(utente.getPassword())) throw new AuthenticationException("Credenziali errate");
+			return utente;
+		} catch (AuthenticationException | ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore durante login", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+
+
+
+
+	// Aggiornamento profilo utente (verifica unicità per email/username se cambiati)
+	public void aggiornaProfilo(UtenteDTO utente) throws ApplicationException {
+		try {
+			if (utente == null) throw new ValidationException("Utente null");
+			if (isBlank(utente.getMatricola())) throw new ValidationException("Errore su Matricola");
+			if (isBlank(utente.getNome())) throw new ValidationException("Errore su Nome");
+			if (isBlank(utente.getCognome())) throw new ValidationException("Errore su Cognome");
+			if (isBlank(utente.getEmail())) throw new ValidationException("Errore su Email");
+			if (isBlank(utente.getUsername())) throw new ValidationException("Errore su Username");
+			if (isBlank(utente.getPassword())) throw new ValidationException("Errore su Password");
+			if (utente.getDataNascita() == null) throw new ValidationException("Errore su DataNascita");
+			UtenteDTO originale = utenteDAO.getUtenteByMatricola(utente.getMatricola());
+			if (originale == null) throw new NotFoundException("Utente non trovato");
+
+			// Se email cambiata
+			if (!originale.getEmail().equalsIgnoreCase(utente.getEmail())) {
+				UtenteDTO conflict = utenteDAO.getUtenteByEmail(utente.getEmail());
+				if (conflict != null) throw new DuplicateResourceException("Email già esistente");
+			}
+			// Se username cambiato
+			if (!originale.getUsername().equalsIgnoreCase(utente.getUsername())) {
+				UtenteDTO conflict = utenteDAO.getUtenteByUsername(utente.getUsername());
+				if (conflict != null) throw new DuplicateResourceException("Username già esistente");
+			}
+
+			boolean ok = utenteDAO.updateUtente(utente);
+			if (!ok) throw new NotFoundException("Utente non trovato");
+		} catch (DuplicateResourceException | ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			if (isUniqueViolation(sql)) throw new DuplicateResourceException("Violazione unicità (update)");
+			throw new PersistenceException("Errore aggiornamento profilo", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+	// Eliminazione utente
+	public void eliminaUtente(String matricola) throws ApplicationException {
+		try {
+			if (isBlank(matricola)) throw new ValidationException("Errore su Matricola");
+			boolean deleted = utenteDAO.deleteUtenteByMatricola(matricola.trim());
+			if (!deleted) throw new NotFoundException("Utente non trovato");
+		} catch (NotFoundException | ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore eliminazione utente", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+
+
+	// Cambio password (richiede password corrente corretta)
+	public void cambiaPassword(String username, String vecchiaPassword, String nuovaPassword) throws ApplicationException {
+		try {
+			if (isBlank(username)) throw new ValidationException("Errore su Username");
+			if (isBlank(vecchiaPassword)) throw new ValidationException("Errore su Password");
+			if (isBlank(nuovaPassword)) throw new ValidationException("Errore su Password");
+			UtenteDTO utente = utenteDAO.getUtenteByUsername(username);
+			if (utente == null) throw new NotFoundException("Utente non trovato");
+			if (!utente.getPassword().equals(vecchiaPassword)) throw new AuthenticationException("Credenziali errate");
+			// aggiorna DTO e delega a update (riusa validazioni lì)
+			utente.setPassword(nuovaPassword);
+			utenteDAO.updateUtente(utente);
+		} catch (AuthenticationException | NotFoundException | ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore cambio password", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+	
+
+	private boolean isBlank(String s){
+		return s == null || s.trim().isEmpty();
+	}
+
+	// Riconosce violazioni di unicità (PostgreSQL codice 23505)
+	private boolean isUniqueViolation(SQLException ex){
+		return "23505".equals(ex.getSQLState());
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// ================== METODI ANNUNCI ==================
+
+	// Crea un nuovo annuncio; per tipo VENDITA il prezzo è obbligatorio e > 0, altrimenti ignorato
+	public AnnuncioDTO creaAnnuncio(String titolo, String descrizione, CategoriaAnnuncioDTO categoria,
+									TipoAnnuncioDTO tipo, BigDecimal prezzoVendita, String ID_Oggetto,
+									String creatore) throws ApplicationException {
+		try {
+			if (isBlank(titolo)) throw new ValidationException("Errore su Titolo");
+			if (categoria == null) throw new ValidationException("Errore su Categoria");
+			if (tipo == null) throw new ValidationException("Errore su Tipo");
+			if (isBlank(ID_Oggetto)) throw new ValidationException("Errore su FK_Oggetto");
+			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
+
+			BigDecimal prezzo = null;
+			if (tipo == TipoAnnuncioDTO.VENDITA) {
+				if (prezzoVendita == null) throw new ValidationException("Errore su PrezzoVendita");
+				if (prezzoVendita.signum() <= 0) throw new ValidationException("Errore su PrezzoVendita");
+				prezzo = prezzoVendita;
+			}
+
+			String descrizionePulita = null;
+			if (descrizione != null) {
+				descrizionePulita = descrizione.trim();
+			}
+			AnnuncioDTO nuovo = new AnnuncioDTO(
+					generaIdAnnuncio(),
+					titolo.trim(),
+					descrizionePulita,
+					StatoAnnuncioDTO.ATTIVO,
+					categoria,
+					LocalDate.now(),
+					creatore.trim(),
+					ID_Oggetto.trim(),
+					tipo,
+					prezzo
+			);
+			annuncioDAO.insertAnnuncio(nuovo);
+			return nuovo;
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore persistenza creazione annuncio", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+	// Ricerca per tipo
+	public List<AnnuncioDTO> cercaAnnunciPerTipo(TipoAnnuncioDTO tipo) throws ApplicationException {
+		try {
+			if (tipo == null) throw new ValidationException("Errore su Tipo");
+			return annuncioDAO.getAnnunciByTipo(tipo);
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ricerca annunci per tipo", sql);
+		}
+	}
+
+	// Ricerca per categoria
+	public List<AnnuncioDTO> cercaAnnunciPerCategoria(CategoriaAnnuncioDTO categoria) throws ApplicationException {
+		try {
+			if (categoria == null) throw new ValidationException("Errore su Categoria");
+			return annuncioDAO.getAnnunciByCategoria(categoria);
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ricerca annunci per categoria", sql);
+		}
+	}
+
+	// Ricerca per titolo (LIKE case-insensitive)
+	public List<AnnuncioDTO> cercaAnnunciPerTitolo(String testo) throws ApplicationException {
+		try {
+			if (isBlank(testo)) throw new ValidationException("Errore su Titolo");
+			return annuncioDAO.getAnnunciByTitolo(testo);
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ricerca annunci per titolo", sql);
+		}
+	}
+
+	// Ricerca per prezzo massimo (solo annunci di tipo VENDITA verranno restituiti dal DAO in base alla query)
+	public List<AnnuncioDTO> cercaAnnunciPerPrezzoMax(BigDecimal prezzoMax) throws ApplicationException {
+		try {
+			if (prezzoMax == null) throw new ValidationException("Errore su PrezzoVendita");
+			if (prezzoMax.signum() < 0) throw new ValidationException("Errore su PrezzoVendita");
+			return annuncioDAO.getAnnunciByPrezzoMax(prezzoMax);
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ricerca annunci per prezzo", sql);
+		}
+	}
+
+	// Ricerca per creatore
+	public List<AnnuncioDTO> cercaAnnunciPerCreatore(String creatore) throws ApplicationException {
+		try {
+			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
+			return annuncioDAO.getAnnunciByCreatore(creatore.trim());
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ricerca annunci per creatore", sql);
+		}
+	}
+
+	// Aggiornamento annuncio (non consente variazione tipo o oggetto)
+	public AnnuncioDTO aggiornaAnnuncio(String ID_Annuncio, String nuovoTitolo, String nuovaDescrizione,
+										CategoriaAnnuncioDTO nuovaCategoria, StatoAnnuncioDTO nuovoStato,
+										BigDecimal nuovoPrezzo) throws ApplicationException {
+		try {
+			if (isBlank(ID_Annuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			if (isBlank(nuovoTitolo)) throw new ValidationException("Errore su Titolo");
+			if (nuovaCategoria == null) throw new ValidationException("Errore su Categoria");
+			if (nuovoStato == null) throw new ValidationException("Errore su Stato");
+
+			AnnuncioDTO esistente = annuncioDAO.getAnnuncioById(ID_Annuncio.trim());
+			if (esistente == null) throw new NotFoundException("Annuncio non trovato");
+
+			TipoAnnuncioDTO tipo = esistente.getTipoAnnuncio();
+			String ID_Oggetto = esistente.getIdOggetto();
+			String creatore = esistente.getCreatore();
+			LocalDate dataPub = esistente.getDataPubblicazione();
+
+			BigDecimal prezzoFinale = null;
+			if (tipo == TipoAnnuncioDTO.VENDITA) {
+				if (nuovoPrezzo != null) {
+					if (nuovoPrezzo.signum() <= 0) throw new ValidationException("Errore su PrezzoVendita");
+					prezzoFinale = nuovoPrezzo;
+				} else {
+					prezzoFinale = esistente.getPrezzoVendita();
+				}
+			}
+
+			String nuovaDescrizionePulita = null;
+			if (nuovaDescrizione != null) {
+				nuovaDescrizionePulita = nuovaDescrizione.trim();
+			}
+			AnnuncioDTO utente = new AnnuncioDTO(
+					esistente.getIdAnnuncio(),
+					nuovoTitolo.trim(),
+					nuovaDescrizionePulita,
+					nuovoStato,
+					nuovaCategoria,
+					dataPub,
+					creatore,
+					ID_Oggetto,
+					tipo,
+					prezzoFinale
+			);
+
+			boolean ok = annuncioDAO.updateAnnuncio(utente);
+			if (!ok) throw new NotFoundException("Annuncio non trovato");
+			return utente;
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore aggiornamento annuncio", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+	
+
+	// Eliminazione annuncio per ID
+	public void eliminaAnnuncio(String ID_Annuncio) throws ApplicationException {
+		try {
+			if (isBlank(ID_Annuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			boolean deleted = annuncioDAO.deleteAnnuncioById(ID_Annuncio.trim());
+			if (!deleted) throw new NotFoundException("Annuncio non trovato");
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore eliminazione annuncio", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+	private String generaIdAnnuncio(){
+		return "ANN-" + UUID.randomUUID().toString();
+	}
+
+
+
+
+
+
+
+
+	// ================== METODI OGGETTO ==================
+
+	public OggettoDTO creaOggetto(String nome, Integer numProprietari, String condizioni, String dimensione, Float peso, String proprietario) throws ApplicationException {
+		try {
+			if (isBlank(nome)) throw new ValidationException("Errore su Nome");
+			if (isBlank(proprietario)) throw new ValidationException("Errore su FK_Utente");
+			if (numProprietari == null || numProprietari < 0) throw new ValidationException("Errore su numProprietari");
+			if (isBlank(condizioni)) throw new ValidationException("Errore su Condizioni");
+			if (isBlank(dimensione)) throw new ValidationException("Errore su Dimensione");
+			if (peso != null && peso < 0) throw new ValidationException("Errore su Peso_Kg");
+			OggettoDTO nuovo = new OggettoDTO(generaIdOggetto(), nome.trim(), numProprietari, condizioni, dimensione, peso, proprietario.trim());
+			oggettoDAO.insertOggetto(nuovo);
+			return nuovo;
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) { 
+			throw new PersistenceException("Errore creazione oggetto", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+	public OggettoDTO aggiornaOggetto(String ID_Oggetto, String nuovoNome, Integer numProprietari, String condizioni, String dimensione, Float peso) throws ApplicationException {
+		try {
+			if (isBlank(ID_Oggetto)) throw new ValidationException("Errore su ID_Oggetto");
+			OggettoDTO esistente = oggettoDAO.getOggettiById(ID_Oggetto.trim());
+			if (esistente == null) throw new NotFoundException("Oggetto non trovato");
+			if (isBlank(nuovoNome)) throw new ValidationException("Errore su Nome");
+			if (numProprietari == null || numProprietari < 0) throw new ValidationException("Errore su numProprietari");
+			if (isBlank(condizioni)) throw new ValidationException("Errore su Condizioni");
+			if (isBlank(dimensione)) throw new ValidationException("Errore su Dimensione");
+			if (peso != null && peso < 0) throw new ValidationException("Errore su Peso_Kg");
+			OggettoDTO oggetto = new OggettoDTO(esistente.getIdOggetto(), nuovoNome.trim(), numProprietari, condizioni, dimensione, peso, esistente.getProprietario());
+			boolean ok = oggettoDAO.updateOggetto(oggetto);
+			if (!ok) throw new NotFoundException("Oggetto non trovato");
+			return oggetto;
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore aggiornamento oggetto", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+	public void eliminaOggetto(String ID_Oggetto) throws ApplicationException {
+		try {
+			if (isBlank(ID_Oggetto)) throw new ValidationException("Errore su ID_Oggetto");
+			boolean deleted = oggettoDAO.deleteOggettoById(ID_Oggetto.trim());
+			if (!deleted) throw new NotFoundException("Oggetto non trovato");
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore eliminazione oggetto", sql);
+		} catch (IllegalArgumentException iae) {
+			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+	public List<OggettoDTO> cercaOggettiPerProprietario(String proprietario) throws ApplicationException {
+		try {
+			if (isBlank(proprietario)) throw new ValidationException("Errore su FK_Utente");
+			return oggettoDAO.getOggettiByPropr(proprietario.trim());
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ricerca oggetti per proprietario", sql);
+		}
+	}
+
+	public List<OggettoDTO> cercaOggettiPerNome(String nome) throws ApplicationException {
+		try {
+			if (isBlank(nome)) throw new ValidationException("Errore su Nome");
+			return oggettoDAO.getOggettiByNome(nome.trim());
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ricerca oggetti per nome", sql);
+		}
+	}
+
+	public OggettoDTO trovaOggettoPerId(String ID_Oggetto) throws ApplicationException {
+		try {
+			if (isBlank(ID_Oggetto)) throw new ValidationException("Errore su ID_Oggetto");
+			OggettoDTO o = oggettoDAO.getOggettiById(ID_Oggetto.trim());
+			if (o == null) throw new NotFoundException("Oggetto non trovato");
+			return o;
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore recupero oggetto", sql);
+		}
+	}
+
+	public List<OggettoDTO> ordinaOggettiPerPeso(String direzione) throws ApplicationException {
+		try {
+			return oggettoDAO.orderOggettiByPeso(direzione);
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ordinamento oggetti per peso", sql);
+		}
+	}
+
+	public List<OggettoDTO> ordinaOggettiPerNumeroProprietari() throws ApplicationException {
+		try {
+			return oggettoDAO.orderOggettiByNumPropr();
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ordinamento oggetti per numero proprietari", sql);
+		}
+	}
+
+	private String generaIdOggetto(){
+		return "OGG-" + UUID.randomUUID();
+	}
+
+
+
+
+
+
+
+
+	// ================== METODI OFFERTA ==================
+
+	public OffertaDTO creaOfferta(String ID_Annuncio, String offerente, Float prezzo, String commento, TipoOffertaDTO tipo, String ID_OggettoOfferto) throws ApplicationException {
+		try {
+			if (isBlank(ID_Annuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
+			if (tipo == null) throw new ValidationException("Errore su Tipo");
+			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(ID_Annuncio.trim());
+			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
+			if (annuncio.getStato() != StatoAnnuncioDTO.ATTIVO) throw new ValidationException("Annuncio non attivo");
+			// Prevent owner from offering on own announcement (se desiderato)
+			if (annuncio.getCreatore() != null && annuncio.getCreatore().equals(offerente)) {
+				throw new ValidationException("Utente proprietario non può fare offerta");
+			}
+			float prezzoVal = 0f;
+			if (tipo == TipoOffertaDTO.VENDITA) {
+				if (prezzo == null) throw new ValidationException("Errore su PrezzoOfferta");
+				if (prezzo <= 0f) throw new ValidationException("Errore su PrezzoOfferta");
+				prezzoVal = prezzo;
+			} else if (tipo == TipoOffertaDTO.SCAMBIO) {
+				if (isBlank(ID_OggettoOfferto)) throw new ValidationException("Errore su ID_OggettoOfferto");
+				// opzionale: verificare che l'oggetto esista e appartenga all'offerente
+				OggettoDTO ogg = oggettoDAO.getOggettiById(ID_OggettoOfferto.trim());
+				if (ogg == null) throw new NotFoundException("Oggetto offerto non trovato");
+				if (!offerente.equals(ogg.getProprietario())) throw new AuthenticationException("Non sei proprietario dell'oggetto offerto");
+			}
+			String commentoPulito = null;
+			if (commento != null) {
+				commentoPulito = commento.trim();
+			}
+			String oggettoOffertoPulito = null;
+			if (ID_OggettoOfferto != null) {
+				oggettoOffertoPulito = ID_OggettoOfferto.trim();
+			}
+			OffertaDTO nuova = new OffertaDTO(
+				"OFF-" + UUID.randomUUID(),
+				prezzoVal,
+				commentoPulito,
+				LocalDate.now(),
+				StatoOffertaDTO.ATTESA,
+				offerente.trim(),
+				tipo,
+				ID_Annuncio.trim(),
+				oggettoOffertoPulito
+			);
+			offertaDAO.insertOfferta(nuova);
+			return nuova;
+		} catch (ValidationException | NotFoundException | AuthenticationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore creazione offerta", sql);
+		}
+	}
+
+	public List<OffertaDTO> cercaOffertePerAnnuncio(String ID_Annuncio) throws ApplicationException {
+		try {
+			if (isBlank(ID_Annuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			return offertaDAO.getOfferteByAnnuncio(ID_Annuncio.trim());
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ricerca offerte", sql);
+		}
+	}
+
+	public OffertaDTO accettaOfferta(String ID_Offerta, String utenteCheAccetta) throws ApplicationException {
+		try {
+			if (isBlank(ID_Offerta)) throw new ValidationException("Errore su ID_Offerta");
+			if (isBlank(utenteCheAccetta)) throw new ValidationException("Errore su FK_Utente");
+			OffertaDTO offerta = offertaDAO.getOffertaById(ID_Offerta.trim());
+			if (offerta == null) throw new NotFoundException("Offerta non trovata");
+			if (offerta.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non in stato Attesa");
+			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(offerta.getIdAnnuncio());
+			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
+			if (!utenteCheAccetta.equals(annuncio.getCreatore())) throw new AuthenticationException("Non autorizzato");
+			if (annuncio.getStato() != StatoAnnuncioDTO.ATTIVO) throw new ValidationException("Annuncio non attivo");
+			boolean ok = offertaDAO.updateStatoOfferta(offerta.getIdOfferta(), StatoOffertaDTO.ATTESA, StatoOffertaDTO.ACCETTATA);
+			if (!ok) throw new ValidationException("Offerta già aggiornata");
+			// Trigger DB gestirà rifiuto altre offerte
+			return offertaDAO.getOffertaById(offerta.getIdOfferta());
+		} catch (ValidationException | NotFoundException | AuthenticationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore accettazione offerta", sql);
+		}
+	}
+
+
+
+	public OffertaDTO rifiutaOfferta(String ID_Offerta, String utenteCheRifiuta) throws ApplicationException {
+		try {
+			if (isBlank(ID_Offerta)) throw new ValidationException("Errore su ID_Offerta");
+			if (isBlank(utenteCheRifiuta)) throw new ValidationException("Errore su FK_Utente");
+			OffertaDTO offerta = offertaDAO.getOffertaById(ID_Offerta.trim());
+			if (offerta == null) throw new NotFoundException("Offerta non trovata");
+			if (offerta.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non in stato Attesa");
+			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(offerta.getIdAnnuncio());
+			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
+			if (!utenteCheRifiuta.equals(annuncio.getCreatore())) throw new AuthenticationException("Non autorizzato");
+			boolean ok = offertaDAO.updateStatoOfferta(offerta.getIdOfferta(), StatoOffertaDTO.ATTESA, StatoOffertaDTO.RIFIUTATA);
+			if (!ok) throw new ValidationException("Offerta già aggiornata");
+			return offertaDAO.getOffertaById(offerta.getIdOfferta());
+		} catch (ValidationException | NotFoundException | AuthenticationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore rifiuto offerta", sql);
+		}
+	}
+
+
+
+
+	public void ritiraOfferta(String ID_Offerta, String offerente) throws ApplicationException {
+		try {
+			if (isBlank(ID_Offerta)) throw new ValidationException("Errore su ID_Offerta");
+			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
+			OffertaDTO offerta = offertaDAO.getOffertaById(ID_Offerta.trim());
+			if (offerta == null) throw new NotFoundException("Offerta non trovata");
+			if (!offerente.equals(offerta.getOfferente())) throw new AuthenticationException("Non autorizzato");
+			if (offerta.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non ritirabile");
+			boolean deleted = offertaDAO.deleteOffertaById(offerta.getIdOfferta());
+			if (!deleted) throw new NotFoundException("Offerta non trovata");
+		} catch (ValidationException | NotFoundException | AuthenticationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ritiro offerta", sql);
+		}
+	}
+
+
+
+	
+
+	// Aggiorna i contenuti dell'offerta (prezzo proposto o oggetto offerto) solo se in stato ATTESA
+	public OffertaDTO aggiornaOfferta(String ID_Offerta, String offerente, Float nuovoPrezzo, String nuovoIdOggettoOfferto, String nuovoCommento) throws ApplicationException {
+		try {
+			if (isBlank(ID_Offerta)) throw new ValidationException("Errore su ID_Offerta");
+			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
+			OffertaDTO esistente = offertaDAO.getOffertaById(ID_Offerta.trim());
+			if (esistente == null) throw new NotFoundException("Offerta non trovata");
+			if (!offerente.equals(esistente.getOfferente())) throw new AuthenticationException("Non autorizzato");
+			if (esistente.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non modificabile");
+
+			// Validazioni per tipo di offerta
+			TipoOffertaDTO tipo = esistente.getTipo();
+			float prezzoFinale = esistente.getPrezzoOfferta();
+			String idOggettoOffertoFinale = esistente.getIdOggettoOfferto();
+
+			if (tipo == TipoOffertaDTO.VENDITA) {
+				if (nuovoPrezzo != null) {
+					if (nuovoPrezzo <= 0f) throw new ValidationException("Errore su PrezzoOfferta");
+					prezzoFinale = nuovoPrezzo;
+				}
+				// Se è VENDITA non si cambia / usa oggetto offerto
+			} else if (tipo == TipoOffertaDTO.SCAMBIO) {
+				if (nuovoIdOggettoOfferto != null) {
+					if (isBlank(nuovoIdOggettoOfferto)) throw new ValidationException("Errore su ID_OggettoOfferto");
+					OggettoDTO ogg = oggettoDAO.getOggettiById(nuovoIdOggettoOfferto.trim());
+					if (ogg == null) throw new NotFoundException("Oggetto offerto non trovato");
+					if (!offerente.equals(ogg.getProprietario())) throw new AuthenticationException("Non sei proprietario dell'oggetto offerto");
+					idOggettoOffertoFinale = nuovoIdOggettoOfferto.trim();
+				}
+				// Per SCAMBIO ignoriamo eventuale nuovoPrezzo
+			} else { // REGALO o altri tipi
+				// Nessun campo specifico modificabile
+			}
+
+			// Commento opzionale
+			String commentoFinale = esistente.getCommento();
+			if (nuovoCommento != null) {
+				commentoFinale = nuovoCommento.trim();
+			}
+
+			OffertaDTO aggiornataDTO = new OffertaDTO(
+					esistente.getIdOfferta(),
+					prezzoFinale,
+					commentoFinale,
+					esistente.getDataOfferta(),
+					esistente.getStato(),
+					esistente.getOfferente(),
+					esistente.getTipo(),
+					esistente.getIdAnnuncio(),
+					idOggettoOffertoFinale
+			);
+			boolean updated = offertaDAO.updateOfferta(aggiornataDTO);
+			if (!updated) throw new ValidationException("Offerta non aggiornabile");
+			return offertaDAO.getOffertaById(aggiornataDTO.getIdOfferta());
+		} catch (ValidationException | NotFoundException | AuthenticationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore aggiornamento offerta", sql);
+		}
+	}
+
+
+
+
+
+}
