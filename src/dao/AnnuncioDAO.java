@@ -23,44 +23,50 @@ public class AnnuncioDAO {
 
 
     public void insertAnnuncio(AnnuncioDTO annuncio) {
-        validaInserimento(annuncio); // <-- validazione interna
+        try {
+            // Validazione campi obbligatori/logica tipo
+            annuncio.setDataPubblicazione(LocalDate.now());
+            validaInserimento(annuncio);
 
-        String sql = """
-            INSERT INTO Annuncio
-            (ID_Annuncio, Titolo, Descrizione, DataPubblicazione, Categoria, Stato,
-             Tipo, PrezzoVendita, FK_Oggetto, FK_Utente)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """;
+            String sql = """
+                INSERT INTO Annuncio
+                (ID_Annuncio, Titolo, Descrizione, DataPubblicazione, Categoria, Stato,
+                 Tipo, PrezzoVendita, FK_Oggetto, FK_Utente)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
 
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, annuncio.getIdAnnuncio());
-            ps.setString(2, annuncio.getTitolo());
-            ps.setString(3, annuncio.getDescrizione());
-            ps.setDate(4, java.sql.Date.valueOf(annuncio.getDataPubblicazione()));
-            ps.setString(5, annuncio.getCategoria().name());
-            ps.setString(6, annuncio.getStato().name());
-            ps.setString(7, annuncio.getTipoAnnuncio().name());
-            if (annuncio.getTipoAnnuncio() == TipoAnnuncioDTO.VENDITA) {
-                ps.setBigDecimal(8, annuncio.getPrezzoVendita());
-            } else {
-                ps.setNull(8, java.sql.Types.DECIMAL);
+            try (Connection con = getConnection();
+                 PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, annuncio.getIdAnnuncio());
+                ps.setString(2, annuncio.getTitolo());
+                ps.setString(3, annuncio.getDescrizione());
+                ps.setDate(4, java.sql.Date.valueOf(annuncio.getDataPubblicazione()));
+                ps.setString(5, annuncio.getCategoria().name());
+                ps.setString(6, annuncio.getStato().name());
+                ps.setString(7, annuncio.getTipoAnnuncio().name());
+                if (annuncio.getTipoAnnuncio() == TipoAnnuncioDTO.VENDITA) {
+                    ps.setBigDecimal(8, annuncio.getPrezzoVendita());
+                } else {
+                    ps.setNull(8, java.sql.Types.DECIMAL);
+                }
+                ps.setString(9, annuncio.getIdOggetto());
+                if (annuncio.getCreatore() != null) {
+                    ps.setString(10, annuncio.getCreatore());
+                } else {
+                    ps.setNull(10, Types.VARCHAR);
+                }
+                ps.executeUpdate();
             }
-            ps.setString(9, annuncio.getIdOggetto());
-            if (annuncio.getCreatore() != null) {
-                ps.setString(10, annuncio.getCreatore());
-            }
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore inserimento annuncio " + annuncio.getIdAnnuncio(), e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante inserimento annuncio", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore generico durante inserimento annuncio", e);
         }
     }
 
 
     public List<AnnuncioDTO> getAnnunciByTipo(TipoAnnuncioDTO tipo){
         if (tipo == null) throw new IllegalArgumentException("Tipo null");
-
         String sql = """
             SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
                    Categoria, Stato, Tipo, PrezzoVendita,
@@ -68,7 +74,6 @@ public class AnnuncioDAO {
             FROM Annuncio
             WHERE Tipo = ?
             """;
-
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -88,8 +93,10 @@ public class AnnuncioDAO {
                     risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipoRow, prezzo));
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca annunci per tipo " + tipo, e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante ricerca annunci per tipo", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore generico durante ricerca annunci per tipo", e);
         }
         return risultati;
     }
@@ -98,7 +105,6 @@ public class AnnuncioDAO {
 
     public List<AnnuncioDTO> getAnnunciByCategoria(CategoriaAnnuncioDTO categoria){
         if (categoria == null) throw new IllegalArgumentException("Tipo null");
-
         String sql = """
             SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
                    Categoria, Stato, Tipo, PrezzoVendita,
@@ -106,9 +112,7 @@ public class AnnuncioDAO {
             FROM Annuncio
             WHERE Categoria = ?
             """;
-
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
-        
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, categoria.name());
@@ -127,8 +131,10 @@ public class AnnuncioDAO {
                     risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca annunci per categoria " + categoria, e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante ricerca annunci per categoria", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore generico durante ricerca annunci per categoria", e);
         }
         return risultati;
     }
@@ -139,7 +145,6 @@ public class AnnuncioDAO {
         if (ricerca == null) throw new IllegalArgumentException("Ricerca null");
         String trimmed = ricerca.trim();
         if (trimmed.isEmpty()) throw new IllegalArgumentException("Ricerca vuota");
-
         String sql = """
             SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
                    Categoria, Stato, Tipo, PrezzoVendita,
@@ -147,7 +152,6 @@ public class AnnuncioDAO {
             FROM Annuncio
             WHERE LOWER(Titolo) LIKE ?
             """;
-
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         String pattern = "%" + trimmed.toLowerCase() + "%";
         try (Connection con = getConnection();
@@ -168,8 +172,10 @@ public class AnnuncioDAO {
                     risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca annunci per titolo contenente '" + ricerca + "'", e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante ricerca annunci per titolo", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore generico durante ricerca annunci per titolo", e);
         }
         return risultati;
     }
@@ -179,7 +185,6 @@ public class AnnuncioDAO {
     public List<AnnuncioDTO> getAnnunciByPrezzoMax(BigDecimal prezzoMax) {
         if (prezzoMax == null) throw new IllegalArgumentException("Prezzo massimo null");
         if (prezzoMax.signum() < 0) throw new IllegalArgumentException("Prezzo massimo negativo");
-
         String sql = """
             SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
                    Categoria, Stato, Tipo, PrezzoVendita,
@@ -187,7 +192,6 @@ public class AnnuncioDAO {
             FROM Annuncio
             WHERE PrezzoVendita <= ?
             """;
-
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -207,8 +211,10 @@ public class AnnuncioDAO {
                     risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca annunci per prezzo <= " + prezzoMax, e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante ricerca annunci per prezzo", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore generico durante ricerca annunci per prezzo", e);
         }
         return risultati;
     }
@@ -217,7 +223,6 @@ public class AnnuncioDAO {
     public List<AnnuncioDTO> getAnnunciByCreatore(String creatore){
         if (creatore == null || creatore.trim().isEmpty()) 
             throw new IllegalArgumentException("Matricola utente mancante");
-
         String sql = """
             SELECT ID_Annuncio, Titolo, Descrizione, DataPubblicazione,
                    Categoria, Stato, Tipo, PrezzoVendita,
@@ -225,8 +230,7 @@ public class AnnuncioDAO {
             FROM Annuncio
             WHERE FK_Utente = ?
             """;
-
-    ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
+        ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, creatore);
@@ -241,129 +245,117 @@ public class AnnuncioDAO {
                     TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
                     String ID_Oggetto = rs.getString("FK_Oggetto");
-                    risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));                }
+                    risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));
+                }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca annunci per creatore " + creatore, e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante ricerca annunci per utente", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore generico durante ricerca annunci per utente", e);
         }
         return risultati;
     }
 
-    //boolean?
+
     public boolean updateAnnuncio(AnnuncioDTO annuncio) {
-        if (annuncio == null) throw new IllegalArgumentException("Annuncio aggiornato null");
-        if (annuncio.getIdAnnuncio() == null || annuncio.getIdAnnuncio().trim().isEmpty())
-            throw new IllegalArgumentException("ID annuncio mancante");
+        try {
+            // Validazione parametri base
+            validaUpdate(annuncio);
 
+            // Recupera e valida tipo annuncio esistente
+            TipoAnnuncioDTO tipoEsistente = recuperaTipoEsistente(annuncio.getIdAnnuncio());
+            if (tipoEsistente == null)
+                return false; // annuncio non trovato
 
-        String sql = "SELECT Tipo FROM Annuncio WHERE ID_Annuncio = ?";
-        TipoAnnuncioDTO tipoEsistente;
-        try (Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, annuncio.getIdAnnuncio());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return false;
-                }
-                tipoEsistente = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore lettura tipo annuncio " + annuncio.getIdAnnuncio(), e);
-        }
-
-        String titolo = annuncio.getTitolo();
-        if (titolo == null || titolo.trim().isEmpty())
-            throw new IllegalArgumentException("Titolo obbligatorio");
-        if (annuncio.getCategoria() == null)
-            throw new IllegalArgumentException("Categoria obbligatoria");
-        if (annuncio.getStato() == null)
-            throw new IllegalArgumentException("Stato obbligatorio");
-        if (annuncio.getIdOggetto() == null)
-            throw new IllegalArgumentException("Oggetto obbligatorio");
-
-
-        BigDecimal prezzo = annuncio.getPrezzoVendita();
-        switch (tipoEsistente) {
-            case VENDITA -> {
-                if (prezzo == null || prezzo.signum() <= 0)
-                    throw new IllegalArgumentException("Prezzo non valido per VENDITA");
-            }
-            case SCAMBIO, REGALO -> {
+            BigDecimal prezzo = annuncio.getPrezzoVendita();
+            if (tipoEsistente != TipoAnnuncioDTO.VENDITA) {
                 prezzo = null;
             }
-        }
 
-
-        sql = """
-            UPDATE Annuncio
-            SET Titolo = ?, Descrizione = ?, Categoria = ?, Stato = ?, PrezzoVendita = ?, FK_Oggetto = ?
-            WHERE ID_Annuncio = ?
-            """;
-
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, titolo);
-            ps.setString(2, annuncio.getDescrizione());
-            ps.setString(3, annuncio.getCategoria().name());
-            ps.setString(4, annuncio.getStato().name());
-            if (prezzo != null) {
-                ps.setBigDecimal(5, prezzo);
-            } else {
-                ps.setNull(5, Types.DECIMAL);
+            String sql = """
+                UPDATE Annuncio
+                SET Titolo = ?, Descrizione = ?, Categoria = ?, Stato = ?, PrezzoVendita = ?
+                WHERE ID_Annuncio = ?
+                """;
+            try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, annuncio.getTitolo());
+                ps.setString(2, annuncio.getDescrizione());
+                ps.setString(3, annuncio.getCategoria().name());
+                ps.setString(4, annuncio.getStato().name());
+                if (prezzo != null) ps.setBigDecimal(5, prezzo); else ps.setNull(5, Types.DECIMAL);
+                ps.setString(6, annuncio.getIdAnnuncio());
+                return ps.executeUpdate() > 0;
             }
-            ps.setString(6, annuncio.getIdOggetto());
-            ps.setString(7, annuncio.getIdAnnuncio());
-
-
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore aggiornamento annuncio " + annuncio.getIdAnnuncio(), e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante aggiornamento annuncio", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore generico durante aggiornamento annuncio", e);
         }
     }
 
 
     public boolean deleteAnnuncio(AnnuncioDTO annuncio) {
-        if (annuncio == null) throw new IllegalArgumentException("Annuncio null");
-        if (annuncio.getIdAnnuncio() == null || annuncio.getIdAnnuncio().trim().isEmpty())
-            throw new IllegalArgumentException("ID annuncio mancante");
+        try {
+            if (annuncio == null) throw new IllegalArgumentException("Annuncio null");
+            if (annuncio.getIdAnnuncio() == null || annuncio.getIdAnnuncio().trim().isEmpty())
+                throw new IllegalArgumentException("ID annuncio mancante");
+            String sql = "DELETE FROM Annuncio WHERE ID_Annuncio = ?";
+            try (Connection con = getConnection();
+                 PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, annuncio.getIdAnnuncio());
+                int deleted = ps.executeUpdate();
+                return deleted > 0;
+            }
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante cancellazione annuncio", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore generico durante cancellazione annuncio", e);
+        }
+    }
 
-        String sql = "DELETE FROM Annuncio WHERE ID_Annuncio = ?";
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, annuncio.getIdAnnuncio());
-            int deleted = ps.executeUpdate();
-            return deleted > 0;
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore eliminazione annuncio " + annuncio.getIdAnnuncio(), e);
+
+
+    // Validazione campi base per update (senza logica dipendente dal tipo)
+    
+    private void validaUpdate(AnnuncioDTO annuncio) {
+        if (annuncio == null) throw new IllegalArgumentException("Annuncio null");
+        if (isBlank(annuncio.getTitolo())) throw new IllegalArgumentException("Errore su Titolo");
+        if (annuncio.getCategoria() == null) throw new IllegalArgumentException("Errore su Categoria");
+        if (annuncio.getStato() == null) throw new IllegalArgumentException("Errore su Stato");
+        if (isBlank(annuncio.getIdOggetto())) throw new IllegalArgumentException("Errore su FK_Oggetto");
+    }
+
+    private boolean isBlank(String s){
+        return s == null || s.trim().isEmpty();
+    }
+
+
+
+    // Recupera il tipo esistente dell'annuncio, null se non trovato
+    private TipoAnnuncioDTO recuperaTipoEsistente(String idAnnuncio){
+        String sql = "SELECT Tipo FROM Annuncio WHERE ID_Annuncio = ?";
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, idAnnuncio);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+                return TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+            }
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante recupero tipo", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore generico durante recupero tipo", e);
         }
     }
 
     
     private void validaInserimento(AnnuncioDTO annuncio) {
-        
-        if (annuncio == null) throw new IllegalArgumentException("Annuncio Null");
-        String titolo = annuncio.getTitolo();
-        if (titolo == null || titolo.trim().isEmpty()) throw new IllegalArgumentException("Titolo obbligatorio");
-        if (annuncio.getCategoria() == null) throw new IllegalArgumentException("Categoria obbligatoria");
-        if (annuncio.getTipoAnnuncio() == null) throw new IllegalArgumentException("Tipo obbligatorio");
-        if (annuncio.getIdOggetto() == null) throw new IllegalArgumentException("Oggetto mancante");
-        if (annuncio.getCreatore() == null || annuncio.getCreatore() == null)
-            throw new IllegalArgumentException("Utente mancante");
-        if (annuncio.getDataPubblicazione() == null) throw new IllegalArgumentException("Data pubblicazione mancante");
-
-        switch (annuncio.getTipoAnnuncio()) {
-            case VENDITA -> {
-                if (annuncio.getPrezzoVendita() == null || annuncio.getPrezzoVendita().signum() <= 0)
-                    throw new IllegalArgumentException("Prezzo non valido");
-            }
-            case SCAMBIO -> {
-                if (annuncio.getPrezzoVendita() != null)
-                    throw new IllegalArgumentException("Il prezzo deve essere null per uno scambio");
-            }
-            case REGALO -> {
-                if (annuncio.getPrezzoVendita() != null)
-                    throw new IllegalArgumentException("Il prezzo deve essere null per un regalo");
-            }
-        }
+        if (annuncio == null) throw new IllegalArgumentException("Annuncio null");
+        if (isBlank(annuncio.getTitolo())) throw new IllegalArgumentException("Errore su Titolo");
+        if (annuncio.getCategoria() == null) throw new IllegalArgumentException("Errore su Categoria");
+        if (annuncio.getTipoAnnuncio() == null) throw new IllegalArgumentException("Errore su Tipo");
+        if (isBlank(annuncio.getIdOggetto())) throw new IllegalArgumentException("Errore su ID_Oggetto");
+        if (isBlank(annuncio.getCreatore())) throw new IllegalArgumentException("Errore su creatore");
+        if (annuncio.getDataPubblicazione() == null) throw new IllegalArgumentException("Errore su DataPubblicazione");
     }
+
 }

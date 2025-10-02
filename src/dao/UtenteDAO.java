@@ -19,90 +19,50 @@ import java.util.List;
 
 public class UtenteDAO {
     
-      private Connection getConnection() throws SQLException {
-        return DB_Connection.getConnection();
-    }
+            private Connection getConnection() throws SQLException {
+                return DB_Connection.getConnection();
+        }
     
 
-    public void insertUtente(UtenteDTO utente){
-        if (utente == null) throw new IllegalArgumentException("Utente null");
-        if (utente.getMatricola() == null || utente.getMatricola().trim().isEmpty()) throw new IllegalArgumentException("Matricola obbligatoria");
-        if (utente.getNome() == null || utente.getNome().trim().isEmpty()) throw new IllegalArgumentException("Nome obbligatorio");
-        if (utente.getCognome() == null || utente.getCognome().trim().isEmpty()) throw new IllegalArgumentException("Cognome obbligatorio");
-        if (utente.getEmail() == null || utente.getEmail().trim().isEmpty()) throw new IllegalArgumentException("Email obbligatoria");
-        if (utente.getUsername() == null || utente.getUsername().trim().isEmpty()) throw new IllegalArgumentException("Username obbligatorio");
-        if (utente.getPassword() == null || utente.getPassword().trim().isEmpty()) throw new IllegalArgumentException("Password obbligatoria");
-        if (utente.getDataNascita() == null) throw new IllegalArgumentException("DataNascita obbligatoria");
-
-        // Controlli di unicità 
-        String checkMatricola = "SELECT 1 FROM Utente WHERE Matricola = ?";
-        String checkEmail = "SELECT 1 FROM Utente WHERE Email = ?";
-        String checkUsername = "SELECT 1 FROM Utente WHERE Username = ?";
-
-        try (Connection con = getConnection();
-             PreparedStatement psMat = con.prepareStatement(checkMatricola);
-             PreparedStatement psEmail = con.prepareStatement(checkEmail);
-             PreparedStatement psUser = con.prepareStatement(checkUsername)) {
-
-            // Matricola
-            psMat.setString(1, utente.getMatricola());
-            try (ResultSet rs = psMat.executeQuery()) {
-                if (rs.next()) {
-                    throw new IllegalArgumentException("Matricola già in uso");
-                }
+    public void insertUtente(UtenteDTO utente) {
+        try {
+            // Validazione campi base (solo presenza campi obbligatori)
+            validaInserimento(utente);
+            String sql = """
+                INSERT INTO Utente
+                (Nome, Cognome, Email, Matricola, Username, Password, DataNascita, Genere)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """;
+            try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, utente.getNome());
+                ps.setString(2, utente.getCognome());
+                ps.setString(3, utente.getEmail());
+                ps.setString(4, utente.getMatricola());
+                ps.setString(5, utente.getUsername());
+                ps.setString(6, utente.getPassword());
+                ps.setDate(7, java.sql.Date.valueOf(utente.getDataNascita()));
+                ps.setString(8, utente.getGenere());
+                ps.executeUpdate();
             }
-
-            // Email
-            psEmail.setString(1, utente.getEmail());
-            try (ResultSet rs = psEmail.executeQuery()) {
-                if (rs.next()) {
-                    throw new IllegalArgumentException("Email già in uso");
-                }
-            }
-
-            // Username
-            psUser.setString(1, utente.getUsername());
-            try (ResultSet rs = psUser.executeQuery()) {
-                if (rs.next()) {
-                    throw new IllegalArgumentException("Username già in uso");
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore controlli unicità per nuovo utente " + utente.getMatricola(), e);
-        }
-
-        String sql = """
-            INSERT INTO Utente
-            (Nome, Cognome, Email, Matricola, Username, Password, DataNascita, Genere)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, utente.getNome());
-            ps.setString(2, utente.getCognome());
-            ps.setString(3, utente.getEmail());
-            ps.setString(4, utente.getMatricola());
-            ps.setString(5, utente.getUsername());
-            ps.setString(6, utente.getPassword());
-            ps.setDate(7, java.sql.Date.valueOf(utente.getDataNascita()));
-            ps.setString(8, utente.getGenere());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore inserimento utente " + utente.getMatricola(), e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante inserimento utente.", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante inserimento utente.", e);
         }
     }
 
 
 
 
-    public UtenteDTO getUtenteByUsername(String username){
-        if (username == null) throw new IllegalArgumentException("Username null");
 
+
+    public UtenteDTO getUtenteByUsername(String username) {
+        if (username == null) throw new IllegalArgumentException("Username null");
         String sql = """
             SELECT Nome, Cognome, Email, Matricola, Username, Password, DataNascita, Genere
             FROM Utente
             WHERE Username = ?
             """;
-
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -119,23 +79,23 @@ public class UtenteDAO {
                 String genere = rs.getString("Genere");
                 return new UtenteDTO(nome, cognome, email, matricola, username, password, dataNascita, genere);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca utente per username " + username, e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante la ricerca per username.", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante la ricerca per username.", e);
         }
     }
 
 
 
     
-    public UtenteDTO getUtenteByMatricola (String matricola){
+    public UtenteDTO getUtenteByMatricola (String matricola) {
         if (matricola == null) throw new IllegalArgumentException("Matricola null");
-
         String sql = """
             SELECT *
             FROM Utente
             WHERE Matricola = ?
             """;
-
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)){
             ps.setString(1, matricola);
             try (ResultSet rs = ps.executeQuery()) {
@@ -151,8 +111,10 @@ public class UtenteDAO {
                 String genere = rs.getString("Genere");
                 return new UtenteDTO(nome, cognome, email, matricola, username, password, dataNascita, genere);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca utente per matricola " + matricola, e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante la ricerca per matricola.", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante la ricerca per matricola.", e);
         }
     }
 
@@ -160,16 +122,13 @@ public class UtenteDAO {
     
 
 
-    public UtenteDTO getUtenteByEmail(String email){
+    public UtenteDTO getUtenteByEmail(String email) {
         if(email == null) throw new IllegalArgumentException("Email null");
-
         String sql = """
                 SELECT *
                 FROM Utente
                 WHERE Email = ?
                 """;
-
-
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)){
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
@@ -185,32 +144,34 @@ public class UtenteDAO {
                 String genere = rs.getString("Genere");
                 return new UtenteDTO(nome, cognome, email, matricola, username, password, dataNascita, genere);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore ricerca utente per email " + email, e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante la ricerca per email.", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante la ricerca per email.", e);
         }
     }
 
 
 
 
-    public void updateUtente(UtenteDTO utente){
+    public void updateUtente(UtenteDTO utente) {
         if (utente == null) throw new IllegalArgumentException("Utente null");
         String matricola = utente.getMatricola();
         if (matricola == null || matricola.trim().isEmpty())
-            throw new IllegalArgumentException("Matricola obbligatoria");
+            throw new IllegalArgumentException("Errore su Matricola");
             
         if (utente.getNome() == null || utente.getNome().trim().isEmpty())
-            throw new IllegalArgumentException("Nome obbligatorio");
+            throw new IllegalArgumentException("Errore su Nome");
         if (utente.getCognome() == null || utente.getCognome().trim().isEmpty())
-            throw new IllegalArgumentException("Cognome obbligatorio");
+            throw new IllegalArgumentException("Errore su Cognome");
         if (utente.getEmail() == null || utente.getEmail().trim().isEmpty())
-            throw new IllegalArgumentException("Email obbligatoria");
+            throw new IllegalArgumentException("Errore su Email");
         if (utente.getUsername() == null || utente.getUsername().trim().isEmpty())
-            throw new IllegalArgumentException("Username obbligatorio");
+            throw new IllegalArgumentException("Errore su Username");
         if (utente.getPassword() == null || utente.getPassword().trim().isEmpty())
-            throw new IllegalArgumentException("Password obbligatoria");
+            throw new IllegalArgumentException("Errore su Password");
         if (utente.getDataNascita() == null)
-            throw new IllegalArgumentException("Data nascita obbligatoria");
+            throw new IllegalArgumentException("Errore su DataNascita");
 
         // Controllo esistenza utente originale
         String sql = "SELECT Matricola FROM Utente WHERE Matricola = ?";
@@ -221,38 +182,14 @@ public class UtenteDAO {
                     return; 
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore verifica esistenza utente " + matricola, e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante aggiornamento utente.", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante aggiornamento utente.", e);
         }
 
 
-        // Controlli di unicità per Email e Username
-        
-        String checkEmail = "SELECT 1 FROM Utente WHERE Email = ? AND Matricola <> ?";
-        String checkUsername = "SELECT 1 FROM Utente WHERE Username = ? AND Matricola <> ?";
-
-        try (Connection con = getConnection();
-             PreparedStatement psEmail = con.prepareStatement(checkEmail);
-             PreparedStatement psUser = con.prepareStatement(checkUsername)) {
-
-            psEmail.setString(1, utente.getEmail());
-            psEmail.setString(2, matricola);
-            try (ResultSet rs = psEmail.executeQuery()) {
-                if (rs.next()) {
-                    throw new IllegalArgumentException("Email già in uso");
-                }
-            }
-
-            psUser.setString(1, utente.getUsername());
-            psUser.setString(2, matricola);
-            try (ResultSet rs = psUser.executeQuery()) {
-                if (rs.next()) {
-                    throw new IllegalArgumentException("Username già in uso");
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore controlli unicità per email/username utente " + matricola, e);
-        }
+    // Unicità Email / Username demandata ai vincoli UNIQUE del DB
 
 
         // Esegui UPDATE 
@@ -263,33 +200,30 @@ public class UtenteDAO {
             WHERE Matricola = ?
             """;
 
-        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, utente.getNome());
-            ps.setString(2, utente.getCognome());
-            ps.setString(3, utente.getEmail());
-            ps.setString(4, utente.getUsername());
-            ps.setString(5, utente.getPassword());
-            ps.setDate(6, java.sql.Date.valueOf(utente.getDataNascita()));
-            ps.setString(7, utente.getGenere());
-            ps.setString(8, matricola);
-            ps.executeUpdate();
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore aggiornamento utente " + matricola, e);
+        try (Connection con2 = getConnection(); PreparedStatement ps2 = con2.prepareStatement(sql)) {
+            ps2.setString(1, utente.getNome());
+            ps2.setString(2, utente.getCognome());
+            ps2.setString(3, utente.getEmail());
+            ps2.setString(4, utente.getUsername());
+            ps2.setString(5, utente.getPassword());
+            ps2.setDate(6, java.sql.Date.valueOf(utente.getDataNascita()));
+            ps2.setString(7, utente.getGenere());
+            ps2.setString(8, matricola);
+            ps2.executeUpdate();
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante agggiornamento utente.", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante aggiornamento utente.", e);
         }
     }
 
 
 
 
-
-
     
-    public void deleteUtente(UtenteDTO utente){
+    public void deleteUtente(UtenteDTO utente) {
         //Controlla argomento null
         if (utente == null) throw new IllegalArgumentException("Utente null");
-        
-        //Esegui delete
         String sql = """
             DELETE 
             FROM Utente
@@ -301,11 +235,32 @@ public class UtenteDAO {
             if (esiste == 0) {
                 throw new IllegalArgumentException("Utente inesistente");
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Errore eliminazione utente " + utente.getMatricola(), e);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Errore DB durante cancellazione utente", ex);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante cancellazione utente", e);
         }
     }
 
+
+
+
+    // Validazione per l'inserimento di un nuovo utente
+
+    private void validaInserimento(UtenteDTO utente) {
+        if (utente == null) throw new IllegalArgumentException("Utente null");
+    if (isBlank(utente.getMatricola())) throw new IllegalArgumentException("Errore su Matricola");
+    if (isBlank(utente.getNome())) throw new IllegalArgumentException("Errore su Nome");
+    if (isBlank(utente.getCognome())) throw new IllegalArgumentException("Errore su Cognome");
+    if (isBlank(utente.getEmail())) throw new IllegalArgumentException("Errore su Email");
+    if (isBlank(utente.getUsername())) throw new IllegalArgumentException("Errore su Username");
+    if (isBlank(utente.getPassword())) throw new IllegalArgumentException("Errore su Password");
+    if (utente.getDataNascita() == null) throw new IllegalArgumentException("Errore su DataNascita");
+}
+
+    private boolean isBlank(String s){
+        return s == null || s.trim().isEmpty();
+    }
 
 
 }
