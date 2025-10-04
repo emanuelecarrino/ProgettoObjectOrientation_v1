@@ -6,8 +6,9 @@ import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.JToolBar;
 
-public class LoginWindow extends JFrame {
+public class prova extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
@@ -19,21 +20,27 @@ public class LoginWindow extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					LoginWindow frame = new LoginWindow();
+					prova frame = new prova();
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
 		});
-	} 
+	}
 
-	public LoginWindow() {
+	/**
+	 * Create the frame.
+	 */
+	public prova() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(120, 100, 450, 300);
+		setBounds(100, 100, 382, 324);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
+		
+		JToolBar toolBar = new JToolBar();
+		contentPane.add(toolBar);
 
 	}
 
