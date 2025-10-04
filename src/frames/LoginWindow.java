@@ -26,9 +26,8 @@ public class LoginWindow extends JFrame {
 				}
 			}
 		});
-	}
+	} 
 
-	//prova push nico
 	public LoginWindow() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(120, 100, 450, 300);
