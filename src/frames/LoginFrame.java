@@ -1,0 +1,101 @@
+package frames;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
+public class LoginFrame extends JFrame {
+
+	private static final long serialVersionUID = 1L;
+	private JPanel contentPane;
+	private JTextField textFieldUsername;
+	private JPasswordField passwordField;
+	private JLabel lblMessage;
+
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					LoginFrame frame = new LoginFrame();
+					frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	public LoginFrame() {
+		setTitle("Login");
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setBounds(100, 100, 500, 350);
+		setResizable(false); // blocca il ridimensionamento
+		contentPane = new JPanel();
+		contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
+		setContentPane(contentPane);
+		contentPane.setLayout(null);
+
+		// =================== LABEL TITOLO ===================
+		JLabel lblTitle = new JLabel("LOGIN");
+		lblTitle.setFont(new Font("Tahoma", Font.BOLD, 24));
+		lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
+		lblTitle.setBounds(0, 30, 484, 30);
+		contentPane.add(lblTitle);
+
+		// =================== LABEL USERNAME ===================
+		JLabel lblUsername = new JLabel("Username:");
+		lblUsername.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		lblUsername.setBounds(120, 110, 90, 25);
+		contentPane.add(lblUsername);
+
+		// =================== TEXTFIELD USERNAME ===================
+		textFieldUsername = new JTextField();
+		textFieldUsername.setBounds(210, 110, 160, 25);
+		contentPane.add(textFieldUsername);
+		textFieldUsername.setColumns(10);
+
+		// =================== LABEL PASSWORD ===================
+		JLabel lblPassword = new JLabel("Password:");
+		lblPassword.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		lblPassword.setBounds(120, 150, 90, 25);
+		contentPane.add(lblPassword);
+
+		// =================== PASSWORD FIELD ===================
+		passwordField = new JPasswordField();
+		passwordField.setBounds(210, 150, 160, 25);
+		contentPane.add(passwordField);
+
+		// =================== BUTTON LOGIN ===================
+		JButton btnLogin = new JButton("Accedi");
+		btnLogin.setFont(new Font("Tahoma", Font.BOLD, 13));
+		btnLogin.setBackground(new Color(100, 149, 237));
+		btnLogin.setForeground(Color.WHITE);
+		btnLogin.setFocusPainted(false);
+		btnLogin.setBounds(195, 200, 100, 30);
+		contentPane.add(btnLogin);
+
+		// =================== MESSAGGIO ===================
+		lblMessage = new JLabel("");
+		lblMessage.setHorizontalAlignment(SwingConstants.CENTER);
+		lblMessage.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblMessage.setForeground(Color.RED);
+		lblMessage.setBounds(50, 250, 380, 25);
+		contentPane.add(lblMessage);
+
+		// =================== EVENTO BOTTONE ===================
+		btnLogin.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String username = textFieldUsername.getText();
+				String password = new String(passwordField.getPassword());
+
+				if (username.equals("admin") && password.equals("1234")) {
+					lblMessage.setForeground(new Color(0, 128, 0));
+					lblMessage.setText("Login effettuato con successo!");
+				} else {
+					lblMessage.setForeground(Color.RED);
+					lblMessage.setText("Username o password errati.");
+				}
+			}
+		});
+	}
+}
