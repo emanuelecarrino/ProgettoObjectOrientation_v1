@@ -9,7 +9,6 @@ import exception.ApplicationException;
 
 public class LoginFrame extends JFrame {
 
-	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private JTextField textFieldUsername;
 	private JPasswordField passwordField;
@@ -75,7 +74,7 @@ public class LoginFrame extends JFrame {
 		btnLogin.setFont(new Font("Tahoma", Font.BOLD, 13));
 		btnLogin.setBackground(new Color(100, 149, 237));
 		btnLogin.setForeground(Color.WHITE);
-		btnLogin.setFocusPainted(false);
+		btnLogin.setFocusPainted(true);
 		btnLogin.setBounds(195, 200, 100, 30);
 		contentPane.add(btnLogin);
 
@@ -99,8 +98,10 @@ public class LoginFrame extends JFrame {
 					controller.login(usernameOrEmail, password);
 					lblMessage.setForeground(new Color(0, 128, 0));
 					lblMessage.setText("Accesso effettuato.");
-					// TODO: Aprire finestra principale dell'applicazione e chiudere il login
-					// dispose();
+					SwingUtilities.invokeLater(() -> {
+						new HomeFrame(); // HomeFrame mostra se stesso nel costruttore
+					});
+					dispose();
 				} catch (ApplicationException ex) {
 					lblMessage.setForeground(Color.RED);
 					lblMessage.setText(ex.getMessage());
