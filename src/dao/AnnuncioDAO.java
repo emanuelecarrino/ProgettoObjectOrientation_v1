@@ -171,6 +171,40 @@ public class AnnuncioDAO {
     }
 
 
+
+
+    public List<AnnuncioDTO> getAllAnnunci() throws SQLException {
+        String sql = """
+            SELECT *
+            FROM Annuncio
+            WHERE StatoAnnuncio = ?
+            """;
+        ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, "Attivo");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String ID_Annuncio = rs.getString("ID_Annuncio");
+                    String titolo = rs.getString("Titolo");
+                    String descrizione = rs.getString("Descrizione");
+                    LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
+                    CategoriaAnnuncioDTO categoria = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
+                    TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+                    BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
+                    String ID_Oggetto = rs.getString("FK_Oggetto");
+                    String creatore = rs.getString("FK_Utente");
+                    risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, StatoAnnuncioDTO.ATTIVO , categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));
+                }
+            }
+        }
+        return risultati;
+    }
+
+
+
+
+
+
     public List<AnnuncioDTO> getAnnunciByCreatore(String creatore) throws SQLException {
         String sql = """
             SELECT *

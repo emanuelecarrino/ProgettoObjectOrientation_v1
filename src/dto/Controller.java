@@ -304,7 +304,19 @@ public class Controller {
 		}
 	}
 
-	// Ricerca per prezzo massimo (solo annunci di tipo VENDITA verranno restituiti dal DAO in base alla query)
+
+	// Output di tutti gli annunci (per default solo quelli con stato: ATTIVO)
+
+	public List<AnnuncioDTO> visualizzaTuttiAnnunci() throws ApplicationException {
+    try {
+        return annuncioDAO.getAllAnnunci();
+    } catch (SQLException sql) {
+        throw new PersistenceException("Errore recupero annunci attivi", sql);
+    }
+	}
+
+
+	// Ricerca per prezzo massimo (solo annunci di tipo VENDITA verranno restituiti)
 	public List<AnnuncioDTO> cercaAnnunciPerPrezzoMax(BigDecimal prezzoMax) throws ApplicationException {
 		try {
 			if (prezzoMax == null) throw new ValidationException("Errore su PrezzoVendita");
@@ -727,6 +739,17 @@ public class Controller {
 			throw e;
 		} catch (SQLException sql) {
 			throw new PersistenceException("Errore ricerca offerte", sql);
+		}
+	}
+
+	public List<OffertaDTO> cercaOffertePerUtente(String matricolaOfferente) throws ApplicationException {
+		try {
+			if (isBlank(matricolaOfferente)) throw new ValidationException("Errore su FK_Utente");
+			return offertaDAO.getOfferteByUtente(matricolaOfferente.trim());
+		} catch (ValidationException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore ricerca offerte per utente", sql);
 		}
 	}
 

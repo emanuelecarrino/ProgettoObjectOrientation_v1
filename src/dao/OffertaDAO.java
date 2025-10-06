@@ -103,6 +103,37 @@ public class OffertaDAO {
     }
 
 
+    // Recupera tutte le offerte create da un determinato utente (offerente)
+    public List<OffertaDTO> getOfferteByUtente(String matricolaOfferente) throws SQLException {
+        String sql = """
+            SELECT *
+            FROM Offerta
+            WHERE FK_Utente = ?
+            ORDER BY DataOfferta DESC
+            """;
+        ArrayList<OffertaDTO> risultati = new ArrayList<>();
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, matricolaOfferente);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String ID_Offerta = rs.getString("ID_Offerta");
+                    float prezzo = rs.getFloat("PrezzoOfferta");
+                    String commento = rs.getString("Commento");
+                    LocalDate data = rs.getDate("DataOfferta").toLocalDate();
+                    StatoOffertaDTO stato = StatoOffertaDTO.valueOf(rs.getString("Stato"));
+                    TipoOffertaDTO tipo = TipoOffertaDTO.valueOf(rs.getString("Tipo"));
+                    String ID_Annuncio = rs.getString("FK_Annuncio");
+                    String ID_OggettoOfferto = rs.getString("ID_OggettoOfferto");
+                    risultati.add(new OffertaDTO(ID_Offerta, prezzo, commento, data, stato, matricolaOfferente, tipo, ID_Annuncio, ID_OggettoOfferto));
+                }
+            }
+        }
+        return risultati;
+    }
+
+
+    
+
 
     public boolean updateStatoOfferta(String ID_Offerta, StatoOffertaDTO statoCorrente, StatoOffertaDTO statoNuovo) throws SQLException {
         
