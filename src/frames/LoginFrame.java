@@ -4,6 +4,9 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
+import dto.Controller;
+import exception.ApplicationException;
+
 public class LoginFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
@@ -24,6 +27,8 @@ public class LoginFrame extends JFrame {
 			}
 		});
 	}
+
+	private final Controller controller = new Controller();
 
 	public LoginFrame() {
 		setTitle("Login");
@@ -83,17 +88,26 @@ public class LoginFrame extends JFrame {
 		contentPane.add(lblMessage);
 
 		// =================== EVENTO BOTTONE ===================
+		
 		btnLogin.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String username = textFieldUsername.getText();
+				String usernameOrEmail = textFieldUsername.getText();
 				String password = new String(passwordField.getPassword());
-
-				if (username.equals("admin") && password.equals("1234")) {
+				try {
+					// Usa direttamente il metodo login del Controller (ritorna UtenteDTO) ma
+					// qui ignoriamo l'oggetto perché ci serve solo verificare le credenziali.
+					controller.login(usernameOrEmail, password);
 					lblMessage.setForeground(new Color(0, 128, 0));
-					lblMessage.setText("Login effettuato con successo!");
-				} else {
+					lblMessage.setText("Accesso effettuato.");
+					// TODO: Aprire finestra principale dell'applicazione e chiudere il login
+					// dispose();
+				} catch (ApplicationException ex) {
+					// Tutte le eccezioni applicative vengono già normalizzate dal Controller
 					lblMessage.setForeground(Color.RED);
-					lblMessage.setText("Username o password errati.");
+					lblMessage.setText(ex.getMessage());
+				} catch (Exception ex) {
+					lblMessage.setForeground(Color.RED);
+					lblMessage.setText("Errore inatteso");
 				}
 			}
 		});
