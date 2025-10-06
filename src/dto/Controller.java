@@ -6,7 +6,6 @@ import dao.AnnuncioDAO;
 import dao.OffertaDAO;
 import dao.ModConsegnaDAO;
 import exception.*;
-import dto.ModConsegnaDTO;
 
 import java.sql.SQLException;
 import java.util.List;
