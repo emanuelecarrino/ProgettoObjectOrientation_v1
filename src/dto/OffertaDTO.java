@@ -1,7 +1,6 @@
 package dto;
 
 import java.time.LocalDate;
-import dto.TipoOffertaDTO;
 
 public class OffertaDTO {
     private final String idOfferta;
