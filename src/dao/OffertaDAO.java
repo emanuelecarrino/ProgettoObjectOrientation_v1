@@ -21,9 +21,9 @@ public class OffertaDAO {
 
     public void insertOfferta(OffertaDTO offerta) throws SQLException {
 
-        String sql = """ 
+        String sql = """
             INSERT INTO Offerta 
-            (ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, FK_OggettoOfferto)
+            (ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, ID_OggettoOfferto)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
@@ -65,7 +65,7 @@ public class OffertaDAO {
                 TipoOffertaDTO tipo = TipoOffertaDTO.valueOf(rs.getString("Tipo"));
                 String offerente = rs.getString("FK_Utente");
                 String ID_Annuncio = rs.getString("FK_Annuncio");
-                String ID_OggettoOfferto = rs.getString("FK_OggettoOfferto");
+                String ID_OggettoOfferto = rs.getString("ID_OggettoOfferto");
                 return new OffertaDTO(ID_Offerta, prezzo, commento, data, stato, offerente, tipo, ID_Annuncio, ID_OggettoOfferto);
             }
         }
@@ -94,7 +94,7 @@ public class OffertaDAO {
                     StatoOffertaDTO stato = StatoOffertaDTO.valueOf(rs.getString("Stato"));
                     TipoOffertaDTO tipo = TipoOffertaDTO.valueOf(rs.getString("Tipo"));
                     String offerente = rs.getString("FK_Utente");
-                    String ID_OggettoOfferto = rs.getString("FK_OggettoOfferto");
+                    String ID_OggettoOfferto = rs.getString("ID_OggettoOfferto");
                     risultati.add(new OffertaDTO(ID_Offerta, prezzo, commento, data, stato, offerente, tipo, ID_Annuncio, ID_OggettoOfferto));
                 }
             }
@@ -128,7 +128,7 @@ public class OffertaDAO {
         
         String sql = """
             UPDATE Offerta
-            SET PrezzoOfferta = ?, Commento = ?, FK_OggettoOfferto = ?
+            SET PrezzoOfferta = ?, Commento = ?, ID_OggettoOfferto = ?
             WHERE ID_Offerta = ? AND Stato = 'ATTESA'
             """;
 

@@ -88,7 +88,7 @@ public class LoginFrame extends JFrame {
 		contentPane.add(lblMessage);
 
 		// =================== EVENTO BOTTONE ===================
-		
+
 		btnLogin.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String usernameOrEmail = textFieldUsername.getText();
@@ -102,7 +102,6 @@ public class LoginFrame extends JFrame {
 					// TODO: Aprire finestra principale dell'applicazione e chiudere il login
 					// dispose();
 				} catch (ApplicationException ex) {
-					// Tutte le eccezioni applicative vengono già normalizzate dal Controller
 					lblMessage.setForeground(Color.RED);
 					lblMessage.setText(ex.getMessage());
 				} catch (Exception ex) {
