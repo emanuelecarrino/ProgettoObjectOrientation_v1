@@ -19,7 +19,11 @@ public class LoginFrame extends JFrame {
 	public LoginFrame() {
 		setTitle("Login");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 500, 350);
+		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+		int x = (screen.width - 500) / 2;
+		int y = (screen.height - 350) / 2;
+		setBounds(x, y, 500, 350);
+setVisible(true);
 		setResizable(false); // blocca il ridimensionamento
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -34,9 +38,9 @@ public class LoginFrame extends JFrame {
 		contentPane.add(lblTitle);
 
 		// =================== LABEL USERNAME ===================
-		JLabel lblUsername = new JLabel("Username:");
+		JLabel lblUsername = new JLabel("Username o email:");
 		lblUsername.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblUsername.setBounds(120, 110, 90, 25);
+		lblUsername.setBounds(67, 110, 130, 25);
 		contentPane.add(lblUsername);
 
 		// =================== TEXTFIELD USERNAME ===================

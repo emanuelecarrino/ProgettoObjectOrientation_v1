@@ -13,7 +13,11 @@ public class HomeFrame extends JFrame{
     public HomeFrame(){
         setTitle("Home");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setExtendedState(JFrame.MAXIMIZED_BOTH); // massimizza orizz. + vert.
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        int x = (screen.width - 700) / 2;
+        int y = (screen.height - 450) / 2;
+        setBounds(x, y, 700, 450);
+        setResizable(false);
         setVisible(true);
         contentPane = new JPanel();
         contentPane.setLayout(new GridBagLayout());
