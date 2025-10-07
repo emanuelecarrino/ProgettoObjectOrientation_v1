@@ -88,17 +88,16 @@ public class LoginFrame extends JFrame {
                     HomeFrame home = new HomeFrame();
                     home.setVisible(true);
                     dispose();
-                } catch (ApplicationException ex) {
+				} catch (ApplicationException ex) {
 					lblMessage.setForeground(Color.RED);
-					lblMessage.setText(ex.getMessage());
-					// mostra messaggio all'utente e logga per debug
-					lblMessage.setForeground(Color.RED);
-					lblMessage.setText(ex.getMessage());
+					String msg = ex.getMessage();
+					// if there's an underlying cause (e.g., SQLException), append its message for clarity
+					if (ex.getCause() != null && ex.getCause().getMessage() != null) {
+						msg += ": " + ex.getCause().getMessage();
+					}
+					lblMessage.setText(msg);
 					ex.printStackTrace();
-                } catch (Exception ex) {
-					lblMessage.setForeground(Color.RED);
-					lblMessage.setText("Errore inatteso");
-					// log completo per capire la causa reale
+				} catch (Exception ex) {
 					lblMessage.setForeground(Color.RED);
 					lblMessage.setText("Errore inatteso: " + ex.getMessage());
 					ex.printStackTrace();

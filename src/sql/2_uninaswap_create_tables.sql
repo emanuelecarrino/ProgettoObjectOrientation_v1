@@ -9,8 +9,6 @@ CREATE TYPE categoriaAnnuncio AS ENUM ('LibriTesto', 'Informatica', 'Abbigliamen
 CREATE TYPE tipoAnnuncio AS ENUM ('Vendita', 'Scambio', 'Regalo');
 CREATE TYPE tipoOfferta AS ENUM ('Vendita', 'Scambio', 'Regalo');
 
-
-
 -- Creazione della tabella Utente (allineata a UtenteDTO: nome, cognome, email, matricola, username, password, dataNascita, genere)
 
 CREATE TABLE Utente (

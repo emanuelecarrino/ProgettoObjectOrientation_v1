@@ -1,0 +1,17 @@
+{
+    // Launch config that runs the Main class without requiring a managed Java project
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run Main (with lib)",
+            "request": "launch",
+            "mainClass": "Main",
+            "classPaths": [
+                "${workspaceFolder}\\bin",
+                "${workspaceFolder}\\lib\\postgresql-42.5.4.jar"
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}
