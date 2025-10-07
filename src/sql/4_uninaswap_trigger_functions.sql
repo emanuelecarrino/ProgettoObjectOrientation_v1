@@ -13,14 +13,14 @@ BEGIN
     SELECT * INTO annuncioOfferto
     FROM Annuncio
     WHERE ID_Annuncio = NEW.FK_Annuncio;
-    IF annuncioOfferto.Stato = 'Venduto' OR annuncioOfferto.Stato = 'Scambiato' OR annuncioOfferto.Stato = 'Regalato' THEN
+    IF annuncioOfferto.Stato = 'VENDUTO' OR annuncioOfferto.Stato = 'SCAMBIATO' OR annuncioOfferto.Stato = 'REGALATO' THEN
         RAISE EXCEPTION 'L''annuncio non è più disponibile: impossibile fare un''offerta';
     END IF;
-    IF annuncioOfferto.Tipo = 'Vendita' AND NEW.prezzoOfferta IS NULL THEN
+    IF annuncioOfferto.Tipo = 'VENDITA' AND NEW.prezzoOfferta IS NULL THEN
         RAISE EXCEPTION 'Deve esserci un''offerta.';
     END IF;
 
-    IF annuncioOfferto.Tipo = 'Vendita' AND (NEW.prezzoOfferta > annuncioOfferto.prezzoVendita OR NEW.prezzoOfferta < 0) THEN
+    IF annuncioOfferto.Tipo = 'VENDITA' AND (NEW.prezzoOfferta > annuncioOfferto.prezzoVendita OR NEW.prezzoOfferta < 0) THEN
         RAISE EXCEPTION 'L''offerta non è valida';
     END IF;
 
@@ -40,13 +40,13 @@ DECLARE
     r RECORD;
     s RECORD;
 BEGIN
-    FOR r IN SELECT * FROM Annuncio WHERE Stato = 'Attivo' LOOP
+    FOR r IN SELECT * FROM Annuncio WHERE Stato = 'ATTIVO' LOOP
         IF (r.ID_Annuncio <> NEW.ID_Annuncio AND r.FK_Oggetto = NEW.FK_Oggetto) THEN
             RAISE EXCEPTION 'È già presente un annuncio attivo con l''oggetto inserito.';
         END IF;
     END LOOP;
 
-    FOR s IN SELECT * FROM Offerta WHERE Stato = 'Attesa' LOOP
+    FOR s IN SELECT * FROM Offerta WHERE Stato = 'ATTESA' LOOP
         IF (s.ID_OggettoOfferto = NEW.FK_Oggetto) THEN
             RAISE EXCEPTION 'Quest''oggetto è già in utilizzo per un''offerta.';
         END IF;
@@ -68,13 +68,13 @@ DECLARE
     r RECORD; 
     s RECORD;
 BEGIN
-    FOR r IN SELECT * FROM Annuncio WHERE Stato = 'Attivo' LOOP
+    FOR r IN SELECT * FROM Annuncio WHERE Stato = 'ATTIVO' LOOP
         IF (r.FK_Oggetto = NEW.ID_OggettoOfferto) THEN
             RAISE EXCEPTION 'È già presente un annuncio attivo con l''oggetto inserito.';
         END IF;
     END LOOP;
 
-    FOR s IN SELECT * FROM Offerta WHERE Stato = 'Attesa' LOOP
+    FOR s IN SELECT * FROM Offerta WHERE Stato = 'ATTESA' LOOP
         IF (s.ID_OggettoOfferto = NEW.ID_OggettoOfferto AND s.ID_Offerta <> NEW.ID_Offerta) THEN
             RAISE EXCEPTION 'Quest''oggetto è già in utilizzo per un''offerta.';
         END IF;
@@ -115,7 +115,7 @@ BEGIN
     FROM Annuncio
     WHERE ID_Annuncio = NEW.FK_Annuncio;
 
-    IF tipo_A = 'Regalo' AND NEW.Commento IS NULL THEN
+    IF tipo_A = 'REGALO' AND NEW.Commento IS NULL THEN
         RAISE EXCEPTION 'Il commento non deve essere NULL.';
     END IF;
 
@@ -136,7 +136,7 @@ BEGIN
 
     -- Scatta solo se lo stato è appena diventato 'Accettata'
 
-    IF (NEW.Stato = 'Accettata') THEN
+    IF (NEW.Stato = 'ACCETTATA') THEN
         SELECT * INTO annuncioOfferto
         FROM Annuncio
         WHERE ID_Annuncio = NEW.FK_Annuncio;
@@ -224,20 +224,20 @@ BEGIN
 
     -- In caso di offerta accettata, rifiuta le altre relative allo stesso annuncio
 
-    IF NEW.Stato = 'Accettata' THEN
-        UPDATE Offerta SET Stato = 'Rifiutata'
-        WHERE FK_Annuncio = NEW.FK_Annuncio AND ID_Offerta <> NEW.ID_Offerta AND Stato <> 'Rifiutata';
+    IF NEW.Stato = 'ACCETTATA' THEN
+        UPDATE Offerta SET Stato = 'RIFIUTATA'
+        WHERE FK_Annuncio = NEW.FK_Annuncio AND ID_Offerta <> NEW.ID_Offerta AND Stato <> 'RIFIUTATA';
     END IF;
 
     -- Aggiorna lo stato dell'annuncio nel caso in cui l'offerta implementata o aggiornata sia accettata
 
-    IF NEW.Stato = 'Accettata' THEN
-        IF annuncio.Tipo = 'Vendita' THEN
-            UPDATE Annuncio SET Stato = 'Venduto' WHERE ID_Annuncio = NEW.FK_Annuncio;
-        ELSIF annuncio.Tipo = 'Scambio' THEN
-            UPDATE Annuncio SET Stato = 'Scambiato' WHERE ID_Annuncio = NEW.FK_Annuncio;
-        ELSIF annuncio.Tipo = 'Regalo' THEN
-            UPDATE Annuncio SET Stato = 'Regalato' WHERE ID_Annuncio = NEW.FK_Annuncio;
+    IF NEW.Stato = 'ACCETTATA' THEN
+        IF annuncio.Tipo = 'VENDITA' THEN
+            UPDATE Annuncio SET Stato = 'VENDUTO' WHERE ID_Annuncio = NEW.FK_Annuncio;
+        ELSIF annuncio.Tipo = 'SCAMBIO' THEN
+            UPDATE Annuncio SET Stato = 'SCAMBIATO' WHERE ID_Annuncio = NEW.FK_Annuncio;
+        ELSIF annuncio.Tipo = 'REGALO' THEN
+            UPDATE Annuncio SET Stato = 'REGALATO' WHERE ID_Annuncio = NEW.FK_Annuncio;
         END IF;
     END IF;
     RETURN NEW;
@@ -255,8 +255,8 @@ RETURNS TRIGGER AS $$
 DECLARE
     n_offerte_accettate INTEGER;
 BEGIN
-    IF NEW.Stato IN ('Venduto', 'Scambiato', 'Regalato') THEN
-        SELECT COUNT(*) INTO n_offerte_accettate FROM Offerta WHERE FK_Annuncio = NEW.ID_Annuncio AND Stato = 'Accettata';
+    IF NEW.Stato IN ('VENDUTO', 'SCAMBIATO', 'REGALATO') THEN
+        SELECT COUNT(*) INTO n_offerte_accettate FROM Offerta WHERE FK_Annuncio = NEW.ID_Annuncio AND Stato = 'ACCETTATA';
         IF n_offerte_accettate = 0 THEN
             RAISE EXCEPTION 'Non è possibile impostare lo stato "%" senza almeno un''offerta accettata.', NEW.Stato;
         END IF;
@@ -276,7 +276,7 @@ DECLARE
     stato_annuncio statoAnnuncio;
 BEGIN
     SELECT Stato INTO stato_annuncio FROM Annuncio WHERE ID_Annuncio = NEW.FK_Annuncio;
-    IF stato_annuncio NOT IN ('Venduto', 'Scambiato', 'Regalato') THEN
+    IF stato_annuncio NOT IN ('VENDUTO', 'SCAMBIATO', 'REGALATO') THEN
         RAISE EXCEPTION 'Non è possibile inserire una consegna per un annuncio attivo';
     END IF;
     RETURN NEW;
@@ -316,7 +316,7 @@ DECLARE
     r RECORD;
 BEGIN
     FOR r IN (SELECT * FROM Offerta) LOOP 
-        IF r.FK_Utente = NEW.FK_Utente AND r.FK_Annuncio = NEW.FK_Annuncio AND r.Stato = 'Attesa' THEN
+    IF r.FK_Utente = NEW.FK_Utente AND r.FK_Annuncio = NEW.FK_Annuncio AND r.Stato = 'ATTESA' THEN
             RAISE EXCEPTION 'Non si può effettuare un''offerta se ne è presente già una in attesa.';
         END IF;
     END LOOP;

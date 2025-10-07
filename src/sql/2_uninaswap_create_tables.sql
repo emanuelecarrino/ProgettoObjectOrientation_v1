@@ -3,11 +3,11 @@ SET search_path TO uninaswap, public;
 
 -- Creazione dei vari enum
 
-CREATE TYPE statoOfferta AS ENUM ('Attesa', 'Accettata', 'Rifiutata');
-CREATE TYPE statoAnnuncio AS ENUM ('Attivo', 'Venduto', 'Scambiato', 'Regalato');
-CREATE TYPE categoriaAnnuncio AS ENUM ('LibriTesto', 'Informatica', 'Abbigliamento', 'Altro');
-CREATE TYPE tipoAnnuncio AS ENUM ('Vendita', 'Scambio', 'Regalo');
-CREATE TYPE tipoOfferta AS ENUM ('Vendita', 'Scambio', 'Regalo');
+CREATE TYPE statoOfferta AS ENUM ('ATTESA', 'ACCETTATA', 'RIFIUTATA');
+CREATE TYPE statoAnnuncio AS ENUM ('ATTIVO', 'VENDUTO', 'SCAMBIATO', 'REGALATO');
+CREATE TYPE categoriaAnnuncio AS ENUM ('LIBRITESTO', 'INFORMATICA', 'ABBIGLIAMENTO', 'ALTRO');
+CREATE TYPE tipoAnnuncio AS ENUM ('VENDITA', 'SCAMBIO', 'REGALO');
+CREATE TYPE tipoOfferta AS ENUM ('VENDITA', 'SCAMBIO', 'REGALO');
 
 -- Creazione della tabella Utente (allineata a UtenteDTO: nome, cognome, email, matricola, username, password, dataNascita, genere)
 
@@ -42,7 +42,7 @@ CREATE TABLE Annuncio (
     ID_Annuncio       VARCHAR(10) PRIMARY KEY,
     Titolo            VARCHAR(50) NOT NULL,
     Descrizione       VARCHAR(200),
-    Stato             statoAnnuncio NOT NULL DEFAULT 'Attivo',
+    Stato             statoAnnuncio NOT NULL DEFAULT 'ATTIVO',
     Categoria         categoriaAnnuncio NOT NULL,
     DataPubblicazione DATE NOT NULL DEFAULT CURRENT_DATE,
     FK_Utente         VARCHAR NOT NULL,        
@@ -59,7 +59,7 @@ CREATE TABLE Offerta (
     FK_Annuncio       VARCHAR NOT NULL,
     FK_Utente         VARCHAR NOT NULL,
     DataOfferta       DATE NOT NULL,
-    Stato             statoOfferta NOT NULL DEFAULT 'Attesa',
+    Stato             statoOfferta NOT NULL DEFAULT 'ATTESA',
     PrezzoOfferta     FLOAT,
     Commento          VARCHAR(150),
     Tipo              tipoAnnuncio NOT NULL,

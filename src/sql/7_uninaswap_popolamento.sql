@@ -30,23 +30,26 @@ INSERT INTO Oggetto (ID_Oggetto, Nome, numProprietari, Condizioni, Dimensione, P
 ('OBJ005','Libro Fisica',1,'Accettabile','28x19cm',0.50,'N86000005'),
 ('OBJ006','Tablet Samsung',1,'Buono','25x17cm',0.45,'N86000006');
 
+-- oggetto extra libero per offerte (non collegato ad annunci)
+INSERT INTO Oggetto (ID_Oggetto, Nome, numProprietari, Condizioni, Dimensione, Peso_Kg, FK_Utente) VALUES
+('OBJ007','Cuffie Bluetooth',1,'Nuovo','10x10cm',0.20,'N86000002');
+
 -- ANNUNCI
 INSERT INTO Annuncio (ID_Annuncio, Titolo, Descrizione, DataPubblicazione, Categoria, Stato, FK_Utente, FK_Oggetto, Tipo, prezzoVendita) VALUES
-('ANN001','Vendo libro Analisi I','Libro universitario in buone condizioni', CURRENT_DATE, 'LibriTesto','Attivo','N86000001','OBJ001','Vendita', 18.00),
-('ANN002','Scambio laptop HP','Laptop quasi nuovo, cerco tablet', CURRENT_DATE, 'Informatica','Attivo','N86000002','OBJ002','Scambio', NULL),
-('ANN003','Regalo giacca invernale','Taglia M, buona condizione', CURRENT_DATE, 'Abbigliamento','Attivo','N86000003','OBJ003','Regalo', NULL),
-('ANN004','Vendo zaino Invicta','Usato poco', CURRENT_DATE, 'Altro','Attivo','N86000004','OBJ004','Vendita', 25.00),
-('ANN005','Vendo libro di Fisica','Alcune sottolineature', CURRENT_DATE, 'LibriTesto','Attivo','N86000005','OBJ005','Vendita', 12.50),
-('ANN006','Scambio tablet Samsung','Cerco laptop o phone', CURRENT_DATE, 'Informatica','Attivo','N86000006','OBJ006','Scambio', NULL);
+('ANN001','Vendo libro Analisi I','Libro universitario in buone condizioni', CURRENT_DATE, 'LIBRITESTO','ATTIVO','N86000001','OBJ001','VENDITA', 18.00),
+('ANN002','Scambio laptop HP','Laptop quasi nuovo, cerco tablet', CURRENT_DATE, 'INFORMATICA','ATTIVO','N86000002','OBJ002','SCAMBIO', NULL),
+('ANN003','Regalo giacca invernale','Taglia M, buona condizione', CURRENT_DATE, 'ABBIGLIAMENTO','ATTIVO','N86000003','OBJ003','REGALO', NULL),
+('ANN004','Vendo zaino Invicta','Usato poco', CURRENT_DATE, 'ALTRO','ATTIVO','N86000004','OBJ004','VENDITA', 25.00),
+('ANN005','Vendo libro di Fisica','Alcune sottolineature', CURRENT_DATE, 'LIBRITESTO','ATTIVO','N86000005','OBJ005','VENDITA', 12.50),
+('ANN006','Scambio tablet Samsung','Cerco laptop o phone', CURRENT_DATE, 'INFORMATICA','ATTIVO','N86000006','OBJ006','SCAMBIO', NULL);
 
 -- OFFERTE (uso colonne esplicite per evitare ambiguità)
 INSERT INTO Offerta (ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, ID_OggettoOfferto) VALUES
-('OFF001', 18.00, 'Prendo subito',           CURRENT_DATE, 'Accettata', 'Vendita', 'N86000005', 'ANN001', NULL),
-('OFF002', 17.00, 'Posso offrire 17',       CURRENT_DATE, 'Rifiutata', 'Vendita', 'N86000006', 'ANN001', NULL),
-('OFF003', NULL,  'Posso dare oggetto in scambio', CURRENT_DATE, 'Attesa',    'Scambio',  'N86000002', 'ANN006', 'OBJ002'),
-('OFF004', 24.00, 'Interessato, ci sto',    CURRENT_DATE, 'Attesa',    'Vendita',  'N86000001', 'ANN004', NULL);
+('OFF001', 18.00, 'Prendo subito',           CURRENT_DATE, 'ACCETTATA', 'VENDITA', 'N86000005', 'ANN001', NULL),
+('OFF002', 17.00, 'Posso offrire 17',       CURRENT_DATE, 'RIFIUTATA', 'VENDITA', 'N86000006', 'ANN001', NULL),
+('OFF003', NULL,  'Posso dare oggetto in scambio', CURRENT_DATE, 'ATTESA',    'SCAMBIO',  'N86000002', 'ANN006', 'OBJ007'),
+('OFF004', 24.00, 'Interessato, ci sto',    CURRENT_DATE, 'ATTESA',    'VENDITA',  'N86000001', 'ANN004', NULL);
 
 -- MODALITA' CONSEGNA (per annunci con accordo)
 INSERT INTO ModConsegna (ID_Consegna, FK_Annuncio, sedeUni, Data, oraInizioFasciaOraria, oraFineFasciaOraria, Note, fasciaOraria) VALUES
-('MOD001','ANN001','Via Esempio 10', CURRENT_DATE + INTERVAL '3 days', '10:00','12:00','Ritiro presso biblioteca di ingegneria','10:00-12:00'),
-('MOD002','ANN004','Piazza Centrale', CURRENT_DATE + INTERVAL '5 days', '15:00','17:00','Consegna al cortile','15:00-17:00');
+('MOD001','ANN001','Via Esempio 10', CURRENT_DATE + INTERVAL '3 days', '10:00','12:00','Ritiro presso biblioteca di ingegneria','10:00-12:00')

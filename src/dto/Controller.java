@@ -50,7 +50,7 @@ public class Controller {
 	
 
             try {
-			// Controlli base (potresti rafforzarli con regex/email ecc.)
+			// Controlli base 
 			if (isBlank(nome)) throw new ValidationException("Errore su Nome");
 			if (isBlank(cognome)) throw new ValidationException("Errore su Cognome");
 			if (isBlank(email)) throw new ValidationException("Errore su Email");
@@ -59,7 +59,7 @@ public class Controller {
 			if (isBlank(password)) throw new ValidationException("Errore su Password");
 			if (isBlank(dataNascita)) throw new ValidationException("Errore su DataNascita");
 
-			// Unicità lato applicazione (riduce eccezioni SQL da unique violation)
+			// Unicità lato applicazione 
 
 			if (utenteDAO.getUtenteByUsername(username) != null)
 				throw new DuplicateResourceException("Username già esistente");
@@ -176,7 +176,6 @@ public class Controller {
 			UtenteDTO utente = utenteDAO.getUtenteByUsername(username);
 			if (utente == null) throw new NotFoundException("Utente non trovato");
 			if (!utente.getPassword().equals(vecchiaPassword)) throw new AuthenticationException("Credenziali errate");
-			// aggiorna DTO e delega a update (riusa validazioni lì)
 			utente.setPassword(nuovaPassword);
 			utenteDAO.updateUtente(utente);
 		} catch (AuthenticationException | NotFoundException | ValidationException e) {
@@ -245,18 +244,9 @@ public class Controller {
 			if (descrizione != null) {
 				descrizionePulita = descrizione.trim();
 			}
-			AnnuncioDTO nuovo = new AnnuncioDTO(
-					generaIdAnnuncio(),
-					titolo.trim(),
-					descrizionePulita,
-					StatoAnnuncioDTO.ATTIVO,
-					categoria,
-					LocalDate.now(),
-					creatore.trim(),
-					ID_Oggetto.trim(),
-					tipo,
-					prezzo
-			);
+			AnnuncioDTO nuovo = new AnnuncioDTO(generaIdAnnuncio(), titolo.trim(), descrizionePulita, StatoAnnuncioDTO.ATTIVO,
+			categoria, LocalDate.now(), creatore.trim(),ID_Oggetto.trim(),tipo,prezzo);
+			
 			annuncioDAO.insertAnnuncio(nuovo);
 			return nuovo;
 		} catch (ValidationException e) {
@@ -834,6 +824,7 @@ public class Controller {
 
 			// Validazioni per tipo di offerta
 			TipoOffertaDTO tipoOfferta = offertaDaAggiornare.getTipo();
+
 			float prezzoFinale = offertaDaAggiornare.getPrezzoOfferta();
 			String idOggettoOffertoFinale = offertaDaAggiornare.getIdOggettoOfferto();
 
@@ -842,30 +833,28 @@ public class Controller {
 					if (nuovoPrezzo <= 0f) throw new ValidationException("Errore su PrezzoOfferta");
 					prezzoFinale = nuovoPrezzo;
 				}
-				// Se è VENDITA non si cambia / usa oggetto offerto
-
 			} else if (tipoOfferta == TipoOffertaDTO.SCAMBIO) {
-
-					if (nuovoIdOggettoOfferto != null) {
-						if (isBlank(nuovoIdOggettoOfferto)) throw new ValidationException("Errore su ID_OggettoOfferto");
-						OggettoDTO oggettoOffertoNuovo = oggettoDAO.getOggettiById(nuovoIdOggettoOfferto.trim());
-						if (oggettoOffertoNuovo == null) throw new NotFoundException("Oggetto offerto non trovato");
-						if (!offerente.equals(oggettoOffertoNuovo.getProprietario())) throw new AuthenticationException("Non sei proprietario dell'oggetto offerto");
-						idOggettoOffertoFinale = nuovoIdOggettoOfferto.trim();
-					}
+				if (nuovoIdOggettoOfferto != null) {
+					if (isBlank(nuovoIdOggettoOfferto)) throw new ValidationException("Errore su ID_OggettoOfferto");
+					OggettoDTO oggettoOffertoNuovo = oggettoDAO.getOggettiById(nuovoIdOggettoOfferto.trim());
+					if (oggettoOffertoNuovo == null) throw new NotFoundException("Oggetto offerto non trovato");
+					if (!offerente.equals(oggettoOffertoNuovo.getProprietario())) throw new AuthenticationException("Non sei proprietario dell'oggetto offerto");
+					idOggettoOffertoFinale = nuovoIdOggettoOfferto.trim();
+				}
 			}
 
-			// Commento opzionale
 			String commentoModificato = offertaDaAggiornare.getCommento();
 			if (nuovoCommento != null) {
 				commentoModificato = nuovoCommento.trim();
 			}
 
-			OffertaDTO aggiornataDTO = new OffertaDTO(offertaDaAggiornare.getIdOfferta(), prezzoFinale, commentoModificato, offertaDaAggiornare.getDataOfferta(),
-			offertaDaAggiornare.getStato(), offertaDaAggiornare.getOfferente(), offertaDaAggiornare.getTipo(), offertaDaAggiornare.getIdAnnuncio(), idOggettoOffertoFinale);
-			
-			boolean aggiornamentoContenutoRiuscito = offertaDAO.updateOfferta(aggiornataDTO);
+			OffertaDTO aggiornataDTO = new OffertaDTO(
+					offertaDaAggiornare.getIdOfferta(), prezzoFinale, commentoModificato,
+					offertaDaAggiornare.getDataOfferta(), offertaDaAggiornare.getStato(),
+					offertaDaAggiornare.getOfferente(), offertaDaAggiornare.getTipo(),
+					offertaDaAggiornare.getIdAnnuncio(), idOggettoOffertoFinale);
 
+			boolean aggiornamentoContenutoRiuscito = offertaDAO.updateOfferta(aggiornataDTO);
 			if (!aggiornamentoContenutoRiuscito) throw new ValidationException("Offerta non aggiornabile");
 			return offertaDAO.getOffertaById(aggiornataDTO.getIdOfferta());
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
@@ -878,5 +867,158 @@ public class Controller {
 
 
 
+
+
+
+
+
+
+	// ================== METODI UTILITY ==================
+
+	private static final java.time.format.DateTimeFormatter DASHBOARD_DATE_FMT = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+
+	public int contaAnnunciAttiviCreatore(String creatore) throws ApplicationException {
+		try {
+			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
+			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim());
+			int c = 0;
+			for (AnnuncioDTO a : miei) if (a.getStato() == StatoAnnuncioDTO.ATTIVO) c++;
+			return c;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore conteggio annunci attivi", sql); }
+	}
+
+	public int contaOfferteMieInAttesa(String offerente) throws ApplicationException {
+		try {
+			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
+			List<OffertaDTO> mie = offertaDAO.getOfferteByUtente(offerente.trim());
+			int c=0; for (OffertaDTO o : mie) if (o.getStato()==StatoOffertaDTO.ATTESA) c++; return c;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore conteggio offerte mie attesa", sql); }
+	}
+
+	public int contaOfferteRicevuteInAttesa(String creatore) throws ApplicationException {
+		try {
+			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
+			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim());
+			int c=0;
+			for (AnnuncioDTO a : miei) {
+				List<OffertaDTO> offerte = offertaDAO.getOfferteByAnnuncio(a.getIdAnnuncio());
+				for (OffertaDTO o : offerte) if (o.getStato()==StatoOffertaDTO.ATTESA) c++;
+			}
+			return c;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore conteggio offerte ricevute attesa", sql); }
+	}
+
+	public String dataUltimoAnnuncioCreato(String creatore) throws ApplicationException {
+		try {
+			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
+			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim());
+			java.time.LocalDate latest = null;
+			for (AnnuncioDTO a : miei) {
+				if (latest == null || a.getDataPubblicazione().isAfter(latest)) latest = a.getDataPubblicazione();
+			}
+			return latest == null ? "--" : latest.format(DASHBOARD_DATE_FMT);
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore calcolo ultima data annuncio", sql); }
+	}
+
+	public List<String> ultimiAnnunci(int limit) throws ApplicationException {
+		if (limit <= 0) limit = 5;
+		try {
+			List<AnnuncioDTO> tutti = annuncioDAO.getAllAnnunci();
+			java.util.List<AnnuncioDTO> copia = new java.util.ArrayList<>(tutti);
+			copia.sort((a,b) -> b.getDataPubblicazione().compareTo(a.getDataPubblicazione()));
+			java.util.List<String> out = new java.util.ArrayList<>();
+			int i=0;
+			for (AnnuncioDTO a : copia) {
+				out.add(a.getTitolo()+" ["+a.getTipoAnnuncio().name()+"] "+a.getStato().name()+" - "+a.getDataPubblicazione().format(DASHBOARD_DATE_FMT));
+				if (++i>=limit) break;
+			}
+			return out;
+		} catch (SQLException sql) { throw new PersistenceException("Errore recupero ultimi annunci", sql); }
+	}
+
+	public List<String> ultimiAnnunciCreatore(String creatore, int limit) throws ApplicationException {
+		if (limit <= 0) limit = 5;
+		try {
+			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
+			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim());
+			miei.sort((a,b) -> b.getDataPubblicazione().compareTo(a.getDataPubblicazione()));
+			java.util.List<String> out = new java.util.ArrayList<>();
+			int i=0;
+			for (AnnuncioDTO a : miei) {
+				out.add(a.getTitolo()+" ["+a.getTipoAnnuncio().name()+"] "+a.getStato().name()+" - "+a.getDataPubblicazione().format(DASHBOARD_DATE_FMT));
+				if (++i>=limit) break;
+			}
+			return out;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore recupero ultimi annunci creatore", sql); }
+	}
+
+	public List<String> ultimeOfferteUtente(String offerente, int limit) throws ApplicationException {
+		if (limit <= 0) limit = 5;
+		try {
+			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
+			List<OffertaDTO> mie = offertaDAO.getOfferteByUtente(offerente.trim());
+			mie.sort((o1,o2) -> o2.getDataOfferta().compareTo(o1.getDataOfferta()));
+			java.util.List<String> out = new java.util.ArrayList<>();
+			int i=0;
+			for (OffertaDTO o : mie) {
+				out.add(o.getIdOfferta()+" ["+o.getTipo().name()+"] "+o.getStato().name());
+				if (++i>=limit) break;
+			}
+			return out;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore recupero offerte utente", sql); }
+	}
+
+	public List<String> offerteDaGestire(String creatore, int limit) throws ApplicationException {
+		if (limit <= 0) limit = 5;
+		try {
+			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
+			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim());
+			java.util.List<String> out = new java.util.ArrayList<>();
+			for (AnnuncioDTO a : miei) {
+				if (out.size() >= limit) break;
+				List<OffertaDTO> offerte = offertaDAO.getOfferteByAnnuncio(a.getIdAnnuncio());
+				for (OffertaDTO o : offerte) {
+					if (o.getStato()==StatoOffertaDTO.ATTESA) {
+						out.add(o.getIdOfferta()+" ["+o.getTipo().name()+"] "+o.getStato().name());
+						if (out.size() >= limit) break;
+					}
+				}
+			}
+			return out;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore recupero offerte da gestire", sql); }
+	}
+
+
+    public String recuperaMatricolaDaUsernameOEmail(String userOrEmail) throws ApplicationException {
+        try {
+            if (userOrEmail == null || userOrEmail.trim().isEmpty()) throw new ValidationException("Errore su Username");
+            if (userOrEmail.contains("@")) {
+                UtenteDTO u = utenteDAO.getUtenteByEmail(userOrEmail.trim());
+                return u != null ? u.getMatricola() : null;
+            } else {
+                UtenteDTO u = utenteDAO.getUtenteByUsername(userOrEmail.trim());
+                return u != null ? u.getMatricola() : null;
+            }
+        } catch (ValidationException e) { throw e; }
+        catch (SQLException sql) { throw new PersistenceException("Errore recupero matricola", sql); }
+    }
+
+
+
+	public String recuperaUsernameDaMatricola(String matricola) throws ApplicationException {
+		try {
+			if (matricola == null || matricola.trim().isEmpty()) throw new ValidationException("Errore su Matricola");
+			UtenteDTO u = utenteDAO.getUtenteByMatricola(matricola.trim());
+			return u != null ? u.getUsername() : null;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore recupero username", sql); }
+	}
 
 }

@@ -4,6 +4,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "HomeFrame",
+            "request": "launch",
+            "mainClass": "frames.HomeFrame",
+            "projectName": "ProgettoObjectOrientation"
+        },
+        {
+            "type": "java",
             "name": "Run Main (with lib)",
             "request": "launch",
             "mainClass": "Main",

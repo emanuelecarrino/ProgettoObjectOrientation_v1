@@ -23,7 +23,7 @@ public class LoginFrame extends JFrame {
 		int x = (screen.width - 500) / 2;
 		int y = (screen.height - 350) / 2;
 		setBounds(x, y, 500, 350);
-setVisible(true);
+		setVisible(true);
 		setResizable(false); // blocca il ridimensionamento
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -87,15 +87,20 @@ setVisible(true);
                     // Usa direttamente il metodo login del Controller (ritorna UtenteDTO) ma
                     // qui ignoriamo l'oggetto perché ci serve solo verificare le credenziali.
                     controller.login(usernameOrEmail, password);
+                    // Recupera SEMPRE la matricola da usare in tutta l'app (filtri annunci/offerte)
+                    String matricola = controller.recuperaMatricolaDaUsernameOEmail(usernameOrEmail.trim());
+                    if (matricola == null) {
+                        throw new ApplicationException("Utente non trovato dopo login");
+                    }
                     lblMessage.setForeground(new Color(0, 128, 0));
                     lblMessage.setText("Accesso effettuato.");
-                    HomeFrame home = new HomeFrame();
+                    // Passiamo SOLO la matricola alla Home (il costruttore userà la stessa per display e filtro)
+                    HomeFrame home = new HomeFrame(controller, matricola);
                     home.setVisible(true);
                     dispose();
 				} catch (ApplicationException ex) {
 					lblMessage.setForeground(Color.RED);
 					String msg = ex.getMessage();
-					// if there's an underlying cause (e.g., SQLException), append its message for clarity
 					if (ex.getCause() != null && ex.getCause().getMessage() != null) {
 						msg += ": " + ex.getCause().getMessage();
 					}

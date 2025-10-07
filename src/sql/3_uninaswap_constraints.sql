@@ -50,9 +50,9 @@ FOREIGN KEY (FK_Annuncio) REFERENCES Annuncio(ID_Annuncio) ON DELETE CASCADE;
 ALTER TABLE Annuncio
 ADD CONSTRAINT checkPrezzoVenditaCorretto
 CHECK (
-  (Tipo = 'Vendita' AND prezzoVendita IS NOT NULL AND prezzoVendita > 0)
+  (Tipo = 'VENDITA' AND prezzoVendita IS NOT NULL AND prezzoVendita > 0)
   OR
-  (Tipo <> 'Vendita' AND prezzoVendita IS NULL)
+  (Tipo <> 'VENDITA' AND prezzoVendita IS NULL)
 );
 
 
@@ -88,7 +88,7 @@ ADD CONSTRAINT uk_emailUtente UNIQUE (Email);
 -- Formato email basilare (case-insensitive)
 --ALTER TABLE Utente
 --ADD CONSTRAINT checkFormatoEmail
---CHECK (Email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+--CHECK (Email ~* '^[A-Za-z0-9]+@[A-Za-z0-9]+\.[A-Za-z]{2,}$');
 
 -- DataNascita non futura
 ALTER TABLE Utente
