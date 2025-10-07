@@ -85,10 +85,10 @@ CHECK (Matricola ~ '^N86[0-9]{6}$');
 ALTER TABLE Utente
 ADD CONSTRAINT uk_emailUtente UNIQUE (Email);
 
--- Formato email basilare
-ALTER TABLE Utente
-ADD CONSTRAINT checkFormatoEmail
-CHECK (Email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$');
+-- Formato email basilare (case-insensitive)
+--ALTER TABLE Utente
+--ADD CONSTRAINT checkFormatoEmail
+--CHECK (Email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
 
 -- DataNascita non futura
 ALTER TABLE Utente

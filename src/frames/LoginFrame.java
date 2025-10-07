@@ -14,19 +14,6 @@ public class LoginFrame extends JFrame {
 	private JPasswordField passwordField;
 	private JLabel lblMessage;
 
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					LoginFrame frame = new LoginFrame();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
 	private final Controller controller = new Controller();
 
 	public LoginFrame() {
@@ -93,22 +80,29 @@ public class LoginFrame extends JFrame {
 				String usernameOrEmail = textFieldUsername.getText();
 				String password = new String(passwordField.getPassword());
 				try {
-					// Usa direttamente il metodo login del Controller (ritorna UtenteDTO) ma
-					// qui ignoriamo l'oggetto perché ci serve solo verificare le credenziali.
-					controller.login(usernameOrEmail, password);
-					lblMessage.setForeground(new Color(0, 128, 0));
-					lblMessage.setText("Accesso effettuato.");
-					SwingUtilities.invokeLater(() -> {
-						new HomeFrame(); // HomeFrame mostra se stesso nel costruttore
-					});
-					dispose();
-				} catch (ApplicationException ex) {
+                    // Usa direttamente il metodo login del Controller (ritorna UtenteDTO) ma
+                    // qui ignoriamo l'oggetto perché ci serve solo verificare le credenziali.
+                    controller.login(usernameOrEmail, password);
+                    lblMessage.setForeground(new Color(0, 128, 0));
+                    lblMessage.setText("Accesso effettuato.");
+                    HomeFrame home = new HomeFrame();
+                    home.setVisible(true);
+                    dispose();
+                } catch (ApplicationException ex) {
 					lblMessage.setForeground(Color.RED);
 					lblMessage.setText(ex.getMessage());
-				} catch (Exception ex) {
+					// mostra messaggio all'utente e logga per debug
+					lblMessage.setForeground(Color.RED);
+					lblMessage.setText(ex.getMessage());
+					ex.printStackTrace();
+                } catch (Exception ex) {
 					lblMessage.setForeground(Color.RED);
 					lblMessage.setText("Errore inatteso");
-				}
+					// log completo per capire la causa reale
+					lblMessage.setForeground(Color.RED);
+					lblMessage.setText("Errore inatteso: " + ex.getMessage());
+					ex.printStackTrace();
+                }
 			}
 		});
 	}
