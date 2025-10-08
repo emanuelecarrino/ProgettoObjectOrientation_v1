@@ -1,17 +1,13 @@
 package frames;
 
 import dto.Controller;
-import dto.AnnuncioDTO;
-import dto.TipoAnnuncioDTO;
-import dto.CategoriaAnnuncioDTO;
-import dto.StatoAnnuncioDTO;
 import java.util.List;
 import java.util.ArrayList;
 
-// Swing / AWT imports (were missing and caused many compile errors)
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import javax.swing.border.*;
 
 public class HomeFrame extends JFrame {
 
@@ -20,7 +16,6 @@ public class HomeFrame extends JFrame {
     // Username risolto on-demand per display (può essere null se non trovato)
     private final String usernameDisplay;
     private JPanel sidebar;
-    // Navigazione semplice con CardLayout (senza AnimatedSwitcher)
     private CardLayout cardLayout;
     private JPanel cardPanel;
     private final List<JToggleButton> navButtons = new ArrayList<>();
@@ -39,11 +34,16 @@ public class HomeFrame extends JFrame {
 
         setTitle("Home");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-        int x = (screen.width - 900) / 2;
-        int y = (screen.height - 600) / 2;
-        setBounds(x, y, 900, 600);
-        setMinimumSize(new Dimension(820, 520));
+    Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+    // Nuove dimensioni più larghe (fisse) richieste
+    int targetW = 1500;
+    int targetH = 750;
+    int x = Math.max(0, (screen.width - targetW) / 2);
+    int y = Math.max(0, (screen.height - targetH) / 2);
+    setBounds(x, y, targetW, targetH);
+    setMinimumSize(new Dimension(targetW, targetH));
+    // Consenti ingrandimento (anche massimizzazione) ma non rimpicciolire sotto la minimum size
+    setResizable(true);
         buildUI();
         setVisible(true);
     }
@@ -63,13 +63,14 @@ public class HomeFrame extends JFrame {
         // Sidebar fissa: niente scrollpane
         add(sidebar, BorderLayout.WEST);
 
-        String[] sections = {
-                "Homepage",
-                "Annunci",
-                "Profilo",
-                "ModConsegna",
-                "Offerte ricevute"
-        };
+    String[] sections = {
+        "Homepage",
+        "Annunci",
+        "I tuoi oggetti",
+        "Profilo",
+        "ModConsegna",
+        "Offerte ricevute"
+    };
 
         ButtonGroup group = new ButtonGroup();
         GridBagConstraints gbc = new GridBagConstraints();
@@ -88,6 +89,27 @@ public class HomeFrame extends JFrame {
         gbc.gridy = row;
         gbc.weighty = 1;
         sidebar.add(Box.createVerticalGlue(), gbc);
+
+        // Bottone Logout (versione originale stilizzata)
+        gbc.gridy = ++row;
+        gbc.weighty = 0;
+        JButton logoutBtn = new JButton("Logout");
+        logoutBtn.setFocusPainted(false);
+        logoutBtn.setBackground(new Color(220, 53, 69));
+        logoutBtn.setForeground(Color.WHITE);
+        logoutBtn.setFont(new Font("Tahoma", Font.BOLD, 14));
+        logoutBtn.setBorder(BorderFactory.createEmptyBorder(10,14,10,14));
+        logoutBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        logoutBtn.addActionListener(e -> {
+            int conf = JOptionPane.showConfirmDialog(this, "Vuoi davvero uscire?", "Conferma logout", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (conf == JOptionPane.YES_OPTION) {
+                SwingUtilities.invokeLater(() -> {
+                    dispose();
+                    new LoginFrame().setVisible(true);
+                });
+            }
+        });
+        sidebar.add(logoutBtn, gbc);
     }
 
     private JToggleButton createNavButton(String text) {
@@ -124,7 +146,8 @@ public class HomeFrame extends JFrame {
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         cardPanel.add(buildHomepagePanel(), "Homepage");
-    cardPanel.add(buildAnnunciPanel(), "Annunci");
+        cardPanel.add(new AnnunciFrame(controller, matricola).buildContentPanel(), "Annunci");
+        cardPanel.add(new OggettiFrame(controller, matricola).buildContentPanel(), "I tuoi oggetti");
         cardPanel.add(new ProfiloFrame(controller, matricola).buildContentPanel(), "Profilo");
         cardPanel.add(new ModConsegnaFrame(controller, matricola).buildContentPanel(), "ModConsegna");
         cardPanel.add(new OfferteRicevuteFrame(controller, matricola).buildContentPanel(), "Offerte ricevute");
@@ -142,11 +165,9 @@ public class HomeFrame extends JFrame {
     JLabel benv = new JLabel("Benvenuto " + usernameDisplay + "!");
         benv.setFont(new Font("Tahoma", Font.BOLD, 30));
         header.add(benv, BorderLayout.WEST);
-        JButton refreshBtn = new JButton("Aggiorna");
-        refreshBtn.setFont(new Font("Tahoma", Font.BOLD, 15));
-        refreshBtn.setForeground(Color.WHITE);
-        refreshBtn.setBackground(new Color(100, 149, 237));
-        refreshBtn.addActionListener(e -> refreshDashboard());
+    JButton refreshBtn = createPrimaryActionButton("Aggiorna");
+    refreshBtn.setFont(new Font("Tahoma", Font.BOLD, 15));
+    refreshBtn.addActionListener(e -> refreshDashboard());
         header.add(refreshBtn, BorderLayout.EAST);
         wrapper.add(header, BorderLayout.NORTH);
 
@@ -156,7 +177,7 @@ public class HomeFrame extends JFrame {
         wrapper.add(new JScrollPane(content), BorderLayout.CENTER);
 
         // Prepare panels placeholders updated by refreshDashboard()
-        kpiPanel = new JPanel(new GridLayout(1,4,12,0));
+    kpiPanel = new JPanel(new GridLayout(1,4,12,0));
         kpiPanel.setOpaque(false);
         kpiCardContainers = new JPanel[4];
         for (int i=0;i<4;i++) {
@@ -179,6 +200,19 @@ public class HomeFrame extends JFrame {
         gbc.gridx=2; gbc.insets=new Insets(0,0,18,18);
         content.add(offerteDaGestirePanel, gbc);
 
+    // Wiring selezione esclusiva tra le tre liste
+    wireMutualSelection();
+
+        // Wrapper azioni dinamico (inizialmente nascosto)
+    dynamicActionsWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT,8,4));
+    dynamicActionsWrapper.setOpaque(false);
+    // Altezza fissa per evitare "saltelli" quando compaiono/scompaiono i pulsanti
+    Dimension actionPref = new Dimension(10, 46); // larghezza verrà espansa dal BorderLayout
+    dynamicActionsWrapper.setPreferredSize(actionPref);
+    dynamicActionsWrapper.setMinimumSize(actionPref);
+    dynamicActionsWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
+        wrapper.add(dynamicActionsWrapper, BorderLayout.SOUTH);
+
         SwingUtilities.invokeLater(this::refreshDashboard);
         return wrapper;
     }
@@ -189,29 +223,42 @@ public class HomeFrame extends JFrame {
     private JPanel recentAnnunciPanel;
     private JPanel mieOffertePanel;
     private JPanel offerteDaGestirePanel;
-    // Annunci panel state
-    private JPanel annunciPanel;
-    private DefaultListModel<AnnuncioDTO> annunciListModel;
-    private JList<AnnuncioDTO> annunciList;
-    private JComboBox<String> annunciTipoFilter;
-    private JComboBox<String> annunciCategoriaFilter;
-    private JLabel annunciStatusLabel;
+    private JPanel dynamicActionsWrapper;
+    private JButton eliminaBtn;
+    private JButton accettaBtn;
+    private JButton rifiutaBtn;
+
 
     private JPanel buildKpiCard(String value, String label) {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout(0,4)) {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),18,18);
+                g2.dispose();
+            }
+        };
+        panel.setOpaque(false);
         panel.setBackground(new Color(250,250,252));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(230,230,234)),
-                BorderFactory.createEmptyBorder(10,14,10,14)));
+        panel.setBorder(new EmptyBorder(14,18,14,18));
+        panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        panel.addMouseListener(new MouseAdapter() {
+            Color base = panel.getBackground();
+            @Override public void mouseEntered(MouseEvent e) { panel.setBackground(new Color(245,245,250)); panel.repaint(); }
+            @Override public void mouseExited(MouseEvent e) { panel.setBackground(base); panel.repaint(); }
+        });
         JLabel val = new JLabel(value, SwingConstants.LEFT);
-        val.setFont(new Font("Tahoma", Font.BOLD, 28));
+        val.setFont(new Font("Tahoma", Font.BOLD, 30));
         JLabel lab = new JLabel(label.toUpperCase());
         lab.setFont(new Font("Tahoma", Font.PLAIN, 11));
-        lab.setForeground(new Color(90,90,95));
+        lab.setForeground(new Color(120,120,125));
         panel.add(val, BorderLayout.CENTER);
         panel.add(lab, BorderLayout.SOUTH);
         panel.putClientProperty("valueLabel", val);
         panel.putClientProperty("nameLabel", lab);
+        panel.putClientProperty("elevated", Boolean.TRUE);
         return panel;
     }
 
@@ -227,9 +274,14 @@ public class HomeFrame extends JFrame {
         container.add(t, BorderLayout.NORTH);
     JList<String> list = new JList<>();
         list.setFont(new Font("Tahoma", Font.PLAIN, 13));
-        list.setFixedCellHeight(24);
+        list.setFixedCellHeight(-1); // variable height for card style
+        list.setCellRenderer(new DashboardListCardRenderer());
         container.add(new JScrollPane(list), BorderLayout.CENTER);
         container.putClientProperty("jlist", list);
+        // Listener per aggiornare pulsanti azione in base al pannello e selezione
+        list.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) updateActionButtonsState();
+        });
         return container;
     }
 
@@ -262,6 +314,8 @@ public class HomeFrame extends JFrame {
             List<String> gestire = controller.offerteDaGestire(matricola,5);
             setListData(offerteDaGestirePanel, gestire);
 
+            updateActionButtonsState();
+
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Errore caricamento dashboard: " + ex.getMessage());
         }
@@ -279,6 +333,167 @@ public class HomeFrame extends JFrame {
         }
     }
 
+    private void ensureActionButtons() {
+        if (eliminaBtn != null) return; // già creati
+        eliminaBtn = createPrimaryActionButton("Elimina selezionato");
+        accettaBtn = createPrimaryActionButton("Accetta");
+        rifiutaBtn = createPrimaryActionButton("Rifiuta");
+        eliminaBtn.addActionListener(e -> onElimina());
+        accettaBtn.addActionListener(e -> onAccetta());
+        rifiutaBtn.addActionListener(e -> onRifiuta());
+    }
+
+    // Stile uniforme: stesso background / font bold / foreground bianco del bottone "Aggiorna"
+    private JButton createPrimaryActionButton(String text) {
+        JButton b = new JButton(text);
+        b.setFont(new Font("Tahoma", Font.BOLD, 14));
+        b.setForeground(Color.WHITE);
+        b.setBackground(new Color(100, 149, 237));
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setMargin(new Insets(6,14,6,14));
+        return b;
+    }
+
+    private void updateActionButtonsState() {
+        if (dynamicActionsWrapper == null) return;
+        ensureActionButtons();
+    dynamicActionsWrapper.removeAll();
+        // Determina quale lista ha focus/selezione
+        JList<String> annunciList = getJList(recentAnnunciPanel);
+        JList<String> mieOffList = getJList(mieOffertePanel);
+        JList<String> gestireList = getJList(offerteDaGestirePanel);
+        String selected = null;
+        boolean fromAnnunci = false;
+        boolean fromMieOfferte = false;
+        boolean fromGestire = false;
+        if (annunciList.getSelectedValue() != null) { selected = annunciList.getSelectedValue(); fromAnnunci = true; }
+        else if (mieOffList.getSelectedValue() != null) { selected = mieOffList.getSelectedValue(); fromMieOfferte = true; }
+        else if (gestireList.getSelectedValue() != null) { selected = gestireList.getSelectedValue(); fromGestire = true; }
+        if (selected == null) {
+            // Nessuna selezione: area resta vuota ma mantiene l'altezza
+            dynamicActionsWrapper.revalidate();
+            dynamicActionsWrapper.repaint();
+            return;
+        }
+        // Formati attuali:
+        // Annuncio: Titolo [Tipo] Stato - dd/MM
+        // Offerta mia / da gestire: ID_OFFERTA [Tipo] Stato
+        // Decidiamo: se stringa inizia con "OFF-" -> offerta, se no annuncio.
+        boolean isOfferta = selected.startsWith("OFF-");
+        if (isOfferta) {
+            String stato = null;
+            int lastSpace = selected.lastIndexOf(' ');
+            if (lastSpace > -1) stato = selected.substring(lastSpace+1).trim();
+            if (stato != null && stato.equalsIgnoreCase("Attesa")) {
+                if (fromMieOfferte) dynamicActionsWrapper.add(eliminaBtn);
+                if (fromGestire) { dynamicActionsWrapper.add(accettaBtn); dynamicActionsWrapper.add(rifiutaBtn); }
+            }
+        } else {
+            if (fromAnnunci) dynamicActionsWrapper.add(eliminaBtn); // (ID annuncio non ancora nel testo)
+        }
+        // Non nascondiamo: wrapper rimane sempre visibile per stabilità layout
+        dynamicActionsWrapper.revalidate();
+        dynamicActionsWrapper.repaint();
+    }
+
+    // Garantisce che solo una lista abbia una selezione attiva alla volta
+    private void wireMutualSelection() {
+        JList<String> lAnn = getJList(recentAnnunciPanel);
+        JList<String> lMie = getJList(mieOffertePanel);
+        JList<String> lGest = getJList(offerteDaGestirePanel);
+        javax.swing.event.ListSelectionListener listenerAnn = e -> {
+            if (!e.getValueIsAdjusting() && lAnn.getSelectedIndex() >= 0) {
+                lMie.clearSelection();
+                lGest.clearSelection();
+                updateActionButtonsState();
+            }
+        };
+        javax.swing.event.ListSelectionListener listenerMie = e -> {
+            if (!e.getValueIsAdjusting() && lMie.getSelectedIndex() >= 0) {
+                lAnn.clearSelection();
+                lGest.clearSelection();
+                updateActionButtonsState();
+            }
+        };
+        javax.swing.event.ListSelectionListener listenerGest = e -> {
+            if (!e.getValueIsAdjusting() && lGest.getSelectedIndex() >= 0) {
+                lAnn.clearSelection();
+                lMie.clearSelection();
+                updateActionButtonsState();
+            }
+        };
+        lAnn.addListSelectionListener(listenerAnn);
+        lMie.addListSelectionListener(listenerMie);
+        lGest.addListSelectionListener(listenerGest);
+    }
+
+    private String estraiIdDaRiga(String riga) {
+        if (riga == null) return null;
+        // Se offerta: inizia con OFF-
+        if (riga.startsWith("OFF-")) {
+            int space = riga.indexOf(' ');
+            return space>0 ? riga.substring(0, space) : riga; 
+        }
+        // Se annuncio: formato Titolo [Tipo] Stato - data -> non contiene ID.
+        // Necessario allora ricaricare? Per semplicità qui non possiamo eliminare senza ID.
+        // TODO: Migliorare formato ultimiAnnunciCreatore per includere ID hidden.
+        return null;
+    }
+
+    private void onElimina() {
+        String id = null; boolean isOfferta=false; boolean isAnnuncio=false;
+        JList<String> aList = getJList(recentAnnunciPanel);
+        JList<String> mList = getJList(mieOffertePanel);
+        if (mList.getSelectedValue()!=null) { id = estraiIdDaRiga(mList.getSelectedValue()); isOfferta=true; }
+        else if (aList.getSelectedValue()!=null) { /* manca ID annuncio nel formato corrente */ }
+        if (id==null && isOfferta) { JOptionPane.showMessageDialog(this, "Impossibile determinare ID offerta"); return; }
+        int conferma = JOptionPane.showConfirmDialog(this, "Confermi eliminazione?", "Conferma", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (conferma != JOptionPane.YES_OPTION) return;
+        try {
+            if (isOfferta) {
+                controller.ritiraOfferta(id, matricola); // elimina via ritira (cancella in Attesa)
+                refreshDashboard();
+            } else if (isAnnuncio) {
+                // controller.eliminaAnnuncio(idAnnuncio);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Errore eliminazione: "+ex.getMessage());
+        }
+    }
+
+    private void onAccetta() {
+        JList<String> gList = getJList(offerteDaGestirePanel);
+        String sel = gList.getSelectedValue();
+        if (sel==null) return;
+        String id = estraiIdDaRiga(sel);
+        if (id==null) { JOptionPane.showMessageDialog(this, "ID offerta non trovato"); return; }
+        int conferma = JOptionPane.showConfirmDialog(this, "Accettare l'offerta?", "Conferma", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (conferma != JOptionPane.YES_OPTION) return;
+        try {
+            controller.accettaOfferta(id, matricola);
+            refreshDashboard();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Errore accettazione: "+ex.getMessage());
+        }
+    }
+
+    private void onRifiuta() {
+        JList<String> gList = getJList(offerteDaGestirePanel);
+        String sel = gList.getSelectedValue();
+        if (sel==null) return;
+        String id = estraiIdDaRiga(sel);
+        if (id==null) { JOptionPane.showMessageDialog(this, "ID offerta non trovato"); return; }
+        int conferma = JOptionPane.showConfirmDialog(this, "Rifiutare l'offerta?", "Conferma", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (conferma != JOptionPane.YES_OPTION) return;
+        try {
+            controller.rifiutaOfferta(id, matricola);
+            refreshDashboard();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Errore rifiuto: "+ex.getMessage());
+        }
+    }
+
 
 
     private JPanel buildPlaceholder(String name) {
@@ -290,124 +505,7 @@ public class HomeFrame extends JFrame {
         return p;
     }
 
-    // Build the Annunci dashboard: search, filters, list of active announcements (excluding current user's)
-    private JPanel buildAnnunciPanel() {
-        annunciPanel = new JPanel(new BorderLayout());
-        annunciPanel.setBackground(Color.WHITE);
-
-        JPanel header = new JPanel(new BorderLayout(8,8));
-        header.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));
-        header.setBackground(Color.WHITE);
-        JLabel title = new JLabel("Annunci");
-        title.setFont(new Font("Tahoma", Font.BOLD, 20));
-        header.add(title, BorderLayout.WEST);
-
-        JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT,8,0));
-        controls.setBackground(Color.WHITE);
-    annunciTipoFilter = new JComboBox<>(new String[]{
-        "Tutti",
-        TipoAnnuncioDTO.Vendita.name(),
-        TipoAnnuncioDTO.Scambio.name(),
-        TipoAnnuncioDTO.Regalo.name()
-    });
-    annunciCategoriaFilter = new JComboBox<>(new String[]{
-        "Tutte",
-        CategoriaAnnuncioDTO.LibriTesto.name(),
-        CategoriaAnnuncioDTO.Informatica.name(),
-        CategoriaAnnuncioDTO.Abbigliamento.name(),
-        CategoriaAnnuncioDTO.Altro.name()
-    });
-    annunciTipoFilter.addActionListener(e -> executeAnnunciSearch());
-    annunciCategoriaFilter.addActionListener(e -> executeAnnunciSearch());
-
-        controls.add(new JLabel("Filtro:"));
-        controls.add(annunciTipoFilter);
-        controls.add(annunciCategoriaFilter);
-    // No search bar, auto-refresh on filter change
-        header.add(controls, BorderLayout.EAST);
-
-        annunciPanel.add(header, BorderLayout.NORTH);
-
-        annunciListModel = new DefaultListModel<>();
-        annunciList = new JList<>(annunciListModel);
-        annunciList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
-            JPanel p = new JPanel(new BorderLayout());
-            p.setBorder(BorderFactory.createEmptyBorder(6,8,6,8));
-            p.setBackground(isSelected ? new Color(220,235,255) : Color.WHITE);
-            JLabel t = new JLabel(value.getTitolo() + " — " + value.getPrezzoVendita());
-            t.setFont(new Font("Tahoma", Font.PLAIN, 13));
-            p.add(t, BorderLayout.CENTER);
-            return p;
-        });
-    annunciPanel.add(new JScrollPane(annunciList), BorderLayout.CENTER);
-
-    // Status bar (count)
-    JPanel statusBar = new JPanel(new BorderLayout());
-    statusBar.setBorder(BorderFactory.createEmptyBorder(4,12,8,12));
-    statusBar.setBackground(Color.WHITE);
-    annunciStatusLabel = new JLabel(" ");
-    annunciStatusLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
-    statusBar.add(annunciStatusLabel, BorderLayout.WEST);
-    annunciPanel.add(statusBar, BorderLayout.SOUTH);
-
-        // initial load (altrui attivi)
-        SwingUtilities.invokeLater(this::executeAnnunciSearch);
-        return annunciPanel;
-    }
-
-    private void executeAnnunciSearch() {
-        try {
-            String tipoSel = (String) annunciTipoFilter.getSelectedItem();
-            String catSel = (String) annunciCategoriaFilter.getSelectedItem();
-
-            // Base list: tutti gli annunci ATTIVI, poi escludiamo l'utente corrente in-memory
-            List<AnnuncioDTO> baseAll = controller.visualizzaTuttiAnnunci();
-            if (baseAll == null) {
-                baseAll = java.util.Collections.emptyList();
-            }
-            List<AnnuncioDTO> base = new ArrayList<>();
-            for (AnnuncioDTO a : baseAll) {
-                if (a.getCreatore() == null || !a.getCreatore().equals(matricola)) {
-                    base.add(a);
-                }
-            }
-            int total = base.size();
-
-            // Applica filtri in-memory se selezionati
-            List<AnnuncioDTO> filtered = new ArrayList<>();
-            for (AnnuncioDTO a : base) {
-                boolean ok = true;
-                if (tipoSel != null && !"Tutti".equals(tipoSel)) {
-                    ok &= a.getTipoAnnuncio() == TipoAnnuncioDTO.valueOf(tipoSel);
-                }
-                if (catSel != null && !"Tutte".equals(catSel)) {
-                    ok &= a.getCategoria() == CategoriaAnnuncioDTO.valueOf(catSel);
-                }
-                if (ok) filtered.add(a);
-            }
-
-            // Aggiorna lista
-            annunciListModel.clear();
-            for (AnnuncioDTO a : filtered) {
-                annunciListModel.addElement(a);
-            }
-            if (annunciStatusLabel != null) {
-                int dbTotal = baseAll.size();
-                int excludedMine = dbTotal - base.size();
-                annunciStatusLabel.setText(
-                    "Totali DB(attivi): " + dbTotal +
-                    " | Esclusi (miei): " + excludedMine +
-                    " | Mostrati: " + filtered.size()
-                );
-            }
-        } catch (Exception ex) {
-            String msg = ex.getMessage();
-            if (ex.getCause() != null) {
-                msg += "\nDettaglio: " + ex.getCause().getMessage();
-            }
-            JOptionPane.showMessageDialog(this, "Errore ricerca annunci: " + msg);
-        }
-    }
+    // (Logica annunci rimossa da HomeFrame)
 
     private void selectSection(String name) {
         if (cardLayout != null && cardPanel != null) {
@@ -417,6 +515,77 @@ public class HomeFrame extends JFrame {
             if (b.getText().equals(name)) {
                 if (!b.isSelected()) b.setSelected(true);
             }
+        }
+    }
+
+    // Renderer card per liste dashboard (annunci, offerte, da gestire)
+    private static class DashboardListCardRenderer extends JPanel implements ListCellRenderer<String> {
+        private final JLabel primary = new JLabel();
+        private final JLabel secondary = new JLabel();
+        private final JPanel badgePanel = new JPanel(new FlowLayout(FlowLayout.LEFT,4,0));
+
+        DashboardListCardRenderer() {
+            setLayout(new BorderLayout(6,4));
+            setOpaque(true);
+            setBorder(new EmptyBorder(8,10,8,10));
+            primary.setFont(new Font("Tahoma", Font.BOLD, 13));
+            secondary.setFont(new Font("Tahoma", Font.PLAIN, 11));
+            secondary.setForeground(new Color(110,110,115));
+            badgePanel.setOpaque(false);
+            JPanel top = new JPanel(new BorderLayout());
+            top.setOpaque(false);
+            top.add(primary, BorderLayout.CENTER);
+            top.add(badgePanel, BorderLayout.EAST);
+            add(top, BorderLayout.NORTH);
+            add(secondary, BorderLayout.SOUTH);
+        }
+
+        private JLabel badge(String txt, Color bg) {
+            JLabel l = new JLabel(txt.toUpperCase());
+            l.setFont(new Font("Tahoma", Font.BOLD, 9));
+            l.setForeground(Color.WHITE);
+            l.setOpaque(true);
+            l.setBackground(bg);
+            l.setBorder(new EmptyBorder(2,6,2,6));
+            return l;
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<? extends String> list, String value, int index, boolean isSelected, boolean cellHasFocus) {
+            // Heuristics: Offerta se inizia con OFF-
+            boolean isOfferta = value != null && value.startsWith("OFF-");
+            primary.setText(value != null ? value : "");
+            // Rimuove completamente la label secondaria (né "Annuncio" né "Offerta")
+            secondary.setText("");
+            secondary.setVisible(false);
+
+            badgePanel.removeAll();
+            if (isOfferta) {
+                Color c = new Color(0,120,212);
+                if (value.contains(" Attesa")) c = new Color(255,140,0);
+                else if (value.contains(" Accettata")) c = new Color(46,160,67);
+                else if (value.contains(" Rifiutata")) c = new Color(200,60,60);
+                badgePanel.add(badge("OFF", c));
+            } else {
+                // estrai tipo tra [] se presente
+                int lb = value!=null? value.indexOf('['):-1;
+                int rb = value!=null? value.indexOf(']'):-1;
+                if (lb>-1 && rb>lb) {
+                    String tipo = value.substring(lb+1, rb).trim();
+                    Color c;
+                    switch (tipo.toLowerCase()) {
+                        case "vendita": c = new Color(46,160,67); break;
+                        case "scambio": c = new Color(0,120,212); break;
+                        case "regalo": c = new Color(218,112,37); break;
+                        default: c = new Color(108,117,125); break;
+                    }
+                    badgePanel.add(badge(tipo, c));
+                }
+            }
+
+            setBackground(isSelected ? new Color(218,230,247) : Color.WHITE);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            return this;
         }
     }
 

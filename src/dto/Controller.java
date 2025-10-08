@@ -415,7 +415,7 @@ public class Controller {
 	}
 
 	private String generaIdAnnuncio(){
-		return "ANN-" + UUID.randomUUID().toString();
+		return generaIdSequenziale("ANN-");
 	}
 
 
@@ -442,7 +442,7 @@ public class Controller {
 		try {
 			if (isBlank(nome)) throw new ValidationException("Errore su Nome");
 			if (isBlank(proprietario)) throw new ValidationException("Errore su FK_Utente");
-			if (numProprietari == null || numProprietari < 0) throw new ValidationException("Errore su numProprietari");
+			if (numProprietari == null || numProprietari < 1) throw new ValidationException("Errore su numProprietari (min 1)");
 			if (isBlank(condizioni)) throw new ValidationException("Errore su Condizioni");
 			if (isBlank(dimensione)) throw new ValidationException("Errore su Dimensione");
 			if (peso != null && peso < 0) throw new ValidationException("Errore su Peso_Kg");
@@ -464,7 +464,7 @@ public class Controller {
 			OggettoDTO esistente = oggettoDAO.getOggettiById(ID_Oggetto.trim());
 			if (esistente == null) throw new NotFoundException("Oggetto non trovato");
 			if (isBlank(nuovoNome)) throw new ValidationException("Errore su Nome");
-			if (numProprietari == null || numProprietari < 0) throw new ValidationException("Errore su numProprietari");
+			if (numProprietari == null || numProprietari < 1) throw new ValidationException("Errore su numProprietari (min 1)");
 			if (isBlank(condizioni)) throw new ValidationException("Errore su Condizioni");
 			if (isBlank(dimensione)) throw new ValidationException("Errore su Dimensione");
 			if (peso != null && peso < 0) throw new ValidationException("Errore su Peso_Kg");
@@ -547,7 +547,7 @@ public class Controller {
 	}
 
 	private String generaIdOggetto(){
-		return "OGG-" + UUID.randomUUID();
+		return generaIdSequenziale("OGG-");
 	}
 
 
@@ -662,12 +662,15 @@ public class Controller {
 	}
 
 	private String generaIdConsegna() {
-		return "CON-" + UUID.randomUUID().toString();
+		return generaIdSequenziale("CON-");
 	}
 
 
 
 
+
+
+	
 
 
 
@@ -697,7 +700,7 @@ public class Controller {
 			if (annuncio.getCreatore() != null && annuncio.getCreatore().equals(offerente)) {
 				throw new ValidationException("Utente proprietario non può fare offerta");
 			}
-			float prezzoOffertaValore = 0f;
+			Float prezzoOffertaValore = null;
 			if (tipo == TipoOffertaDTO.Vendita) {
 				if (prezzo == null) throw new ValidationException("Errore su PrezzoOfferta");
 				if (prezzo <= 0f) throw new ValidationException("Errore su PrezzoOfferta");
@@ -718,7 +721,7 @@ public class Controller {
 				oggettoOffertoNew = ID_OggettoOfferto.trim();
 			}
 
-			OffertaDTO offertaCreata = new OffertaDTO("OFF-" + UUID.randomUUID(), prezzoOffertaValore, commentoNew, LocalDate.now(), StatoOffertaDTO.Attesa, 
+			OffertaDTO offertaCreata = new OffertaDTO(generaIdOfferta(), prezzoOffertaValore==null?0f:prezzoOffertaValore, commentoNew, LocalDate.now(), StatoOffertaDTO.Attesa, 
 			offerente.trim(), tipo, ID_Annuncio.trim(), oggettoOffertoNew);
 
 			offertaDAO.insertOfferta(offertaCreata);
@@ -795,7 +798,6 @@ public class Controller {
 			throw new PersistenceException("Errore rifiuto offerta", sql);
 		}
 	}
-
 
 
 
@@ -876,6 +878,11 @@ public class Controller {
 
 
 
+
+	// Generatore ID Offerta
+	private String generaIdOfferta() {
+		return generaIdSequenziale("OFF-");
+	}
 
 
 
@@ -1030,4 +1037,191 @@ public class Controller {
 		catch (SQLException sql) { throw new PersistenceException("Errore recupero username", sql); }
 	}
 
+	// Restituisce elenco tipi annuncio disponibili come String (ordine fisso)
+	public java.util.List<String> elencoTipiAnnuncio() {
+		java.util.List<String> out = new java.util.ArrayList<>();
+		for (TipoAnnuncioDTO t : TipoAnnuncioDTO.values()) out.add(t.name());
+		return out;
+	}
+
+	// Restituisce elenco categorie annuncio disponibili come String (ordine fisso)
+	public java.util.List<String> elencoCategorieAnnuncio() {
+		java.util.List<String> out = new java.util.ArrayList<>();
+		for (CategoriaAnnuncioDTO c : CategoriaAnnuncioDTO.values()) out.add(c.name());
+		return out;
+	}
+
+	// Recupera annunci attivi altrui (esclude creatore) e restituisce stringhe formattate
+	public java.util.List<String> annunciAltruiAttiviFormattati(String creatoreDaEscludere) throws ApplicationException {
+		try {
+			if (creatoreDaEscludere == null || creatoreDaEscludere.trim().isEmpty()) throw new ValidationException("Errore su FK_Utente");
+			java.util.List<AnnuncioDTO> elenco = annuncioDAO.getAnnunciAttiviEsclusoCreatore(creatoreDaEscludere.trim());
+			java.util.List<String> out = new java.util.ArrayList<>();
+			for (AnnuncioDTO a : elenco) {
+				out.add(a.getIdAnnuncio() + "|" + a.getTitolo() + "|" + a.getTipoAnnuncio().name() + "|" + a.getCategoria().name() + "|" + (a.getPrezzoVendita()==null?"-":a.getPrezzoVendita()));
+			}
+			return out;
+		} catch (ValidationException e) { throw e; }
+		catch (java.sql.SQLException sql) { throw new PersistenceException("Errore recupero annunci altrui attivi", sql); }
+	}
+
+	// Recupera tutti gli annunci attivi (inclusi quelli del creatore) formattati includendo il creatore
+	// Formato: ID|Titolo|Tipo|Categoria|Prezzo|Creatore
+	public java.util.List<String> annunciAttiviFormattatiInclusiMiei(String creatore) throws ApplicationException {
+		try {
+			if (creatore == null || creatore.trim().isEmpty()) throw new ValidationException("Errore su FK_Utente");
+			java.util.List<AnnuncioDTO> elenco = annuncioDAO.getAllAnnunci(); // se getAllAnnunci() restituisce anche non attivi andrebbe filtrato
+			java.util.List<String> out = new java.util.ArrayList<>();
+			for (AnnuncioDTO a : elenco) {
+				if (a.getStato() != StatoAnnuncioDTO.Attivo) continue; // solo attivi come in precedente versione
+				out.add(a.getIdAnnuncio()+"|"+a.getTitolo()+"|"+a.getTipoAnnuncio().name()+"|"+a.getCategoria().name()+"|"+(a.getPrezzoVendita()==null?"-":a.getPrezzoVendita())+"|"+a.getCreatore());
+			}
+			return out;
+		} catch (ValidationException e) { throw e; }
+		catch (java.sql.SQLException sql) { throw new PersistenceException("Errore recupero annunci attivi", sql); }
+	}
+
+	public String estraiCreatoreAnnuncio(String record) {
+		if (record == null) return null;
+		String[] p = record.split("\\|", -1);
+		return p.length>=6 ? p[5] : null;
+	}
+
+	// Applica filtri in-memory (tipo/categoria) sulle stringhe annuncio restituite da annunciAltruiAttiviFormattati
+	public java.util.List<String> filtraAnnunciFormattati(java.util.List<String> annunci, String tipo, String categoria) {
+		if (annunci == null) return java.util.Collections.emptyList();
+		java.util.List<String> out = new java.util.ArrayList<>();
+		for (String r : annunci) {
+			// formato: ID|Titolo|Tipo|Categoria|Prezzo
+			String[] parts = r.split("\\|", -1);
+			if (parts.length < 5) continue;
+			String tipoVal = parts[2];
+			String catVal = parts[3];
+			boolean ok = true;
+			if (tipo != null && !tipo.equals("Tutti") && !tipo.equals(tipoVal)) ok = false;
+			if (categoria != null && !categoria.equals("Tutte") && !categoria.equals(catVal)) ok = false;
+			if (ok) out.add(r);
+		}
+		return out;
+	}
+
+	// Converte record stringa annuncio formattato in una label user-friendly
+	public String formatAnnuncioLabel(String record) {
+		if (record == null) return "";
+		String[] p = record.split("\\|", -1);
+		if (p.length < 5) return record;
+		String titolo = p[1];
+		String tipo = p[2];
+		String prezzo = p[4];
+		// Mostra prezzo solo per tipo Vendita e se non nullo/"-"
+		if ("Vendita".equalsIgnoreCase(tipo) && prezzo != null && !prezzo.equals("-") && !prezzo.isEmpty()) {
+			return titolo + " (" + tipo + ") - €" + prezzo;
+		} else {
+			return titolo + " (" + tipo + ")";
+		}
+	}
+
+	// Variante che mostra anche il creatore (o "you" se coincide col viewer) in grigio.
+	// record formato: ID|Titolo|Tipo|Categoria|Prezzo|Creatore
+	public String formatAnnuncioLabelConCreatore(String record, String viewer) {
+		if (record == null) return "";
+		String[] p = record.split("\\|", -1);
+		if (p.length < 6) return formatAnnuncioLabel(record);
+		String titolo = p[1];
+		String tipo = p[2];
+		String prezzo = p[4];
+		String creatore = p[5];
+		boolean isVenditaConPrezzo = "Vendita".equalsIgnoreCase(tipo) && prezzo != null && !prezzo.equals("-") && !prezzo.isEmpty();
+		String prezzoPart = isVenditaConPrezzo ? (" - €"+prezzo) : "";
+		String who = (viewer != null && viewer.trim().equalsIgnoreCase(creatore)) ? "you" : creatore;
+		// HTML per colorare il creatore in grigio
+		return "<html>"+escapeHtml(titolo)+" ("+escapeHtml(tipo)+")"+prezzoPart+" <span style='color:#777777;font-size:11px;'>"+escapeHtml(who)+"</span></html>";
+	}
+
+	private String escapeHtml(String s) {
+		if (s == null) return "";
+		return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;");
+	}
+
+	public String estraiIdAnnuncio(String record) {
+        if (record == null) return null;
+        String[] p = record.split("\\|", -1);
+        return p.length > 0 ? p[0] : null;
+    }
+
+
+	// La UI deve passare solo String / numeri primitivi senza conoscere gli enum
+	public OffertaDTO creaOffertaDaUI(String idAnnuncio, String offerente, String tipoStr, String prezzoStr, String commento, String idOggettoOfferto) throws ApplicationException {
+		try {
+			if (isBlank(tipoStr)) throw new ValidationException("Errore su Tipo");
+			TipoOffertaDTO tipo = null;
+			// match case-insensitive contro i valori enum
+			for (TipoOffertaDTO t : TipoOffertaDTO.values()) {
+				if (t.name().equalsIgnoreCase(tipoStr.trim())) { tipo = t; break; }
+			}
+			if (tipo == null) throw new ValidationException("Tipo offerta non valido");
+
+			Float prezzo = null;
+			if (tipo == TipoOffertaDTO.Vendita) {
+				if (prezzoStr == null || prezzoStr.trim().isEmpty()) throw new ValidationException("Prezzo richiesto");
+				try {
+					prezzo = Float.parseFloat(prezzoStr.trim());
+				} catch (NumberFormatException nfe) {
+					throw new ValidationException("Formato prezzo non valido");
+				}
+			}
+			String idOggetto = null;
+			if (tipo == TipoOffertaDTO.Scambio) {
+				if (idOggettoOfferto == null || idOggettoOfferto.trim().isEmpty()) throw new ValidationException("ID Oggetto offerto richiesto");
+				idOggetto = idOggettoOfferto.trim();
+			}
+			return creaOfferta(idAnnuncio, offerente, prezzo, commento, tipo, idOggetto);
+		} catch (ValidationException | NotFoundException | AuthenticationException e) {
+			throw e;
+		}
+	}
+
+	public java.util.List<String> oggettiUtenteFormattati(String proprietario) throws ApplicationException {
+		try {
+			if (isBlank(proprietario)) throw new ValidationException("Errore su FK_Utente");
+			java.util.List<OggettoDTO> list = oggettoDAO.getOggettiByPropr(proprietario.trim());
+			java.util.List<String> out = new java.util.ArrayList<>();
+			for (OggettoDTO o : list) {
+				String pesoStr = (o.getPeso()==null?"-":String.valueOf(o.getPeso()));
+				out.add(o.getIdOggetto()+"|"+o.getNomeOggetto()+"|"+o.getNumProprietari()+"|"+o.getCondizione()+"|"+o.getDimensione()+"|"+pesoStr);
+			}
+			return out;
+		} catch (ValidationException e) { throw e; }
+		catch (java.sql.SQLException sql) { throw new PersistenceException("Errore recupero oggetti utente", sql); }
+	}
+
+	public String formatOggettoLabel(String record) {
+		if (record == null) return "";
+		String[] p = record.split("\\|", -1);
+		if (p.length < 6) return record;
+		String nome = p[1];
+		String numProp = p[2];
+		String cond = p[3];
+		String dim = p[4];
+		String peso = p[5];
+		String extraPeso = (peso == null || peso.equals("-") || peso.isEmpty())? "" : (" - " + peso + "kg");
+		return nome + " ("+cond+") dim:"+dim+extraPeso+" | proprietari:"+numProp;
+	}
+
+	public String estraiIdOggetto(String record) {
+		if (record == null) return null;
+		String[] p = record.split("\\|", -1);
+		return p.length>0 ? p[0] : null;
+	}
+
+	private static final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger> ID_COUNTERS = new java.util.concurrent.ConcurrentHashMap<>();
+	private String generaIdSequenziale(String prefix) {
+		java.util.concurrent.atomic.AtomicInteger counter = ID_COUNTERS.computeIfAbsent(prefix, p -> new java.util.concurrent.atomic.AtomicInteger(0));
+		int val = counter.incrementAndGet();
+		return prefix + String.format("%05d", val);
+	}
+
 }
+
+
+

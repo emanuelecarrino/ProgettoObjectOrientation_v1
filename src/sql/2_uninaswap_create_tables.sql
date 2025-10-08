@@ -3,11 +3,11 @@ SET search_path TO uninaswap, public;
 
 -- Creazione dei vari enum
 
-CREATE TYPE statoOfferta AS ENUM ('ATTESA', 'ACCETTATA', 'RIFIUTATA');
-CREATE TYPE statoAnnuncio AS ENUM ('ATTIVO', 'VENDUTO', 'SCAMBIATO', 'REGALATO');
-CREATE TYPE categoriaAnnuncio AS ENUM ('LIBRITESTO', 'INFORMATICA', 'ABBIGLIAMENTO', 'ALTRO');
-CREATE TYPE tipoAnnuncio AS ENUM ('VENDITA', 'SCAMBIO', 'REGALO');
-CREATE TYPE tipoOfferta AS ENUM ('VENDITA', 'SCAMBIO', 'REGALO');
+CREATE TYPE statoOfferta AS ENUM ('Attesa', 'Accettata', 'Rifiutata');
+CREATE TYPE statoAnnuncio AS ENUM ('Attivo', 'Venduto', 'Scambiato', 'Regalato');
+CREATE TYPE categoriaAnnuncio AS ENUM ('Libritesto', 'Informatica', 'Abbigliamento', 'Altro');
+CREATE TYPE tipoAnnuncio AS ENUM ('Vendita', 'Scambio', 'Regalo');
+CREATE TYPE tipoOfferta AS ENUM ('Vendita', 'Scambio', 'Regalo');
 
 -- Creazione della tabella Utente (allineata a UtenteDTO: nome, cognome, email, matricola, username, password, dataNascita, genere)
 
@@ -26,6 +26,7 @@ CREATE TABLE Utente (
 -- Creazione della tabella Oggetto (allineata a OggettoDTO)
 
 CREATE TABLE Oggetto (
+
     ID_Oggetto     VARCHAR(10) PRIMARY KEY,
     Nome           VARCHAR(30) NOT NULL,
     numProprietari INTEGER NOT NULL DEFAULT 1,
@@ -42,7 +43,7 @@ CREATE TABLE Annuncio (
     ID_Annuncio       VARCHAR(10) PRIMARY KEY,
     Titolo            VARCHAR(50) NOT NULL,
     Descrizione       VARCHAR(200),
-    Stato             statoAnnuncio NOT NULL DEFAULT 'ATTIVO',
+    Stato             statoAnnuncio NOT NULL DEFAULT 'Attivo',
     Categoria         categoriaAnnuncio NOT NULL,
     DataPubblicazione DATE NOT NULL DEFAULT CURRENT_DATE,
     FK_Utente         VARCHAR NOT NULL,        
@@ -55,14 +56,15 @@ CREATE TABLE Annuncio (
 -- Creazione della tabella Offerta (allineata a OffertaDTO - ID_OggettoOfferto opzionale per scambi)
 
 CREATE TABLE Offerta (
+
     ID_Offerta        VARCHAR(10) PRIMARY KEY,
     FK_Annuncio       VARCHAR NOT NULL,
     FK_Utente         VARCHAR NOT NULL,
     DataOfferta       DATE NOT NULL,
-    Stato             statoOfferta NOT NULL DEFAULT 'ATTESA',
+    Stato             statoOfferta NOT NULL DEFAULT 'Attesa',
     PrezzoOfferta     FLOAT,
     Commento          VARCHAR(150),
-    Tipo              tipoAnnuncio NOT NULL,
+    Tipo              tipoOfferta NOT NULL,
     ID_OggettoOfferto VARCHAR
 );
 
@@ -70,6 +72,7 @@ CREATE TABLE Offerta (
 -- Creazione della tabella ModConsegna (allineata a ModConsegnaDTO)
 
 CREATE TABLE ModConsegna (
+
     ID_Consegna  VARCHAR(10) PRIMARY KEY,
     FK_Annuncio  VARCHAR NOT NULL UNIQUE,
     sedeUni      VARCHAR(30) NOT NULL,

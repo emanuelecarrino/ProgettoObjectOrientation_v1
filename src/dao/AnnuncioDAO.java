@@ -32,9 +32,10 @@ public class AnnuncioDAO {
             ps.setString(2, annuncio.getTitolo());
             ps.setString(3, annuncio.getDescrizione());
             ps.setDate(4, Date.valueOf(annuncio.getDataPubblicazione()));
-            ps.setString(5, annuncio.getCategoria().name().toUpperCase());
-            ps.setString(6, annuncio.getStato().name().toUpperCase());
-            ps.setString(7, annuncio.getTipoAnnuncio().name().toUpperCase());
+            // Enum values now stored Title Case in DB, no uppercasing
+            ps.setString(5, annuncio.getCategoria().name());
+            ps.setString(6, annuncio.getStato().name());
+            ps.setString(7, annuncio.getTipoAnnuncio().name());
             if (annuncio.getTipoAnnuncio() == TipoAnnuncioDTO.Vendita) ps.setBigDecimal(8, annuncio.getPrezzoVendita()); else ps.setNull(8, Types.DECIMAL);
             ps.setString(9, annuncio.getIdOggetto());
             if (annuncio.getCreatore() != null) ps.setString(10, annuncio.getCreatore()); else ps.setNull(10, Types.VARCHAR);
@@ -298,8 +299,8 @@ public class AnnuncioDAO {
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, annuncio.getTitolo());
             ps.setString(2, annuncio.getDescrizione());
-            ps.setString(3, annuncio.getCategoria().name().toUpperCase());
-            ps.setString(4, annuncio.getStato().name().toUpperCase());
+            ps.setString(3, annuncio.getCategoria().name());
+            ps.setString(4, annuncio.getStato().name());
             if (annuncio.getPrezzoVendita() != null) ps.setBigDecimal(5, annuncio.getPrezzoVendita()); else ps.setNull(5, Types.DECIMAL);
             ps.setString(6, annuncio.getIdOggetto());
             ps.setString(7, annuncio.getIdAnnuncio());

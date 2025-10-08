@@ -36,18 +36,18 @@ INSERT INTO Oggetto (ID_Oggetto, Nome, numProprietari, Condizioni, Dimensione, P
 
 -- ANNUNCI
 INSERT INTO Annuncio (ID_Annuncio, Titolo, Descrizione, DataPubblicazione, Categoria, Stato, FK_Utente, FK_Oggetto, Tipo, prezzoVendita) VALUES
-('ANN001','Vendo libro Analisi I','Libro universitario in buone condizioni', CURRENT_DATE, 'LibriTesto','Attivo','N86000001','OBJ001','Vendita', 18.00),
+('ANN001','Vendo libro Analisi I','Libro universitario in buone condizioni', CURRENT_DATE, 'Libritesto','Attivo','N86000001','OBJ001','Vendita', 18.00),
 ('ANN002','Scambio laptop HP','Laptop quasi nuovo, cerco tablet', CURRENT_DATE, 'Informatica','Attivo','N86000002','OBJ002','Scambio', NULL),
 ('ANN003','Regalo giacca invernale','Taglia M, buona condizione', CURRENT_DATE, 'Abbigliamento','Attivo','N86000003','OBJ003','Regalo', NULL),
 ('ANN004','Vendo zaino Invicta','Usato poco', CURRENT_DATE, 'Altro','Attivo','N86000004','OBJ004','Vendita', 25.00),
-('ANN005','Vendo libro di Fisica','Alcune sottolineature', CURRENT_DATE, 'LibriTesto','Attivo','N86000005','OBJ005','Vendita', 12.50),
+('ANN005','Vendo libro di Fisica','Alcune sottolineature', CURRENT_DATE, 'Libritesto','Attivo','N86000005','OBJ005','Vendita', 12.50),
 ('ANN006','Scambio tablet Samsung','Cerco laptop o phone', CURRENT_DATE, 'Informatica','Attivo','N86000006','OBJ006','Scambio', NULL);
 
 -- OFFERTE (uso colonne esplicite per evitare ambiguità)
 INSERT INTO Offerta (ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, ID_OggettoOfferto) VALUES
 ('OFF001', 18.00, 'Prendo subito',           CURRENT_DATE, 'Accettata', 'Vendita', 'N86000005', 'ANN001', NULL),
 ('OFF002', 17.00, 'Posso offrire 17',       CURRENT_DATE, 'Rifiutata', 'Vendita', 'N86000006', 'ANN001', NULL),
-('OFF003', NULL,  'Posso dare oggetto in Scambio', CURRENT_DATE, 'Attesa',    'Scambio',  'N86000002', 'ANN006', 'OBJ007'),
+('OFF003', NULL,  'Posso dare oggetto in scambio', CURRENT_DATE, 'Attesa',    'Scambio',  'N86000002', 'ANN006', 'OBJ007'),
 ('OFF004', 24.00, 'Interessato, ci sto',    CURRENT_DATE, 'Attesa',    'Vendita',  'N86000001', 'ANN004', NULL);
 
 -- MODALITA' CONSEGNA (per annunci con accordo)

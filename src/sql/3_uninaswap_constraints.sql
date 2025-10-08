@@ -50,9 +50,9 @@ FOREIGN KEY (FK_Annuncio) REFERENCES Annuncio(ID_Annuncio) ON DELETE CASCADE;
 ALTER TABLE Annuncio
 ADD CONSTRAINT checkPrezzoVenditaCorretto
 CHECK (
-  (Tipo = 'VENDITA' AND prezzoVendita IS NOT NULL AND prezzoVendita > 0)
+  (Tipo = 'Vendita' AND prezzoVendita IS NOT NULL AND prezzoVendita > 0)
   OR
-  (Tipo <> 'VENDITA' AND prezzoVendita IS NULL)
+  (Tipo <> 'Vendita' AND prezzoVendita IS NULL)
 );
 
 

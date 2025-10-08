@@ -24,12 +24,17 @@ public class OffertaDAO {
         String sql = """
             INSERT INTO Offerta 
             (ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, ID_OggettoOfferto)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?::statoOfferta, ?::tipoOfferta, ?, ?, ?)
                 """;
 
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, offerta.getIdOfferta());
-            ps.setFloat(2, offerta.getPrezzoOfferta());
+            // Se prezzo è 0 e il tipo non è Vendita, lo consideriamo NULL (non rilevante)
+            if (offerta.getTipo() != dto.TipoOffertaDTO.Vendita && offerta.getPrezzoOfferta() == 0f) {
+                ps.setNull(2, java.sql.Types.FLOAT);
+            } else {
+                ps.setFloat(2, offerta.getPrezzoOfferta());
+            }
             ps.setString(3, offerta.getCommento());
             ps.setDate(4, Date.valueOf(offerta.getDataOfferta()));
             ps.setString(5, offerta.getStato().name());
@@ -160,7 +165,7 @@ public class OffertaDAO {
         String sql = """
             UPDATE Offerta
             SET PrezzoOfferta = ?, Commento = ?, ID_OggettoOfferto = ?
-            WHERE ID_Offerta = ? AND Stato = 'ATTESA'
+            WHERE ID_Offerta = ? AND Stato = 'Attesa'
             """;
 
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
