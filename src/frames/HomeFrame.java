@@ -1,13 +1,17 @@
 package frames;
 
 import dto.Controller;
-
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import dto.AnnuncioDTO;
+import dto.TipoAnnuncioDTO;
+import dto.CategoriaAnnuncioDTO;
+import dto.StatoAnnuncioDTO;
 import java.util.List;
 import java.util.ArrayList;
+
+// Swing / AWT imports (were missing and caused many compile errors)
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
 
 public class HomeFrame extends JFrame {
 
@@ -120,7 +124,7 @@ public class HomeFrame extends JFrame {
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         cardPanel.add(buildHomepagePanel(), "Homepage");
-        cardPanel.add(new AnnunciFrame(controller, matricola).buildContentPanel(), "Annunci");
+    cardPanel.add(buildAnnunciPanel(), "Annunci");
         cardPanel.add(new ProfiloFrame(controller, matricola).buildContentPanel(), "Profilo");
         cardPanel.add(new ModConsegnaFrame(controller, matricola).buildContentPanel(), "ModConsegna");
         cardPanel.add(new OfferteRicevuteFrame(controller, matricola).buildContentPanel(), "Offerte ricevute");
@@ -185,6 +189,13 @@ public class HomeFrame extends JFrame {
     private JPanel recentAnnunciPanel;
     private JPanel mieOffertePanel;
     private JPanel offerteDaGestirePanel;
+    // Annunci panel state
+    private JPanel annunciPanel;
+    private DefaultListModel<AnnuncioDTO> annunciListModel;
+    private JList<AnnuncioDTO> annunciList;
+    private JComboBox<String> annunciTipoFilter;
+    private JComboBox<String> annunciCategoriaFilter;
+    private JLabel annunciStatusLabel;
 
     private JPanel buildKpiCard(String value, String label) {
         JPanel panel = new JPanel(new BorderLayout());
@@ -264,7 +275,7 @@ public class HomeFrame extends JFrame {
     private void setListData(JPanel panel, List<String> values) {
         JList<String> list = getJList(panel);
         if (list != null) {
-            list.setListData(values.toArray(new String[0]));
+            list.setListData(values.toArray(String[]::new));
         }
     }
 
@@ -279,6 +290,125 @@ public class HomeFrame extends JFrame {
         return p;
     }
 
+    // Build the Annunci dashboard: search, filters, list of active announcements (excluding current user's)
+    private JPanel buildAnnunciPanel() {
+        annunciPanel = new JPanel(new BorderLayout());
+        annunciPanel.setBackground(Color.WHITE);
+
+        JPanel header = new JPanel(new BorderLayout(8,8));
+        header.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));
+        header.setBackground(Color.WHITE);
+        JLabel title = new JLabel("Annunci");
+        title.setFont(new Font("Tahoma", Font.BOLD, 20));
+        header.add(title, BorderLayout.WEST);
+
+        JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT,8,0));
+        controls.setBackground(Color.WHITE);
+    annunciTipoFilter = new JComboBox<>(new String[]{
+        "Tutti",
+        TipoAnnuncioDTO.Vendita.name(),
+        TipoAnnuncioDTO.Scambio.name(),
+        TipoAnnuncioDTO.Regalo.name()
+    });
+    annunciCategoriaFilter = new JComboBox<>(new String[]{
+        "Tutte",
+        CategoriaAnnuncioDTO.LibriTesto.name(),
+        CategoriaAnnuncioDTO.Informatica.name(),
+        CategoriaAnnuncioDTO.Abbigliamento.name(),
+        CategoriaAnnuncioDTO.Altro.name()
+    });
+    annunciTipoFilter.addActionListener(e -> executeAnnunciSearch());
+    annunciCategoriaFilter.addActionListener(e -> executeAnnunciSearch());
+
+        controls.add(new JLabel("Filtro:"));
+        controls.add(annunciTipoFilter);
+        controls.add(annunciCategoriaFilter);
+    // No search bar, auto-refresh on filter change
+        header.add(controls, BorderLayout.EAST);
+
+        annunciPanel.add(header, BorderLayout.NORTH);
+
+        annunciListModel = new DefaultListModel<>();
+        annunciList = new JList<>(annunciListModel);
+        annunciList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            JPanel p = new JPanel(new BorderLayout());
+            p.setBorder(BorderFactory.createEmptyBorder(6,8,6,8));
+            p.setBackground(isSelected ? new Color(220,235,255) : Color.WHITE);
+            JLabel t = new JLabel(value.getTitolo() + " — " + value.getPrezzoVendita());
+            t.setFont(new Font("Tahoma", Font.PLAIN, 13));
+            p.add(t, BorderLayout.CENTER);
+            return p;
+        });
+    annunciPanel.add(new JScrollPane(annunciList), BorderLayout.CENTER);
+
+    // Status bar (count)
+    JPanel statusBar = new JPanel(new BorderLayout());
+    statusBar.setBorder(BorderFactory.createEmptyBorder(4,12,8,12));
+    statusBar.setBackground(Color.WHITE);
+    annunciStatusLabel = new JLabel(" ");
+    annunciStatusLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
+    statusBar.add(annunciStatusLabel, BorderLayout.WEST);
+    annunciPanel.add(statusBar, BorderLayout.SOUTH);
+
+        // initial load (altrui attivi)
+        SwingUtilities.invokeLater(this::executeAnnunciSearch);
+        return annunciPanel;
+    }
+
+    private void executeAnnunciSearch() {
+        try {
+            String tipoSel = (String) annunciTipoFilter.getSelectedItem();
+            String catSel = (String) annunciCategoriaFilter.getSelectedItem();
+
+            // Base list: tutti gli annunci ATTIVI, poi escludiamo l'utente corrente in-memory
+            List<AnnuncioDTO> baseAll = controller.visualizzaTuttiAnnunci();
+            if (baseAll == null) {
+                baseAll = java.util.Collections.emptyList();
+            }
+            List<AnnuncioDTO> base = new ArrayList<>();
+            for (AnnuncioDTO a : baseAll) {
+                if (a.getCreatore() == null || !a.getCreatore().equals(matricola)) {
+                    base.add(a);
+                }
+            }
+            int total = base.size();
+
+            // Applica filtri in-memory se selezionati
+            List<AnnuncioDTO> filtered = new ArrayList<>();
+            for (AnnuncioDTO a : base) {
+                boolean ok = true;
+                if (tipoSel != null && !"Tutti".equals(tipoSel)) {
+                    ok &= a.getTipoAnnuncio() == TipoAnnuncioDTO.valueOf(tipoSel);
+                }
+                if (catSel != null && !"Tutte".equals(catSel)) {
+                    ok &= a.getCategoria() == CategoriaAnnuncioDTO.valueOf(catSel);
+                }
+                if (ok) filtered.add(a);
+            }
+
+            // Aggiorna lista
+            annunciListModel.clear();
+            for (AnnuncioDTO a : filtered) {
+                annunciListModel.addElement(a);
+            }
+            if (annunciStatusLabel != null) {
+                int dbTotal = baseAll.size();
+                int excludedMine = dbTotal - base.size();
+                annunciStatusLabel.setText(
+                    "Totali DB(attivi): " + dbTotal +
+                    " | Esclusi (miei): " + excludedMine +
+                    " | Mostrati: " + filtered.size()
+                );
+            }
+        } catch (Exception ex) {
+            String msg = ex.getMessage();
+            if (ex.getCause() != null) {
+                msg += "\nDettaglio: " + ex.getCause().getMessage();
+            }
+            JOptionPane.showMessageDialog(this, "Errore ricerca annunci: " + msg);
+        }
+    }
+
     private void selectSection(String name) {
         if (cardLayout != null && cardPanel != null) {
             cardLayout.show(cardPanel, name);
@@ -289,7 +419,5 @@ public class HomeFrame extends JFrame {
             }
         }
     }
-
-    // (Rimossa classe AnimatedSwitcher per semplificare: si usa direttamente CardLayout)
 
 }

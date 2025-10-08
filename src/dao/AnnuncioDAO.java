@@ -25,16 +25,16 @@ public class AnnuncioDAO {
             INSERT INTO Annuncio
             (ID_Annuncio, Titolo, Descrizione, DataPubblicazione, Categoria, Stato,
              Tipo, PrezzoVendita, FK_Oggetto, FK_Utente)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?::uninaswap.categoriaannuncio, ?::uninaswap.statoannuncio, ?::uninaswap.tipoannuncio, ?, ?, ?)
             """;
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, annuncio.getIdAnnuncio());
             ps.setString(2, annuncio.getTitolo());
             ps.setString(3, annuncio.getDescrizione());
             ps.setDate(4, Date.valueOf(annuncio.getDataPubblicazione()));
-            ps.setString(5, annuncio.getCategoria().name());
-            ps.setString(6, annuncio.getStato().name());
-            ps.setString(7, annuncio.getTipoAnnuncio().name());
+            ps.setString(5, annuncio.getCategoria().name().toUpperCase());
+            ps.setString(6, annuncio.getStato().name().toUpperCase());
+            ps.setString(7, annuncio.getTipoAnnuncio().name().toUpperCase());
             if (annuncio.getTipoAnnuncio() == TipoAnnuncioDTO.Vendita) ps.setBigDecimal(8, annuncio.getPrezzoVendita()); else ps.setNull(8, Types.DECIMAL);
             ps.setString(9, annuncio.getIdOggetto());
             if (annuncio.getCreatore() != null) ps.setString(10, annuncio.getCreatore()); else ps.setNull(10, Types.VARCHAR);
@@ -48,21 +48,21 @@ public class AnnuncioDAO {
         String sql = """
             SELECT *
             FROM Annuncio
-            WHERE Tipo = ?
+            WHERE UPPER(Tipo::text) = ?
             """;
 
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, tipo.name());
+            ps.setString(1, tipo.name().toUpperCase());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String ID_Annuncio = rs.getString("ID_Annuncio");
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
-                    CategoriaAnnuncioDTO categoria = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
-                    StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
-                    TipoAnnuncioDTO tipoRow = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+                    CategoriaAnnuncioDTO categoria = enumOfIgnoreCase(CategoriaAnnuncioDTO.class, rs.getString("Categoria"));
+                    StatoAnnuncioDTO stato = enumOfIgnoreCase(StatoAnnuncioDTO.class, rs.getString("Stato"));
+                    TipoAnnuncioDTO tipoRow = enumOfIgnoreCase(TipoAnnuncioDTO.class, rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
                     String ID_Oggetto = rs.getString("FK_Oggetto");
                     String creatore = rs.getString("FK_Utente");
@@ -80,21 +80,21 @@ public class AnnuncioDAO {
         String sql = """
             SELECT *
             FROM Annuncio
-            WHERE Categoria = ?
+            WHERE UPPER(Categoria::text) = ?
             """;
 
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, categoria.name());
+            ps.setString(1, categoria.name().toUpperCase());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String ID_Annuncio = rs.getString("ID_Annuncio");
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
-                    CategoriaAnnuncioDTO cat = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
-                    StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
-                    TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+                    CategoriaAnnuncioDTO cat = enumOfIgnoreCase(CategoriaAnnuncioDTO.class, rs.getString("Categoria"));
+                    StatoAnnuncioDTO stato = enumOfIgnoreCase(StatoAnnuncioDTO.class, rs.getString("Stato"));
+                    TipoAnnuncioDTO tipo = enumOfIgnoreCase(TipoAnnuncioDTO.class, rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
                     String ID_Oggetto = rs.getString("FK_Oggetto");
                     String creatore = rs.getString("FK_Utente");
@@ -126,9 +126,9 @@ public class AnnuncioDAO {
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
-                    CategoriaAnnuncioDTO categoria = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
-                    StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
-                    TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+                    CategoriaAnnuncioDTO categoria = enumOfIgnoreCase(CategoriaAnnuncioDTO.class, rs.getString("Categoria"));
+                    StatoAnnuncioDTO stato = enumOfIgnoreCase(StatoAnnuncioDTO.class, rs.getString("Stato"));
+                    TipoAnnuncioDTO tipo = enumOfIgnoreCase(TipoAnnuncioDTO.class, rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
                     String ID_Oggetto = rs.getString("FK_Oggetto");
                     String creatore = rs.getString("FK_Utente");
@@ -158,9 +158,9 @@ public class AnnuncioDAO {
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
-                    CategoriaAnnuncioDTO categoria = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
-                    StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
-                    TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+                    CategoriaAnnuncioDTO categoria = enumOfIgnoreCase(CategoriaAnnuncioDTO.class, rs.getString("Categoria"));
+                    StatoAnnuncioDTO stato = enumOfIgnoreCase(StatoAnnuncioDTO.class, rs.getString("Stato"));
+                    TipoAnnuncioDTO tipo = enumOfIgnoreCase(TipoAnnuncioDTO.class, rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
                     String ID_Oggetto = rs.getString("FK_Oggetto");
                     String creatore = rs.getString("FK_Utente");
@@ -189,12 +189,42 @@ public class AnnuncioDAO {
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
-                    CategoriaAnnuncioDTO categoria = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
-                    StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
-                    TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+                    CategoriaAnnuncioDTO categoria = enumOfIgnoreCase(CategoriaAnnuncioDTO.class, rs.getString("Categoria"));
+                    StatoAnnuncioDTO stato = enumOfIgnoreCase(StatoAnnuncioDTO.class, rs.getString("Stato"));
+                    TipoAnnuncioDTO tipo = enumOfIgnoreCase(TipoAnnuncioDTO.class, rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
                     String ID_Oggetto = rs.getString("FK_Oggetto");
                     risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, creatore, ID_Oggetto, tipo, prezzo));
+                }
+            }
+        }
+        return risultati;
+    }
+
+    // Annunci attivi escluso un creatore specifico
+    public List<AnnuncioDTO> getAnnunciAttiviEsclusoCreatore(String creatore) throws SQLException {
+        String sql = """
+            SELECT *
+            FROM Annuncio
+            WHERE UPPER(Stato::text) = ? AND FK_Utente <> ?
+            """;
+        ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, StatoAnnuncioDTO.Attivo.name().toUpperCase());
+            ps.setString(2, creatore);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String ID_Annuncio = rs.getString("ID_Annuncio");
+                    String titolo = rs.getString("Titolo");
+                    String descrizione = rs.getString("Descrizione");
+                    LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
+                    CategoriaAnnuncioDTO categoria = enumOfIgnoreCase(CategoriaAnnuncioDTO.class, rs.getString("Categoria"));
+                    StatoAnnuncioDTO stato = enumOfIgnoreCase(StatoAnnuncioDTO.class, rs.getString("Stato"));
+                    TipoAnnuncioDTO tipo = enumOfIgnoreCase(TipoAnnuncioDTO.class, rs.getString("Tipo"));
+                    BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
+                    String ID_Oggetto = rs.getString("FK_Oggetto");
+                    String owner = rs.getString("FK_Utente");
+                    risultati.add(new AnnuncioDTO(ID_Annuncio, titolo, descrizione, stato, categoria, dataPub, owner, ID_Oggetto, tipo, prezzo));
                 }
             }
         }
@@ -216,9 +246,9 @@ public class AnnuncioDAO {
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
-                    CategoriaAnnuncioDTO categoria = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
-                    StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
-                    TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+                    CategoriaAnnuncioDTO categoria = enumOfIgnoreCase(CategoriaAnnuncioDTO.class, rs.getString("Categoria"));
+                    StatoAnnuncioDTO stato = enumOfIgnoreCase(StatoAnnuncioDTO.class, rs.getString("Stato"));
+                    TipoAnnuncioDTO tipo = enumOfIgnoreCase(TipoAnnuncioDTO.class, rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
                     String ID_Oggetto = rs.getString("FK_Oggetto");
                     String creatore = rs.getString("FK_Utente");
@@ -234,20 +264,20 @@ public class AnnuncioDAO {
         String sql = """
             SELECT *
             FROM Annuncio
-            WHERE Stato = ?
+            WHERE UPPER(Stato::text) = ?
             """;
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, StatoAnnuncioDTO.Attivo.name());
+            ps.setString(1, StatoAnnuncioDTO.Attivo.name().toUpperCase());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String ID_Annuncio = rs.getString("ID_Annuncio");
                     String titolo = rs.getString("Titolo");
                     String descrizione = rs.getString("Descrizione");
                     LocalDate dataPub = rs.getDate("DataPubblicazione").toLocalDate();
-                    CategoriaAnnuncioDTO categoria = CategoriaAnnuncioDTO.valueOf(rs.getString("Categoria"));
-                    StatoAnnuncioDTO stato = StatoAnnuncioDTO.valueOf(rs.getString("Stato"));
-                    TipoAnnuncioDTO tipo = TipoAnnuncioDTO.valueOf(rs.getString("Tipo"));
+                    CategoriaAnnuncioDTO categoria = enumOfIgnoreCase(CategoriaAnnuncioDTO.class, rs.getString("Categoria"));
+                    StatoAnnuncioDTO stato = enumOfIgnoreCase(StatoAnnuncioDTO.class, rs.getString("Stato"));
+                    TipoAnnuncioDTO tipo = enumOfIgnoreCase(TipoAnnuncioDTO.class, rs.getString("Tipo"));
                     BigDecimal prezzo = rs.getBigDecimal("PrezzoVendita");
                     String ID_Oggetto = rs.getString("FK_Oggetto");
                     String creatore = rs.getString("FK_Utente");
@@ -262,14 +292,14 @@ public class AnnuncioDAO {
     public boolean updateAnnuncio(AnnuncioDTO annuncio) throws SQLException {
         String sql = """
             UPDATE Annuncio
-            SET Titolo = ?, Descrizione = ?, Categoria = ?, Stato = ?, PrezzoVendita = ?, FK_Oggetto = ?
+            SET Titolo = ?, Descrizione = ?, Categoria = ?::uninaswap.categoriaannuncio, Stato = ?::uninaswap.statoannuncio, PrezzoVendita = ?, FK_Oggetto = ?
             WHERE ID_Annuncio = ?
             """;
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, annuncio.getTitolo());
             ps.setString(2, annuncio.getDescrizione());
-            ps.setString(3, annuncio.getCategoria().name());
-            ps.setString(4, annuncio.getStato().name());
+            ps.setString(3, annuncio.getCategoria().name().toUpperCase());
+            ps.setString(4, annuncio.getStato().name().toUpperCase());
             if (annuncio.getPrezzoVendita() != null) ps.setBigDecimal(5, annuncio.getPrezzoVendita()); else ps.setNull(5, Types.DECIMAL);
             ps.setString(6, annuncio.getIdOggetto());
             ps.setString(7, annuncio.getIdAnnuncio());
@@ -295,6 +325,13 @@ public class AnnuncioDAO {
         }
     }
 
-    
+    // Helper: map enum label from DB ignoring case (DB labels are uppercase by schema)
+    private static <E extends Enum<E>> E enumOfIgnoreCase(Class<E> enumClass, String label) {
+        if (label == null) return null;
+        for (E c : enumClass.getEnumConstants()) {
+            if (c.name().equalsIgnoreCase(label)) return c;
+        }
+        throw new IllegalArgumentException("No enum constant " + enumClass.getSimpleName() + " for label '" + label + "'");
+    }
 
 }

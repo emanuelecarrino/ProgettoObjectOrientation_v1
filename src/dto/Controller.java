@@ -305,6 +305,15 @@ public class Controller {
     }
 	}
 
+	// Annunci attivi escluso il creatore corrente
+	public List<AnnuncioDTO> visualizzaAnnunciAltruiAttivi(String creatoreDaEscludere) throws ApplicationException {
+		try {
+			if (isBlank(creatoreDaEscludere)) throw new ValidationException("Errore su FK_Utente");
+			return annuncioDAO.getAnnunciAttiviEsclusoCreatore(creatoreDaEscludere.trim());
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore recupero annunci altrui attivi", sql); }
+	}
+
 
 	// Ricerca per prezzo massimo (solo annunci di tipo VENDITA verranno restituiti)
 	public List<AnnuncioDTO> cercaAnnunciPerPrezzoMax(BigDecimal prezzoMax) throws ApplicationException {
