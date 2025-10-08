@@ -35,7 +35,7 @@ public class AnnuncioDAO {
             ps.setString(5, annuncio.getCategoria().name());
             ps.setString(6, annuncio.getStato().name());
             ps.setString(7, annuncio.getTipoAnnuncio().name());
-            if (annuncio.getTipoAnnuncio() == TipoAnnuncioDTO.VENDITA) ps.setBigDecimal(8, annuncio.getPrezzoVendita()); else ps.setNull(8, Types.DECIMAL);
+            if (annuncio.getTipoAnnuncio() == TipoAnnuncioDTO.Vendita) ps.setBigDecimal(8, annuncio.getPrezzoVendita()); else ps.setNull(8, Types.DECIMAL);
             ps.setString(9, annuncio.getIdOggetto());
             if (annuncio.getCreatore() != null) ps.setString(10, annuncio.getCreatore()); else ps.setNull(10, Types.VARCHAR);
             ps.executeUpdate();
@@ -238,7 +238,7 @@ public class AnnuncioDAO {
             """;
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, StatoAnnuncioDTO.ATTIVO.name());
+            ps.setString(1, StatoAnnuncioDTO.Attivo.name());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String ID_Annuncio = rs.getString("ID_Annuncio");

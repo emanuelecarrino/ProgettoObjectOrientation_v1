@@ -214,7 +214,7 @@ public class HomeFrame extends JFrame {
         t.setFont(new Font("Tahoma", Font.BOLD, 14));
         t.setBorder(BorderFactory.createMatteBorder(0,0,1,0,new Color(230,230,233)));
         container.add(t, BorderLayout.NORTH);
-        JList<String> list = new JList<>(model);
+    JList<String> list = new JList<>();
         list.setFont(new Font("Tahoma", Font.PLAIN, 13));
         list.setFixedCellHeight(24);
         container.add(new JScrollPane(list), BorderLayout.CENTER);

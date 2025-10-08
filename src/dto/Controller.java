@@ -234,7 +234,7 @@ public class Controller {
 			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
 
 			BigDecimal prezzo = null;
-			if (tipo == TipoAnnuncioDTO.VENDITA) {
+			if (tipo == TipoAnnuncioDTO.Vendita) {
 				if (prezzoVendita == null) throw new ValidationException("Errore su PrezzoVendita");
 				if (prezzoVendita.signum() <= 0) throw new ValidationException("Errore su PrezzoVendita");
 				prezzo = prezzoVendita;
@@ -244,7 +244,7 @@ public class Controller {
 			if (descrizione != null) {
 				descrizionePulita = descrizione.trim();
 			}
-			AnnuncioDTO nuovo = new AnnuncioDTO(generaIdAnnuncio(), titolo.trim(), descrizionePulita, StatoAnnuncioDTO.ATTIVO,
+			AnnuncioDTO nuovo = new AnnuncioDTO(generaIdAnnuncio(), titolo.trim(), descrizionePulita, StatoAnnuncioDTO.Attivo,
 			categoria, LocalDate.now(), creatore.trim(),ID_Oggetto.trim(),tipo,prezzo);
 			
 			annuncioDAO.insertAnnuncio(nuovo);
@@ -350,7 +350,7 @@ public class Controller {
 			LocalDate dataPub = esistente.getDataPubblicazione();
 
 			BigDecimal prezzoFinale = null;
-			if (tipo == TipoAnnuncioDTO.VENDITA) {
+			if (tipo == TipoAnnuncioDTO.Vendita) {
 				if (nuovoPrezzo != null) {
 					if (nuovoPrezzo.signum() <= 0) throw new ValidationException("Errore su PrezzoVendita");
 					prezzoFinale = nuovoPrezzo;
@@ -682,18 +682,18 @@ public class Controller {
 			if (tipo == null) throw new ValidationException("Errore su Tipo");
 			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(ID_Annuncio.trim());
 			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
-			if (annuncio.getStato() != StatoAnnuncioDTO.ATTIVO) throw new ValidationException("Annuncio non attivo");
+			if (annuncio.getStato() != StatoAnnuncioDTO.Attivo) throw new ValidationException("Annuncio non attivo");
 			
 			// Prevent owner from offering on own announcement (se desiderato)
 			if (annuncio.getCreatore() != null && annuncio.getCreatore().equals(offerente)) {
 				throw new ValidationException("Utente proprietario non può fare offerta");
 			}
 			float prezzoOffertaValore = 0f;
-			if (tipo == TipoOffertaDTO.VENDITA) {
+			if (tipo == TipoOffertaDTO.Vendita) {
 				if (prezzo == null) throw new ValidationException("Errore su PrezzoOfferta");
 				if (prezzo <= 0f) throw new ValidationException("Errore su PrezzoOfferta");
 				prezzoOffertaValore = prezzo;
-			} else if (tipo == TipoOffertaDTO.SCAMBIO) {
+			} else if (tipo == TipoOffertaDTO.Scambio) {
 				if (isBlank(ID_OggettoOfferto)) throw new ValidationException("Errore su ID_OggettoOfferto");
 				// opzionale: verificare che l'oggetto esista e appartenga all'offerente
 				OggettoDTO oggettoOfferto = oggettoDAO.getOggettiById(ID_OggettoOfferto.trim());
@@ -709,7 +709,7 @@ public class Controller {
 				oggettoOffertoNew = ID_OggettoOfferto.trim();
 			}
 
-			OffertaDTO offertaCreata = new OffertaDTO("OFF-" + UUID.randomUUID(), prezzoOffertaValore, commentoNew, LocalDate.now(), StatoOffertaDTO.ATTESA, 
+			OffertaDTO offertaCreata = new OffertaDTO("OFF-" + UUID.randomUUID(), prezzoOffertaValore, commentoNew, LocalDate.now(), StatoOffertaDTO.Attesa, 
 			offerente.trim(), tipo, ID_Annuncio.trim(), oggettoOffertoNew);
 
 			offertaDAO.insertOfferta(offertaCreata);
@@ -749,12 +749,12 @@ public class Controller {
 			if (isBlank(utente)) throw new ValidationException("Errore su FK_Utente");
 			OffertaDTO offertaDaAccettare = offertaDAO.getOffertaById(ID_Offerta.trim());
 			if (offertaDaAccettare == null) throw new NotFoundException("Offerta non trovata");
-			if (offertaDaAccettare.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non in stato Attesa");
+			if (offertaDaAccettare.getStato() != StatoOffertaDTO.Attesa) throw new ValidationException("Offerta non in stato Attesa");
 			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(offertaDaAccettare.getIdAnnuncio());
 			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
 			if (!utente.equals(annuncio.getCreatore())) throw new AuthenticationException("Non autorizzato");
-			if (annuncio.getStato() != StatoAnnuncioDTO.ATTIVO) throw new ValidationException("Annuncio non attivo");
-			boolean aggiornamentoStatoAccettazione = offertaDAO.updateStatoOfferta(offertaDaAccettare.getIdOfferta(), StatoOffertaDTO.ATTESA, StatoOffertaDTO.ACCETTATA);
+			if (annuncio.getStato() != StatoAnnuncioDTO.Attivo) throw new ValidationException("Annuncio non attivo");
+			boolean aggiornamentoStatoAccettazione = offertaDAO.updateStatoOfferta(offertaDaAccettare.getIdOfferta(), StatoOffertaDTO.Attesa, StatoOffertaDTO.Accettata);
 			if (!aggiornamentoStatoAccettazione) throw new ValidationException("Offerta già aggiornata");
 
 			return offertaDAO.getOffertaById(offertaDaAccettare.getIdOfferta());
@@ -773,11 +773,11 @@ public class Controller {
 			if (isBlank(utente)) throw new ValidationException("Errore su FK_Utente");
 			OffertaDTO offertaDaRifiutare = offertaDAO.getOffertaById(ID_Offerta.trim());
 			if (offertaDaRifiutare == null) throw new NotFoundException("Offerta non trovata");
-			if (offertaDaRifiutare.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non in stato Attesa");
+			if (offertaDaRifiutare.getStato() != StatoOffertaDTO.Attesa) throw new ValidationException("Offerta non in stato Attesa");
 			AnnuncioDTO annuncio = annuncioDAO.getAnnuncioById(offertaDaRifiutare.getIdAnnuncio());
 			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
 			if (!utente.equals(annuncio.getCreatore())) throw new AuthenticationException("Non autorizzato");
-			boolean aggiornamentoStatoRifiuto = offertaDAO.updateStatoOfferta(offertaDaRifiutare.getIdOfferta(), StatoOffertaDTO.ATTESA, StatoOffertaDTO.RIFIUTATA);
+			boolean aggiornamentoStatoRifiuto = offertaDAO.updateStatoOfferta(offertaDaRifiutare.getIdOfferta(), StatoOffertaDTO.Attesa, StatoOffertaDTO.Rifiutata);
 			if (!aggiornamentoStatoRifiuto) throw new ValidationException("Offerta già aggiornata");
 			return offertaDAO.getOffertaById(offertaDaRifiutare.getIdOfferta());
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
@@ -797,7 +797,7 @@ public class Controller {
 			OffertaDTO offertaDaRitirare = offertaDAO.getOffertaById(ID_Offerta.trim());
 			if (offertaDaRitirare == null) throw new NotFoundException("Offerta non trovata");
 			if (!offerente.equals(offertaDaRitirare.getOfferente())) throw new AuthenticationException("Non autorizzato");
-			if (offertaDaRitirare.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non ritirabile");
+			if (offertaDaRitirare.getStato() != StatoOffertaDTO.Attesa) throw new ValidationException("Offerta non ritirabile");
 			boolean eliminazioneOffertaRiuscita = offertaDAO.deleteOffertaById(offertaDaRitirare.getIdOfferta());
 			if (!eliminazioneOffertaRiuscita) throw new NotFoundException("Offerta non trovata");
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
@@ -820,7 +820,7 @@ public class Controller {
 			OffertaDTO offertaDaAggiornare = offertaDAO.getOffertaById(ID_Offerta.trim());
 			if (offertaDaAggiornare == null) throw new NotFoundException("Offerta non trovata");
 			if (!offerente.equals(offertaDaAggiornare.getOfferente())) throw new AuthenticationException("Non autorizzato");
-			if (offertaDaAggiornare.getStato() != StatoOffertaDTO.ATTESA) throw new ValidationException("Offerta non modificabile");
+			if (offertaDaAggiornare.getStato() != StatoOffertaDTO.Attesa) throw new ValidationException("Offerta non modificabile");
 
 			// Validazioni per tipo di offerta
 			TipoOffertaDTO tipoOfferta = offertaDaAggiornare.getTipo();
@@ -828,12 +828,12 @@ public class Controller {
 			float prezzoFinale = offertaDaAggiornare.getPrezzoOfferta();
 			String idOggettoOffertoFinale = offertaDaAggiornare.getIdOggettoOfferto();
 
-			if (tipoOfferta == TipoOffertaDTO.VENDITA) {
+			if (tipoOfferta == TipoOffertaDTO.Vendita) {
 				if (nuovoPrezzo != null) {
 					if (nuovoPrezzo <= 0f) throw new ValidationException("Errore su PrezzoOfferta");
 					prezzoFinale = nuovoPrezzo;
 				}
-			} else if (tipoOfferta == TipoOffertaDTO.SCAMBIO) {
+			} else if (tipoOfferta == TipoOffertaDTO.Scambio) {
 				if (nuovoIdOggettoOfferto != null) {
 					if (isBlank(nuovoIdOggettoOfferto)) throw new ValidationException("Errore su ID_OggettoOfferto");
 					OggettoDTO oggettoOffertoNuovo = oggettoDAO.getOggettiById(nuovoIdOggettoOfferto.trim());
@@ -882,7 +882,7 @@ public class Controller {
 			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
 			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim());
 			int c = 0;
-			for (AnnuncioDTO a : miei) if (a.getStato() == StatoAnnuncioDTO.ATTIVO) c++;
+			for (AnnuncioDTO a : miei) if (a.getStato() == StatoAnnuncioDTO.Attivo) c++;
 			return c;
 		} catch (ValidationException e) { throw e; }
 		catch (SQLException sql) { throw new PersistenceException("Errore conteggio annunci attivi", sql); }
@@ -892,7 +892,7 @@ public class Controller {
 		try {
 			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
 			List<OffertaDTO> mie = offertaDAO.getOfferteByUtente(offerente.trim());
-			int c=0; for (OffertaDTO o : mie) if (o.getStato()==StatoOffertaDTO.ATTESA) c++; return c;
+			int c=0; for (OffertaDTO o : mie) if (o.getStato()==StatoOffertaDTO.Attesa) c++; return c;
 		} catch (ValidationException e) { throw e; }
 		catch (SQLException sql) { throw new PersistenceException("Errore conteggio offerte mie attesa", sql); }
 	}
@@ -904,7 +904,7 @@ public class Controller {
 			int c=0;
 			for (AnnuncioDTO a : miei) {
 				List<OffertaDTO> offerte = offertaDAO.getOfferteByAnnuncio(a.getIdAnnuncio());
-				for (OffertaDTO o : offerte) if (o.getStato()==StatoOffertaDTO.ATTESA) c++;
+				for (OffertaDTO o : offerte) if (o.getStato()==StatoOffertaDTO.Attesa) c++;
 			}
 			return c;
 		} catch (ValidationException e) { throw e; }
@@ -984,7 +984,7 @@ public class Controller {
 				if (out.size() >= limit) break;
 				List<OffertaDTO> offerte = offertaDAO.getOfferteByAnnuncio(a.getIdAnnuncio());
 				for (OffertaDTO o : offerte) {
-					if (o.getStato()==StatoOffertaDTO.ATTESA) {
+					if (o.getStato()==StatoOffertaDTO.Attesa) {
 						out.add(o.getIdOfferta()+" ["+o.getTipo().name()+"] "+o.getStato().name());
 						if (out.size() >= limit) break;
 					}

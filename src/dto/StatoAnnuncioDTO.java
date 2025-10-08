@@ -1,8 +1,8 @@
 package dto;
 
 public enum StatoAnnuncioDTO{
-    ATTIVO, 
-    VENDUTO, 
-    SCAMBIATO, 
-    REGALATO
+    Attivo,
+    Venduto,
+    Scambiato,
+    Regalato
 }
