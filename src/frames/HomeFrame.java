@@ -16,6 +16,7 @@ public class HomeFrame extends JFrame {
     // Username risolto on-demand per display (può essere null se non trovato)
     private final String usernameDisplay;
     private JPanel sidebar;
+    // Navigazione semplice con CardLayout (senza AnimatedSwitcher)
     private CardLayout cardLayout;
     private JPanel cardPanel;
     private final List<JToggleButton> navButtons = new ArrayList<>();
@@ -46,7 +47,7 @@ public class HomeFrame extends JFrame {
     private void buildUI() {
         setLayout(new BorderLayout());
         buildSidebar();
-        buildCards();
+        buildSections();
         selectSection("Homepage");
     }
 
@@ -55,9 +56,8 @@ public class HomeFrame extends JFrame {
         sidebar.setLayout(new GridBagLayout());
         sidebar.setBackground(new Color(245,245,247));
         sidebar.setPreferredSize(new Dimension(200, getHeight()));
-        JScrollPane scroll = new JScrollPane(sidebar, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setBorder(null);
-        add(scroll, BorderLayout.WEST);
+        // Sidebar fissa: niente scrollpane
+        add(sidebar, BorderLayout.WEST);
 
         String[] sections = {
                 "Homepage",
@@ -72,7 +72,6 @@ public class HomeFrame extends JFrame {
         gbc.gridx = 0;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-
 
         int row = 0;
         for (String s : sections) {
@@ -117,16 +116,14 @@ public class HomeFrame extends JFrame {
         return btn;
     }
 
-    private void buildCards() {
+    private void buildSections() {
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
-
         cardPanel.add(buildHomepagePanel(), "Homepage");
-        cardPanel.add(buildPlaceholder("Annunci"), "Annunci");
-        cardPanel.add(buildPlaceholder("Profilo"), "Profilo");
-        cardPanel.add(buildPlaceholder("ModConsegna"), "ModConsegna");
-        cardPanel.add(buildPlaceholder("Offerte ricevute"), "Offerte ricevute");
-
+        cardPanel.add(new AnnunciFrame(controller, matricola).buildContentPanel(), "Annunci");
+        cardPanel.add(new ProfiloFrame(controller, matricola).buildContentPanel(), "Profilo");
+        cardPanel.add(new ModConsegnaFrame(controller, matricola).buildContentPanel(), "ModConsegna");
+        cardPanel.add(new OfferteRicevuteFrame(controller, matricola).buildContentPanel(), "Offerte ricevute");
         add(cardPanel, BorderLayout.CENTER);
     }
 
@@ -163,9 +160,9 @@ public class HomeFrame extends JFrame {
             kpiPanel.add(kpiCardContainers[i]);
         }
 
-        recentAnnunciPanel = buildListPanel("I tuoi ultimi annunci", new DefaultListModel<>());
-        mieOffertePanel = buildListPanel("Le tue Offerte", new DefaultListModel<>());
-        offerteDaGestirePanel = buildListPanel("Offerte da Gestire", new DefaultListModel<>());
+    recentAnnunciPanel = buildListPanel("I tuoi ultimi annunci");
+    mieOffertePanel = buildListPanel("Le tue Offerte");
+    offerteDaGestirePanel = buildListPanel("Offerte da Gestire");
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx=0; gbc.gridy=0; gbc.gridwidth=3; gbc.weightx=1; gbc.fill=GridBagConstraints.HORIZONTAL; gbc.insets=new Insets(0,18,20,18);
@@ -178,12 +175,11 @@ public class HomeFrame extends JFrame {
         gbc.gridx=2; gbc.insets=new Insets(0,0,18,18);
         content.add(offerteDaGestirePanel, gbc);
 
-        // Initial load
         SwingUtilities.invokeLater(this::refreshDashboard);
         return wrapper;
     }
 
-    // Components updated dynamically
+
     private JPanel kpiPanel;
     private JPanel[] kpiCardContainers;
     private JPanel recentAnnunciPanel;
@@ -203,13 +199,12 @@ public class HomeFrame extends JFrame {
         lab.setForeground(new Color(90,90,95));
         panel.add(val, BorderLayout.CENTER);
         panel.add(lab, BorderLayout.SOUTH);
-        // Wrap label to allow retrieval of panel
         panel.putClientProperty("valueLabel", val);
         panel.putClientProperty("nameLabel", lab);
         return panel;
     }
 
-    private JPanel buildListPanel(String title, DefaultListModel<String> model) {
+    private JPanel buildListPanel(String title) {
         JPanel container = new JPanel(new BorderLayout());
         container.setBackground(Color.WHITE);
         container.setBorder(BorderFactory.createCompoundBorder(
@@ -223,7 +218,7 @@ public class HomeFrame extends JFrame {
         list.setFont(new Font("Tahoma", Font.PLAIN, 13));
         list.setFixedCellHeight(24);
         container.add(new JScrollPane(list), BorderLayout.CENTER);
-        container.putClientProperty("model", model);
+        container.putClientProperty("jlist", list);
         return container;
     }
 
@@ -248,29 +243,29 @@ public class HomeFrame extends JFrame {
             updateKpi(3, ultimoAnnuncioData, "Ultimo annuncio");
 
             List<String> ultimiAnnunci = controller.ultimiAnnunciCreatore(matricola,5);
-            DefaultListModel<String> modUltimi = getModel(recentAnnunciPanel);
-            modUltimi.clear();
-            ultimiAnnunci.forEach(modUltimi::addElement);
+            setListData(recentAnnunciPanel, ultimiAnnunci);
 
             List<String> mieOfferte = controller.ultimeOfferteUtente(matricola,5);
-            DefaultListModel<String> modMieOff = getModel(mieOffertePanel);
-            modMieOff.clear();
-            mieOfferte.forEach(modMieOff::addElement);
+            setListData(mieOffertePanel, mieOfferte);
 
             List<String> gestire = controller.offerteDaGestire(matricola,5);
-            DefaultListModel<String> modGest = getModel(offerteDaGestirePanel);
-            modGest.clear();
-            gestire.forEach(modGest::addElement);
+            setListData(offerteDaGestirePanel, gestire);
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Errore caricamento dashboard: " + ex.getMessage());
         }
     }
 
-    private DefaultListModel<String> getModel(JPanel listPanel) {
-        @SuppressWarnings("unchecked")
-        DefaultListModel<String> m = (DefaultListModel<String>) listPanel.getClientProperty("model");
-        return m;
+    @SuppressWarnings("unchecked")
+    private JList<String> getJList(JPanel listPanel) {
+        return (JList<String>) listPanel.getClientProperty("jlist");
+    }
+
+    private void setListData(JPanel panel, List<String> values) {
+        JList<String> list = getJList(panel);
+        if (list != null) {
+            list.setListData(values.toArray(new String[0]));
+        }
     }
 
 
@@ -285,12 +280,16 @@ public class HomeFrame extends JFrame {
     }
 
     private void selectSection(String name) {
-        cardLayout.show(cardPanel, name);
+        if (cardLayout != null && cardPanel != null) {
+            cardLayout.show(cardPanel, name);
+        }
         for (JToggleButton b : navButtons) {
             if (b.getText().equals(name)) {
                 if (!b.isSelected()) b.setSelected(true);
-                break;
             }
         }
     }
+
+    // (Rimossa classe AnimatedSwitcher per semplificare: si usa direttamente CardLayout)
+
 }
