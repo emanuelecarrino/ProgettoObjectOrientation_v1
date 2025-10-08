@@ -32,7 +32,7 @@ public class HomeFrame extends JFrame {
         this.usernameDisplay = (resolved != null ? resolved : matricola);
 
 
-        setTitle("UninaSwap - Home");
+        setTitle("Home");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
         int x = (screen.width - 900) / 2;
@@ -45,7 +45,6 @@ public class HomeFrame extends JFrame {
 
     private void buildUI() {
         setLayout(new BorderLayout());
-
         buildSidebar();
         buildCards();
         selectSection("Homepage");
@@ -73,7 +72,7 @@ public class HomeFrame extends JFrame {
         gbc.gridx = 0;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(4,8,0,8);
+
 
         int row = 0;
         for (String s : sections) {
@@ -94,11 +93,11 @@ public class HomeFrame extends JFrame {
         btn.setHorizontalAlignment(SwingConstants.LEFT);
         btn.setBackground(new Color(245,245,247));
         btn.setBorder(BorderFactory.createEmptyBorder(10,14,10,14));
-        btn.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        btn.setFont(new Font("Tahoma", Font.PLAIN, 15));
         btn.setOpaque(true);
 
         Color hover = new Color(228,230,235);
-        Color selected = new Color(210,212,218);
+        Color selected = new Color(100, 149, 237);
         Color normal = btn.getBackground();
 
         btn.addChangeListener(e -> {
@@ -140,9 +139,12 @@ public class HomeFrame extends JFrame {
         header.setBorder(BorderFactory.createEmptyBorder(18,18,12,18));
         header.setBackground(Color.WHITE);
     JLabel benv = new JLabel("Benvenuto " + usernameDisplay + "!");
-        benv.setFont(new Font("Segoe UI", Font.BOLD, 30));
+        benv.setFont(new Font("Tahoma", Font.BOLD, 30));
         header.add(benv, BorderLayout.WEST);
         JButton refreshBtn = new JButton("Aggiorna");
+        refreshBtn.setFont(new Font("Tahoma", Font.BOLD, 15));
+        refreshBtn.setForeground(Color.WHITE);
+        refreshBtn.setBackground(new Color(100, 149, 237));
         refreshBtn.addActionListener(e -> refreshDashboard());
         header.add(refreshBtn, BorderLayout.EAST);
         wrapper.add(header, BorderLayout.NORTH);
@@ -195,9 +197,9 @@ public class HomeFrame extends JFrame {
                 BorderFactory.createLineBorder(new Color(230,230,234)),
                 BorderFactory.createEmptyBorder(10,14,10,14)));
         JLabel val = new JLabel(value, SwingConstants.LEFT);
-        val.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        val.setFont(new Font("Tahoma", Font.BOLD, 28));
         JLabel lab = new JLabel(label.toUpperCase());
-        lab.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lab.setFont(new Font("Tahoma", Font.PLAIN, 11));
         lab.setForeground(new Color(90,90,95));
         panel.add(val, BorderLayout.CENTER);
         panel.add(lab, BorderLayout.SOUTH);
@@ -214,11 +216,11 @@ public class HomeFrame extends JFrame {
                 BorderFactory.createEmptyBorder(0,0,0,0),
                 BorderFactory.createLineBorder(new Color(235,235,238))));
         JLabel t = new JLabel("  " + title);
-        t.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        t.setFont(new Font("Tahoma", Font.BOLD, 14));
         t.setBorder(BorderFactory.createMatteBorder(0,0,1,0,new Color(230,230,233)));
         container.add(t, BorderLayout.NORTH);
         JList<String> list = new JList<>(model);
-        list.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        list.setFont(new Font("Tahoma", Font.PLAIN, 13));
         list.setFixedCellHeight(24);
         container.add(new JScrollPane(list), BorderLayout.CENTER);
         container.putClientProperty("model", model);
@@ -277,7 +279,7 @@ public class HomeFrame extends JFrame {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
         JLabel l = new JLabel(name, SwingConstants.CENTER);
-        l.setFont(new Font("Segoe UI", Font.PLAIN, 26));
+        l.setFont(new Font("Tahoma", Font.PLAIN, 26));
         p.add(l, BorderLayout.CENTER);
         return p;
     }
