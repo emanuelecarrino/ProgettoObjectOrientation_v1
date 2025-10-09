@@ -258,6 +258,34 @@ public class Controller {
 		}
 	}
 
+	
+	public AnnuncioDTO creaAnnuncioDaUI(String titolo, String descrizione, String tipoStr, String categoriaStr, String prezzoStr, String idOggetto, String creatore) throws ApplicationException {
+		try {
+			if (isBlank(tipoStr)) throw new ValidationException("Errore su Tipo");
+			TipoAnnuncioDTO tipoEnum = null;
+			for (TipoAnnuncioDTO t : TipoAnnuncioDTO.values()) if (t.name().equalsIgnoreCase(tipoStr.trim())) { tipoEnum = t; break; }
+			if (tipoEnum == null) throw new ValidationException("Tipo non valido");
+
+			if (isBlank(categoriaStr)) throw new ValidationException("Errore su Categoria");
+			CategoriaAnnuncioDTO catEnum = null;
+			for (CategoriaAnnuncioDTO c : CategoriaAnnuncioDTO.values()) if (c.name().equalsIgnoreCase(categoriaStr.trim())) { catEnum = c; break; }
+			if (catEnum == null) throw new ValidationException("Categoria non valida");
+
+			java.math.BigDecimal prezzo = null;
+			if (tipoEnum == TipoAnnuncioDTO.Vendita) {
+				if (prezzoStr == null || prezzoStr.trim().isEmpty()) throw new ValidationException("Prezzo richiesto per Vendita");
+				try { prezzo = new java.math.BigDecimal(prezzoStr.trim().replace(",",".")); }
+				catch (NumberFormatException nfe) { throw new ValidationException("Formato prezzo non valido"); }
+			}
+
+			return creaAnnuncio(titolo, descrizione, catEnum, tipoEnum, prezzo, idOggetto, creatore);
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (Exception ex) {
+			throw new PersistenceException("Errore creazione annuncio da UI", ex);
+		}
+	}
+
 	// Ricerca per tipo
 	public List<AnnuncioDTO> cercaAnnunciPerTipo(TipoAnnuncioDTO tipo) throws ApplicationException {
 		try {

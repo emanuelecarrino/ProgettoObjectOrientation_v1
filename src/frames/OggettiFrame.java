@@ -227,11 +227,7 @@ public class OggettiFrame extends JFrame {
 
             // Badges ordinati: dimensione, proprietari, peso
             if (!dim.isEmpty()) badges.add(badge(dim + " (cm)", new Color(46,160,67)));
-            if (!numProp.isEmpty()) 
-                if (numProp == "1") 
-                    badges.add(badge(numProp+" proprietario", new Color(0,120,212)));
-                else 
-                    badges.add(badge(numProp+" proprietari", new Color(0,120,212)));
+            if (!numProp.isEmpty()) badges.add(badge(numProp+" proprietari", new Color(0,120,212)));
             if (peso != null && !peso.isEmpty() && !peso.equals("-")) badges.add(badge(peso+"kg", new Color(218,112,37)));
             setBackground(isSelected ? new Color(218,230,247) : Color.WHITE);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
