@@ -66,7 +66,7 @@ public class LoginFrame extends JFrame {
 		// Registrazione (link) - restore HTML link (blue, underlined)
 		JLabel lblForgot = new JLabel("<html><a href=''>Nuovo account? Registrati</a></html>");
 		lblForgot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		lblForgot.setBounds(centerX - 39, 178, 150, 20);
+		lblForgot.setBounds(centerX - 39, 178, 170, 20);
 		lblForgot.setToolTipText("Crea un nuovo account");
 		lblForgot.addMouseListener(new MouseAdapter() {
 			@Override

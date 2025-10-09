@@ -32,7 +32,6 @@ public class AnnuncioDAO {
             ps.setString(2, annuncio.getTitolo());
             ps.setString(3, annuncio.getDescrizione());
             ps.setDate(4, Date.valueOf(annuncio.getDataPubblicazione()));
-            // Enum values now stored Title Case in DB, no uppercasing
             ps.setString(5, annuncio.getCategoria().name());
             ps.setString(6, annuncio.getStato().name());
             ps.setString(7, annuncio.getTipoAnnuncio().name());

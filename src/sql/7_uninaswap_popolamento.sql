@@ -37,11 +37,11 @@ INSERT INTO Oggetto (ID_Oggetto, Nome, numProprietari, Condizioni, Dimensione, P
 -- ANNUNCI
 -- ANNUNCI (ID formattati come ANN-xxxxx)
 INSERT INTO Annuncio (ID_Annuncio, Titolo, Descrizione, DataPubblicazione, Categoria, Stato, FK_Utente, FK_Oggetto, Tipo, prezzoVendita) VALUES
-('ANN-00001','Vendo libro Analisi I','Libro universitario in buone condizioni', CURRENT_DATE, 'Libritesto','Attivo','N86000001','OBJ-00001','Vendita', 18.00),
+('ANN-00001','Vendo libro Analisi I','Libro universitario in buone condizioni', CURRENT_DATE, 'LibriTesto','Attivo','N86000001','OBJ-00001','Vendita', 18.00),
 ('ANN-00002','Scambio laptop HP','Laptop quasi nuovo, cerco tablet', CURRENT_DATE, 'Informatica','Attivo','N86000002','OBJ-00002','Scambio', NULL),
 ('ANN-00003','Regalo giacca invernale','Taglia M, buona condizione', CURRENT_DATE, 'Abbigliamento','Attivo','N86000003','OBJ-00003','Regalo', NULL),
 ('ANN-00004','Vendo zaino Invicta','Usato poco', CURRENT_DATE, 'Altro','Attivo','N86000004','OBJ-00004','Vendita', 25.00),
-('ANN-00005','Vendo libro di Fisica','Alcune sottolineature', CURRENT_DATE, 'Libritesto','Attivo','N86000005','OBJ-00005','Vendita', 12.50),
+('ANN-00005','Vendo libro di Fisica','Alcune sottolineature', CURRENT_DATE, 'LibriTesto','Attivo','N86000005','OBJ-00005','Vendita', 12.50),
 ('ANN-00006','Scambio tablet Samsung','Cerco laptop o phone', CURRENT_DATE, 'Informatica','Attivo','N86000006','OBJ-00006','Scambio', NULL);
 
 -- OFFERTE (uso colonne esplicite per evitare ambiguità)

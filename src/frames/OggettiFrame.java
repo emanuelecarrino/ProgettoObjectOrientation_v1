@@ -102,6 +102,29 @@ public class OggettiFrame extends JFrame {
         refreshData();
     }
 
+    private Component getDialogParent() {
+        Component parent = SwingUtilities.getWindowAncestor(contentPanel);
+        return parent != null ? parent : contentPanel;
+    }
+
+    private void dismissModalOverlay(Component parentCandidate) {
+        Component parent = parentCandidate != null ? parentCandidate : getDialogParent();
+        if (parent == null) return;
+        JRootPane rootPane;
+        if (parent instanceof RootPaneContainer container) {
+            rootPane = container.getRootPane();
+        } else {
+            rootPane = SwingUtilities.getRootPane(parent);
+        }
+        if (rootPane != null) {
+            Component glass = rootPane.getGlassPane();
+            if (glass != null && glass.isVisible()) {
+                glass.setVisible(false);
+                glass.repaint();
+            }
+        }
+    }
+
     // Auto refresh: quando la finestra torna attiva
     {
         this.addWindowListener(new java.awt.event.WindowAdapter() {
@@ -117,7 +140,9 @@ public class OggettiFrame extends JFrame {
             for (String r : raw) listModel.addElement(r);
             if (statusLabel != null) statusLabel.setText("Oggetti: " + raw.size());
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Errore caricamento oggetti: " + ex.getMessage());
+            Component parent = getDialogParent();
+            JOptionPane.showMessageDialog(parent, "Errore caricamento oggetti: " + ex.getMessage());
+            dismissModalOverlay(parent);
         }
     }
 
@@ -126,16 +151,23 @@ public class OggettiFrame extends JFrame {
         // Ora il valore selezionato è il record grezzo, possiamo estrarre l'ID in modo robusto
         String id = controller.estraiIdOggetto(rawRecord);
         if (id == null || id.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Impossibile derivare ID oggetto da: " + rawRecord);
+            Component parent = getDialogParent();
+            JOptionPane.showMessageDialog(parent, "Impossibile derivare ID oggetto da: " + rawRecord);
+            dismissModalOverlay(parent);
             return;
         }
-        int res = JOptionPane.showConfirmDialog(this, "Eliminare oggetto?" , "Conferma eliminazione", JOptionPane.YES_NO_OPTION);
+        Component parent = getDialogParent();
+        int res = JOptionPane.showConfirmDialog(parent, "Eliminare oggetto?" , "Conferma eliminazione", JOptionPane.YES_NO_OPTION);
+        dismissModalOverlay(parent);
         if (res == JOptionPane.YES_OPTION) {
             try {
                 controller.eliminaOggetto(id); // eliminazione semplice per ID
                 refreshData();
+                JOptionPane.showMessageDialog(parent, "Oggetto eliminato");
+                dismissModalOverlay(parent);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Errore eliminazione: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, "Errore eliminazione: " + ex.getMessage());
+                dismissModalOverlay(parent);
             }
         }
     }
@@ -165,7 +197,9 @@ public class OggettiFrame extends JFrame {
         gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Condizione:"), gc); gc.gridx=1; panel.add(condField, gc); row++;
         gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Dimensione (cm):"), gc); gc.gridx=1; panel.add(dimField, gc); row++;
         gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Peso (kg):"), gc); gc.gridx=1; panel.add(pesoField, gc); row++;
-        int res = JOptionPane.showConfirmDialog(this, panel, "Modifica Oggetto "+id, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        Component parent = getDialogParent();
+        int res = JOptionPane.showConfirmDialog(parent, panel, "Modifica Oggetto "+id, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        dismissModalOverlay(parent);
         if (res == JOptionPane.OK_OPTION) {
             try {
                 String nome = nomeField.getText();
@@ -179,9 +213,11 @@ public class OggettiFrame extends JFrame {
                 }
                 controller.aggiornaOggetto(id, nome, numProp, cond, dim, peso);
                 refreshData();
-                JOptionPane.showMessageDialog(this, "Oggetto aggiornato");
+                JOptionPane.showMessageDialog(parent, "Oggetto aggiornato");
+                dismissModalOverlay(parent);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Errore aggiornamento: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, "Errore aggiornamento: " + ex.getMessage());
+                dismissModalOverlay(parent);
             }
         }
     }
@@ -217,7 +253,9 @@ public class OggettiFrame extends JFrame {
         gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Dimensione (cm):"), gc); gc.gridx=1; panel.add(dimField, gc); row++;
         gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Peso (kg):"), gc); gc.gridx=1; panel.add(pesoField, gc); row++;
 
-        int res = JOptionPane.showConfirmDialog(this, panel, "Nuovo Oggetto", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        Component parent = getDialogParent();
+        int res = JOptionPane.showConfirmDialog(parent, panel, "Nuovo Oggetto", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        dismissModalOverlay(parent);
         if (res == JOptionPane.OK_OPTION) {
             try {
                 String nome = nomeField.getText();
@@ -231,9 +269,11 @@ public class OggettiFrame extends JFrame {
                 }
                 controller.creaOggetto(nome, numProp, cond, dim, peso, matricola);
                 refreshData();
-                JOptionPane.showMessageDialog(this, "Oggetto creato");
+                JOptionPane.showMessageDialog(parent, "Oggetto creato");
+                dismissModalOverlay(parent);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Errore creazione oggetto: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, "Errore creazione oggetto: " + ex.getMessage());
+                dismissModalOverlay(parent);
             }
         }
     }

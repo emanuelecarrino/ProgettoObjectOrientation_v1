@@ -1,6 +1,7 @@
 package frames;
 
 import dto.Controller;
+import exception.ApplicationException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -332,7 +333,7 @@ public class HomeFrame extends JFrame {
             updateActionButtonsState();
 
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Errore caricamento dashboard: " + ex.getMessage());
+            showErrorDialog(this, "Impossibile aggiornare la dashboard", ex);
         }
     }
 
@@ -346,6 +347,67 @@ public class HomeFrame extends JFrame {
         if (list != null) {
             list.setListData(values.toArray(String[]::new));
         }
+    }
+
+    private void showErrorDialog(Component parent, String titolo, Throwable ex) {
+        String messaggio = estraiMessaggioPulito(ex);
+        if (messaggio == null || messaggio.isBlank()) {
+            messaggio = "Operazione non riuscita. Riprova più tardi.";
+        }
+        JOptionPane.showMessageDialog(parent, titolo + ": " + messaggio, "Errore", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private String estraiMessaggioPulito(Throwable ex) {
+        if (ex == null) return null;
+
+        String messaggio = normalizzaMessaggio(ex.getMessage());
+
+        if (ex instanceof ApplicationException) {
+            if (isMessaggioGenerico(messaggio)) {
+                String daCausa = estraiMessaggioPulito(ex.getCause());
+                if (daCausa != null && !daCausa.isBlank()) {
+                    return daCausa;
+                }
+            }
+            if (messaggio != null && !messaggio.isBlank()) {
+                return messaggio;
+            }
+        }
+
+        if (messaggio != null && !messaggio.isBlank()) {
+            return messaggio;
+        }
+
+        if (ex.getCause() != null && ex.getCause() != ex) {
+            return estraiMessaggioPulito(ex.getCause());
+        }
+
+        return ex.getClass().getSimpleName();
+    }
+
+    private String normalizzaMessaggio(String raw) {
+        if (raw == null) return null;
+        String trimmed = raw.strip();
+        if (trimmed.isEmpty()) return null;
+        int newline = trimmed.indexOf('\n');
+        if (newline >= 0) {
+            trimmed = trimmed.substring(0, newline).strip();
+        }
+        if (trimmed.startsWith("ERRORE:")) {
+            trimmed = trimmed.substring("ERRORE:".length()).strip();
+        } else if (trimmed.startsWith("ERROR:")) {
+            trimmed = trimmed.substring("ERROR:".length()).strip();
+        }
+        return trimmed;
+    }
+
+    private boolean isMessaggioGenerico(String msg) {
+        if (msg == null) return true;
+        String lower = msg.toLowerCase();
+        return lower.startsWith("errore persistenza")
+                || lower.startsWith("errore modifica")
+                || lower.startsWith("errore creazione")
+                || lower.startsWith("errore applicativo");
     }
 
     private void ensureActionButtons() {
@@ -447,17 +509,10 @@ public class HomeFrame extends JFrame {
 
     private String estraiIdDaRiga(String riga) {
         if (riga == null) return null;
-        // Se offerta: inizia con OFF-
-        if (riga.startsWith("OFF-")) {
-            int space = riga.indexOf(' ');
-            return space>0 ? riga.substring(0, space) : riga; 
-        }
-        // Se annuncio: dalla versione aggiornata, la riga inizia con ID (ANN-...)
-        if (riga.startsWith("ANN-")) {
-            int space = riga.indexOf(' ');
-            return space>0 ? riga.substring(0, space) : riga;
-        }
-        return null;
+        String trimmed = riga.trim();
+        if (trimmed.isEmpty()) return null;
+        int space = trimmed.indexOf(' ');
+        return space > 0 ? trimmed.substring(0, space) : trimmed;
     }
 
     private void onModifica() {
@@ -467,12 +522,15 @@ public class HomeFrame extends JFrame {
         JList<String> gList = getJList(offerteDaGestirePanel);
         String sel = null; boolean isOfferta=false; boolean isAnnuncio=false; boolean fromMieOfferte=false;
         if (mList.getSelectedValue()!=null) { sel = mList.getSelectedValue(); isOfferta=true; fromMieOfferte=true; }
-        else if (aList.getSelectedValue()!=null) { sel = aList.getSelectedValue(); isAnnuncio=true; }
+    else if (aList.getSelectedValue()!=null) { sel = aList.getSelectedValue(); isAnnuncio=true; }
         else if (gList.getSelectedValue()!=null) { sel = gList.getSelectedValue(); isOfferta=true; }
         if (sel == null) return;
 
-        String id = estraiIdDaRiga(sel);
-        if (id == null) { JOptionPane.showMessageDialog(this, "Impossibile determinare ID"); return; }
+    String id = estraiIdDaRiga(sel);
+    if (id == null) {
+        JOptionPane.showMessageDialog(this, "Seleziona un elemento valido prima di continuare.");
+        return;
+    }
 
         try {
             if (isOfferta && fromMieOfferte) {
@@ -480,7 +538,7 @@ public class HomeFrame extends JFrame {
                 String[] fields = controller.recuperaOffertaFields(id);
                 // fields: tipo, prezzo, commento, idOggettoOfferto, stato, idAnnuncio
                 if (!"Attesa".equalsIgnoreCase(fields[4])) {
-                    JOptionPane.showMessageDialog(this, "Offerta non modificabile");
+                    JOptionPane.showMessageDialog(this, "Puoi modificare solo le offerte ancora in attesa.");
                     return;
                 }
 
@@ -492,13 +550,6 @@ public class HomeFrame extends JFrame {
                 gc.fill = GridBagConstraints.HORIZONTAL;
                 gc.weightx = 1;
                 int row = 0;
-
-                gc.gridx = 0; gc.gridy = row; gc.gridwidth = 2;
-                p.add(new JLabel("Tipo: " + tipoOfferta), gc);
-                row++;
-                gc.gridy = row;
-                p.add(new JLabel("Stato attuale: " + statoOfferta + " (non modificabile)"), gc);
-                row++;
                 gc.gridwidth = 1;
 
                 JTextField commentoField = new JTextField(fields[2] == null ? "" : fields[2]);
@@ -665,13 +716,7 @@ public class HomeFrame extends JFrame {
                 }
             }
         } catch (Exception ex) {
-            StringBuilder msg = new StringBuilder();
-            msg.append(ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
-            Throwable cause = ex.getCause();
-            if (cause != null && cause.getMessage() != null) {
-                msg.append("\nCausa: ").append(cause.getMessage());
-            }
-            JOptionPane.showMessageDialog(this, "Errore modifica: " + msg);
+            showErrorDialog(this, "Impossibile completare la modifica", ex);
         }
     }
 
@@ -679,20 +724,36 @@ public class HomeFrame extends JFrame {
         String id = null; boolean isOfferta=false; boolean isAnnuncio=false;
         JList<String> aList = getJList(recentAnnunciPanel);
         JList<String> mList = getJList(mieOffertePanel);
-        if (mList.getSelectedValue()!=null) { id = estraiIdDaRiga(mList.getSelectedValue()); isOfferta=true; }
-        else if (aList.getSelectedValue()!=null) { /* manca ID annuncio nel formato corrente */ }
-        if (id==null && isOfferta) { JOptionPane.showMessageDialog(this, "Impossibile determinare ID offerta"); return; }
+        if (mList.getSelectedValue()!=null) {
+            id = estraiIdDaRiga(mList.getSelectedValue());
+            isOfferta=true;
+        }
+        else if (aList.getSelectedValue()!=null) {
+            id = estraiIdDaRiga(aList.getSelectedValue());
+            isAnnuncio=true;
+        }
+        if (id==null) {
+            JOptionPane.showMessageDialog(this, "Seleziona un elemento valido prima di procedere.");
+            return;
+        }
         int conferma = JOptionPane.showConfirmDialog(this, "Confermi eliminazione?", "Conferma", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (conferma != JOptionPane.YES_OPTION) return;
         try {
             if (isOfferta) {
                 controller.ritiraOfferta(id, matricola); // elimina via ritira (cancella in Attesa)
-                refreshDashboard();
             } else if (isAnnuncio) {
-                // controller.eliminaAnnuncio(idAnnuncio);
+                controller.eliminaAnnuncio(id);
             }
+            if (aList != null) aList.clearSelection();
+            if (mList != null) mList.clearSelection();
+            JList<String> gList = getJList(offerteDaGestirePanel);
+            if (gList != null) gList.clearSelection();
+            refreshDashboard();
+            if (annunciFrame != null) annunciFrame.refreshContent();
+            if (oggettiFrame != null) oggettiFrame.refreshContent();
+            updateActionButtonsState();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Errore eliminazione: "+ex.getMessage());
+            showErrorDialog(this, "Eliminazione non riuscita", ex);
         }
     }
 
@@ -701,14 +762,17 @@ public class HomeFrame extends JFrame {
         String sel = gList.getSelectedValue();
         if (sel==null) return;
         String id = estraiIdDaRiga(sel);
-        if (id==null) { JOptionPane.showMessageDialog(this, "ID offerta non trovato"); return; }
+        if (id==null) {
+            JOptionPane.showMessageDialog(this, "Seleziona un'offerta valida dalla lista.");
+            return;
+        }
         int conferma = JOptionPane.showConfirmDialog(this, "Accettare l'offerta?", "Conferma", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (conferma != JOptionPane.YES_OPTION) return;
         try {
             controller.accettaOfferta(id, matricola);
             refreshDashboard();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Errore accettazione: "+ex.getMessage());
+            showErrorDialog(this, "Impossibile accettare l'offerta", ex);
         }
     }
 
@@ -717,14 +781,17 @@ public class HomeFrame extends JFrame {
         String sel = gList.getSelectedValue();
         if (sel==null) return;
         String id = estraiIdDaRiga(sel);
-        if (id==null) { JOptionPane.showMessageDialog(this, "ID offerta non trovato"); return; }
+        if (id==null) {
+            JOptionPane.showMessageDialog(this, "Seleziona un'offerta valida dalla lista.");
+            return;
+        }
         int conferma = JOptionPane.showConfirmDialog(this, "Rifiutare l'offerta?", "Conferma", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (conferma != JOptionPane.YES_OPTION) return;
         try {
             controller.rifiutaOfferta(id, matricola);
             refreshDashboard();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Errore rifiuto: "+ex.getMessage());
+            showErrorDialog(this, "Impossibile rifiutare l'offerta", ex);
         }
     }
 

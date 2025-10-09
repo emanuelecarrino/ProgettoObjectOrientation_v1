@@ -1,7 +1,13 @@
 package frames;
 
 import dto.Controller;
+import exception.ApplicationException;
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.plaf.basic.BasicArrowButton;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
@@ -14,6 +20,12 @@ public class AnnunciFrame extends JFrame {
 
     // === COSTANTI ===
     private static final String PLACEHOLDER_COMMENTO = "Commento (facoltativo)";
+    private static final Color COMBO_BORDER = new Color(214, 219, 226);
+    private static final Color COMBO_BORDER_FOCUS = new Color(99, 134, 235);
+    private static final Color COMBO_TEXT = new Color(45, 52, 63);
+    private static final Color COMBO_PLACEHOLDER = new Color(146, 152, 161);
+    private static final Color COMBO_SELECTION_BG = new Color(99, 134, 235);
+    private static final Font COMBO_FONT = new Font("Segoe UI", Font.PLAIN, 13);
 
     // === CAMPI ISTANZA / STATO ===
     private final Controller controller;
@@ -91,21 +103,25 @@ public class AnnunciFrame extends JFrame {
         header.add(leftHeader, BorderLayout.WEST);
 
         // destra: filtri + ordine
-        JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        controls.setBackground(Color.WHITE);
+    JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+    controls.setOpaque(false);
 
         tipoFilter = new JComboBox<>(buildTipoFiltroModel());
         categoriaFilter = new JComboBox<>(buildCategoriaFiltroModel());
         orderByCombo = new JComboBox<>(new String[] { "Default", "Prezzo crescente", "Prezzo decrescente" });
+    styleCombo(tipoFilter, 130);
+    styleCombo(categoriaFilter, 150);
+    styleCombo(orderByCombo, 180);
 
         tipoFilter.addActionListener(e -> eseguiRicerca());
         categoriaFilter.addActionListener(e -> eseguiRicerca());
         orderByCombo.addActionListener(e -> eseguiRicerca());
 
-        controls.add(new JLabel("Tipo:"));
+    controls.add(createFilterLabel("Tipo:"));
         controls.add(tipoFilter);
-        controls.add(new JLabel("Categoria:"));
+    controls.add(createFilterLabel("Categoria:"));
         controls.add(categoriaFilter);
+    controls.add(createFilterLabel("Ordina:"));
         controls.add(orderByCombo);
 
         header.add(controls, BorderLayout.EAST);
@@ -197,6 +213,86 @@ public class AnnunciFrame extends JFrame {
         return parent != null ? parent : contentPanel;
     }
 
+    private void dismissModalOverlay(Component parentCandidate) {
+        Component parent = parentCandidate != null ? parentCandidate : getDialogParent();
+        if (parent == null) return;
+        JRootPane rootPane;
+        if (parent instanceof RootPaneContainer container) {
+            rootPane = container.getRootPane();
+        } else {
+            rootPane = SwingUtilities.getRootPane(parent);
+        }
+        if (rootPane != null) {
+            Component glass = rootPane.getGlassPane();
+            if (glass != null && glass.isVisible()) {
+                glass.setVisible(false);
+                glass.repaint();
+            }
+        }
+    }
+
+
+    // === UTIL: gestione messaggi di errore ===
+    private void showErrorDialog(Component parent, String titolo, Throwable ex) {
+        String messaggio = estraiMessaggioPulito(ex);
+        if (messaggio == null || messaggio.isBlank()) {
+            messaggio = "Operazione non riuscita.";
+        }
+        JOptionPane.showMessageDialog(parent, titolo + ": " + messaggio, "Errore", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private String estraiMessaggioPulito(Throwable ex) {
+        if (ex == null) return null;
+
+        String messaggio = normalizzaMessaggio(ex.getMessage());
+
+        if (ex instanceof ApplicationException) {
+            if (isMessaggioGenerico(messaggio)) {
+                String daCausa = estraiMessaggioPulito(ex.getCause());
+                if (daCausa != null && !daCausa.isBlank()) {
+                    return daCausa;
+                }
+            }
+            if (messaggio != null && !messaggio.isBlank()) {
+                return messaggio;
+            }
+        }
+
+        if (messaggio != null && !messaggio.isBlank()) {
+            return messaggio;
+        }
+
+        if (ex.getCause() != null && ex.getCause() != ex) {
+            return estraiMessaggioPulito(ex.getCause());
+        }
+
+        return ex.getClass().getSimpleName();
+    }
+
+    private String normalizzaMessaggio(String raw) {
+        if (raw == null) return null;
+        String trimmed = raw.strip();
+        if (trimmed.isEmpty()) return null;
+        int newline = trimmed.indexOf('\n');
+        if (newline >= 0) {
+            trimmed = trimmed.substring(0, newline).strip();
+        }
+        if (trimmed.startsWith("ERRORE:")) {
+            trimmed = trimmed.substring("ERRORE:".length()).strip();
+        } else if (trimmed.startsWith("ERROR:")) {
+            trimmed = trimmed.substring("ERROR:".length()).strip();
+        }
+        return trimmed;
+    }
+
+    private boolean isMessaggioGenerico(String msg) {
+        if (msg == null) return true;
+        String lower = msg.toLowerCase();
+        return lower.startsWith("errore creazione annuncio")
+                || lower.startsWith("errore persistenza")
+                || lower.startsWith("errore applicativo");
+    }
+
 
     // === METODI DI SUPPORTO COMPONENTI ===
     private JButton createPrimaryButton(String text) {
@@ -238,6 +334,117 @@ public class AnnunciFrame extends JFrame {
         model.add("Tutte");
         model.addAll(cat);
         return model.toArray(new String[0]);
+    }
+
+    private JLabel createFilterLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(COMBO_FONT);
+        label.setForeground(COMBO_TEXT.darker());
+        return label;
+    }
+
+    private void styleCombo(JComboBox<?> combo) {
+        styleCombo(combo, -1);
+    }
+
+    private void styleCombo(JComboBox<?> combo, int width) {
+        if (combo == null) {
+            return;
+        }
+        applyComboStyle(combo);
+        if (width > 0) {
+            Dimension size = new Dimension(width, 34);
+            combo.setPreferredSize(size);
+            combo.setMinimumSize(size);
+            combo.setMaximumSize(size);
+        }
+    }
+
+    private void applyComboStyle(JComboBox<?> combo) {
+        if (combo == null) {
+            return;
+        }
+        combo.setFont(COMBO_FONT);
+        combo.setForeground(COMBO_TEXT);
+        combo.setBackground(Color.WHITE);
+        combo.setOpaque(true);
+        combo.setFocusable(true);
+        combo.setBorder(new CompoundBorder(new LineBorder(COMBO_BORDER, 1, true), new EmptyBorder(4, 10, 4, 10)));
+        combo.setRenderer(new FilterComboRenderer(combo));
+        combo.setUI(new FilterComboUI());
+        combo.setMaximumRowCount(12);
+        if (combo.getClientProperty("styledCombo") == null) {
+            combo.addFocusListener(new FocusAdapter() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    combo.setBorder(new CompoundBorder(new LineBorder(COMBO_BORDER_FOCUS, 1, true), new EmptyBorder(4, 10, 4, 10)));
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    combo.setBorder(new CompoundBorder(new LineBorder(COMBO_BORDER, 1, true), new EmptyBorder(4, 10, 4, 10)));
+                }
+            });
+            combo.putClientProperty("styledCombo", Boolean.TRUE);
+        }
+    }
+
+    private static class FilterComboUI extends BasicComboBoxUI {
+        @Override
+        protected JButton createArrowButton() {
+            BasicArrowButton arrow = new BasicArrowButton(BasicArrowButton.SOUTH, Color.WHITE, COMBO_BORDER, COMBO_TEXT, Color.WHITE);
+            arrow.setBorder(new EmptyBorder(0, 8, 0, 8));
+            arrow.setFocusPainted(false);
+            arrow.setContentAreaFilled(false);
+            arrow.setOpaque(false);
+            return arrow;
+        }
+    }
+
+    private static class FilterComboRenderer extends DefaultListCellRenderer {
+        private final JComboBox<?> owner;
+
+        private FilterComboRenderer(JComboBox<?> owner) {
+            this.owner = owner;
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                       boolean isSelected, boolean cellHasFocus) {
+            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            label.setFont(COMBO_FONT);
+            label.setOpaque(true);
+            label.setBorder(new EmptyBorder(6, 12, 6, 12));
+
+            if (isSelected) {
+                label.setBackground(COMBO_SELECTION_BG);
+                label.setForeground(Color.WHITE);
+            } else {
+                label.setBackground(Color.WHITE);
+                label.setForeground(COMBO_TEXT);
+            }
+
+            boolean placeholder = false;
+            if (value instanceof String str) {
+                placeholder = isPlaceholder(str);
+            }
+
+            if (index == 0 || (index == -1 && owner.getSelectedIndex() == 0)) {
+                placeholder = true;
+            }
+
+            if (placeholder && !isSelected) {
+                label.setForeground(COMBO_PLACEHOLDER);
+            }
+
+            return label;
+        }
+
+        private boolean isPlaceholder(String value) {
+            String lower = value.trim().toLowerCase();
+            return lower.isEmpty() || lower.equals("tutti") || lower.equals("tutte") || lower.equals("default")
+                    || lower.contains("nessun") || lower.contains("seleziona") || lower.startsWith("(");
+        }
     }
 
 
@@ -297,7 +504,9 @@ public class AnnunciFrame extends JFrame {
 
             if (statusLabel != null) statusLabel.setText("Totali attivi: " + base.size() + " | Mostrati: " + filtrati.size());
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(getDialogParent(), "Errore ricerca annunci: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
+            Component parent = getDialogParent();
+            showErrorDialog(parent, "Errore durante la ricerca degli annunci", ex);
+            dismissModalOverlay(parent);
         }
     }
 
@@ -379,11 +588,13 @@ public class AnnunciFrame extends JFrame {
             try { mieiOggetti = controller.oggettiUtenteFormattati(matricola); } catch (Exception ex) { /* fallback lista vuota */ }
             java.util.List<String> labels = new java.util.ArrayList<>();
             for (String rec : mieiOggetti) labels.add(controller.formatOggettoLabel(rec));
-            oggettoCombo = new JComboBox<>(labels.toArray(new String[0]));
             if (labels.isEmpty()) {
                 oggettoCombo = new JComboBox<>(new String[] { "(Nessun oggetto disponibile)" });
                 oggettoCombo.setEnabled(false);
+            } else {
+                oggettoCombo = new JComboBox<>(labels.toArray(new String[0]));
             }
+            styleCombo(oggettoCombo, 220);
             gc.gridx = 0; gc.gridy = r; extra.add(new JLabel("Oggetto da scambiare:"), gc);
             gc.gridx = 1; extra.add(oggettoCombo, gc); r++;
         }
@@ -392,10 +603,11 @@ public class AnnunciFrame extends JFrame {
 
         Component parentComponent = getDialogParent();
 
-    Object[] options = { "Conferma", "Annulla" };
-    int res = JOptionPane.showOptionDialog(parentComponent, panel, "Nuova Offerta",
-        JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
-    if (res == 0) {
+        Object[] options = { "Conferma", "Annulla" };
+        int res = JOptionPane.showOptionDialog(parentComponent, panel, "Nuova Offerta",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+        dismissModalOverlay(parentComponent);
+        if (res == 0) {
             try {
                 String prezzoStr = null;
                 String ogg = null;
@@ -415,14 +627,11 @@ public class AnnunciFrame extends JFrame {
                 if (PLACEHOLDER_COMMENTO.equals(commento)) commento = "";
 
                 controller.creaOfferta(idAnnuncio, matricola, tipo, prezzoStr, commento, ogg);
-                JOptionPane.showMessageDialog(getDialogParent(), "Offerta creata");
+                JOptionPane.showMessageDialog(parentComponent, "Offerta creata");
+                dismissModalOverlay(parentComponent);
             } catch (Exception ex) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(ex.getClass().getSimpleName()).append(": ").append(ex.getMessage());
-                if (ex.getCause() != null) sb.append("\nCausa: ")
-                        .append(ex.getCause().getClass().getSimpleName()).append(" - ")
-                        .append(ex.getCause().getMessage());
-                JOptionPane.showMessageDialog(getDialogParent(), "Errore creazione offerta:\n" + sb);
+                showErrorDialog(parentComponent, "Impossibile creare l'offerta", ex);
+                dismissModalOverlay(parentComponent);
             }
         }
     }
@@ -439,8 +648,8 @@ public class AnnunciFrame extends JFrame {
 
         JTextField titoloField = new JTextField();
         JTextArea descrArea = new JTextArea(4, 20);
-        JComboBox<String> tipoBox = new JComboBox<>(controller.elencoTipiAnnuncio().toArray(new String[0]));
-        JComboBox<String> catBox = new JComboBox<>(controller.elencoCategorieAnnuncio().toArray(new String[0]));
+    JComboBox<String> tipoBox = new JComboBox<>(controller.elencoTipiAnnuncio().toArray(new String[0]));
+    JComboBox<String> catBox = new JComboBox<>(controller.elencoCategorieAnnuncio().toArray(new String[0]));
         JTextField prezzoField = new JTextField();
 
         java.util.List<String> oggettiUser = java.util.Collections.emptyList();
@@ -456,6 +665,9 @@ public class AnnunciFrame extends JFrame {
         } else {
             oggettoCombo = new JComboBox<>(oggLabels.toArray(new String[0]));
         }
+        styleCombo(tipoBox, 220);
+        styleCombo(catBox, 220);
+        styleCombo(oggettoCombo, 220);
 
         JLabel prezzoLabel = new JLabel("Prezzo (Vendita):");
 
@@ -490,9 +702,11 @@ public class AnnunciFrame extends JFrame {
 
         panel.add(fields, BorderLayout.CENTER);
 
-        Object[] options = { "Conferma", "Annulla" };
-        int res = JOptionPane.showOptionDialog(getDialogParent(), panel, "Nuovo Annuncio",
+    Component parent = getDialogParent();
+    Object[] options = { "Conferma", "Annulla" };
+    int res = JOptionPane.showOptionDialog(parent, panel, "Nuovo Annuncio",
         JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+    dismissModalOverlay(parent);
     if (res == 0) {
             try {
                 String titolo = titoloField.getText();
@@ -515,10 +729,12 @@ public class AnnunciFrame extends JFrame {
 
                 // delega al controller la creazione (UI -> controller)
                 controller.creaAnnuncio(titolo, descr, tipo, categoria, (prezzo == null ? null : prezzo.toPlainString()), idOggetto, matricola);
-                JOptionPane.showMessageDialog(getDialogParent(), "Annuncio creato");
+                JOptionPane.showMessageDialog(parent, "Annuncio creato");
+                dismissModalOverlay(parent);
                 eseguiRicerca();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(getDialogParent(), "Errore creazione annuncio: " + ex.getMessage());
+                showErrorDialog(parent, "Impossibile creare l'annuncio", ex);
+                dismissModalOverlay(parent);
             }
         }
     }
