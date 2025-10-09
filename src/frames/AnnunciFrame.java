@@ -18,6 +18,7 @@ public class AnnunciFrame extends JFrame {
     // === CAMPI ISTANZA / STATO ===
     private final Controller controller;
     private final String matricola;
+    private final JPanel contentPanel;
 
     private DefaultListModel<String> annunciListModel;
     private JList<String> annunciList;
@@ -38,7 +39,8 @@ public class AnnunciFrame extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        setContentPane(buildContentPanel());
+        this.contentPanel = buildContentPanel();
+        setContentPane(contentPanel);
     }
 
 
@@ -182,6 +184,19 @@ public class AnnunciFrame extends JFrame {
         return root;
     }
 
+    public JPanel getContentPanel() {
+        return contentPanel;
+    }
+
+    public void refreshContent() {
+        eseguiRicerca();
+    }
+
+    private Component getDialogParent() {
+        Component parent = SwingUtilities.getWindowAncestor(contentPanel);
+        return parent != null ? parent : contentPanel;
+    }
+
 
     // === METODI DI SUPPORTO COMPONENTI ===
     private JButton createPrimaryButton(String text) {
@@ -282,7 +297,7 @@ public class AnnunciFrame extends JFrame {
 
             if (statusLabel != null) statusLabel.setText("Totali attivi: " + base.size() + " | Mostrati: " + filtrati.size());
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Errore ricerca annunci: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
+            JOptionPane.showMessageDialog(getDialogParent(), "Errore ricerca annunci: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
         }
     }
 
@@ -375,8 +390,12 @@ public class AnnunciFrame extends JFrame {
 
         panel.add(extra, BorderLayout.SOUTH);
 
-        int res = JOptionPane.showConfirmDialog(this, panel, "Nuova Offerta", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (res == JOptionPane.OK_OPTION) {
+        Component parentComponent = getDialogParent();
+
+    Object[] options = { "Conferma", "Annulla" };
+    int res = JOptionPane.showOptionDialog(parentComponent, panel, "Nuova Offerta",
+        JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+    if (res == 0) {
             try {
                 String prezzoStr = null;
                 String ogg = null;
@@ -395,15 +414,15 @@ public class AnnunciFrame extends JFrame {
                 String commento = commentoArea.getText();
                 if (PLACEHOLDER_COMMENTO.equals(commento)) commento = "";
 
-                controller.creaOffertaDaUI(idAnnuncio, matricola, tipo, prezzoStr, commento, ogg);
-                JOptionPane.showMessageDialog(this, "Offerta creata");
+                controller.creaOfferta(idAnnuncio, matricola, tipo, prezzoStr, commento, ogg);
+                JOptionPane.showMessageDialog(getDialogParent(), "Offerta creata");
             } catch (Exception ex) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(ex.getClass().getSimpleName()).append(": ").append(ex.getMessage());
                 if (ex.getCause() != null) sb.append("\nCausa: ")
                         .append(ex.getCause().getClass().getSimpleName()).append(" - ")
                         .append(ex.getCause().getMessage());
-                JOptionPane.showMessageDialog(this, "Errore creazione offerta:\n" + sb);
+                JOptionPane.showMessageDialog(getDialogParent(), "Errore creazione offerta:\n" + sb);
             }
         }
     }
@@ -471,8 +490,10 @@ public class AnnunciFrame extends JFrame {
 
         panel.add(fields, BorderLayout.CENTER);
 
-        int res = JOptionPane.showConfirmDialog(this, panel, "Nuovo Annuncio", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (res == JOptionPane.OK_OPTION) {
+        Object[] options = { "Conferma", "Annulla" };
+        int res = JOptionPane.showOptionDialog(getDialogParent(), panel, "Nuovo Annuncio",
+        JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+    if (res == 0) {
             try {
                 String titolo = titoloField.getText();
                 String descr = descrArea.getText();
@@ -493,11 +514,11 @@ public class AnnunciFrame extends JFrame {
                 }
 
                 // delega al controller la creazione (UI -> controller)
-                controller.creaAnnuncioDaUI(titolo, descr, tipo, categoria, (prezzo == null ? null : prezzo.toPlainString()), idOggetto, matricola);
-                JOptionPane.showMessageDialog(this, "Annuncio creato");
+                controller.creaAnnuncio(titolo, descr, tipo, categoria, (prezzo == null ? null : prezzo.toPlainString()), idOggetto, matricola);
+                JOptionPane.showMessageDialog(getDialogParent(), "Annuncio creato");
                 eseguiRicerca();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Errore creazione annuncio: " + ex.getMessage());
+                JOptionPane.showMessageDialog(getDialogParent(), "Errore creazione annuncio: " + ex.getMessage());
             }
         }
     }
@@ -566,14 +587,15 @@ public class AnnunciFrame extends JFrame {
             metaLabel.setText("ID: " + id + "  •  Categoria: " + categoria + "  •  Creatore: " + who);
 
             badgePanel.removeAll();
-            Color tipoColor;
-            switch (tipo.toLowerCase()) {
-                case "vendita": tipoColor = new Color(46, 160, 67); break;
-                case "scambio": tipoColor = new Color(0, 120, 212); break;
-                case "regalo": tipoColor = new Color(218, 112, 37); break;
-                default: tipoColor = new Color(108, 117, 125); break;
+            if (!"vendita".equalsIgnoreCase(tipo)) {
+                Color tipoColor;
+                switch (tipo.toLowerCase()) {
+                    case "scambio": tipoColor = new Color(0, 120, 212); break;
+                    case "regalo": tipoColor = new Color(218, 112, 37); break;
+                    default: tipoColor = new Color(108, 117, 125); break;
+                }
+                badgePanel.add(makeBadge(tipo, tipoColor));
             }
-            badgePanel.add(makeBadge(tipo, tipoColor));
 
             if ("Vendita".equalsIgnoreCase(tipo) && prezzo != null && !prezzo.equals("-") && !prezzo.isEmpty()) {
                 badgePanel.add(makeBadge("€" + prezzo, new Color(90, 25, 200)));

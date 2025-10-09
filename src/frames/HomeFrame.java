@@ -1,34 +1,31 @@
 package frames;
 
 import dto.Controller;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.border.*;
+import java.math.BigDecimal;
 
 public class HomeFrame extends JFrame {
 
-    // === CAMPI ===
     private final Controller controller;
     private final String matricola;
+    // Username risolto on-demand per display (può essere null se non trovato)
     private final String usernameDisplay;
     private JPanel sidebar;
     private CardLayout cardLayout;
     private JPanel cardPanel;
     private final List<JToggleButton> navButtons = new ArrayList<>();
-    private JPanel kpiPanel;
-    private JPanel[] kpiCardContainers;
-    private JPanel recentAnnunciPanel;
-    private JPanel mieOffertePanel;
-    private JPanel offerteDaGestirePanel;
-    private JPanel dynamicActionsWrapper;
-    private JButton eliminaBtn;
-    private JButton accettaBtn;
-    private JButton rifiutaBtn;
+    private final List<SectionEntry> sectionHandlers = new ArrayList<>();
+    private AnnunciFrame annunciFrame;
+    private OggettiFrame oggettiFrame;
+    private ProfiloFrame profiloFrame;
+    private ModConsegnaFrame modConsegnaFrame;
 
-    // === COSTRUTTORE ===
     public HomeFrame(Controller controller, String matricola) {
         this.controller = controller;
         this.matricola = matricola;
@@ -39,21 +36,24 @@ public class HomeFrame extends JFrame {
             resolved = null;
         }
         this.usernameDisplay = (resolved != null ? resolved : matricola);
+
+
         setTitle("Home");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-        int targetW = 1500;
-        int targetH = 750;
-        int x = Math.max(0, (screen.width - targetW) / 2);
-        int y = Math.max(0, (screen.height - targetH) / 2);
-        setBounds(x, y, targetW, targetH);
-        setMinimumSize(new Dimension(targetW, targetH));
-        setResizable(true);
+    Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+    // Nuove dimensioni più larghe (fisse) richieste
+    int targetW = 1500;
+    int targetH = 750;
+    int x = Math.max(0, (screen.width - targetW) / 2);
+    int y = Math.max(0, (screen.height - targetH) / 2);
+    setBounds(x, y, targetW, targetH);
+    setMinimumSize(new Dimension(targetW, targetH));
+    // Consenti ingrandimento (anche massimizzazione) ma non rimpicciolire sotto la minimum size
+    setResizable(true);
         buildUI();
         setVisible(true);
     }
 
-    // === COSTRUZIONE UI ===
     private void buildUI() {
         setLayout(new BorderLayout());
         buildSidebar();
@@ -64,11 +64,19 @@ public class HomeFrame extends JFrame {
     private void buildSidebar() {
         sidebar = new JPanel();
         sidebar.setLayout(new GridBagLayout());
-        sidebar.setBackground(new Color(245, 245, 247));
+        sidebar.setBackground(new Color(245,245,247));
         sidebar.setPreferredSize(new Dimension(200, getHeight()));
+        // Sidebar fissa: niente scrollpane
         add(sidebar, BorderLayout.WEST);
 
-        String[] sections = {"Homepage", "Annunci", "I tuoi oggetti", "Profilo", "ModConsegna"};
+    String[] sections = {
+        "Homepage",
+        "Annunci",
+        "I tuoi oggetti",
+        "Profilo",
+        "ModConsegna"
+    };
+
         ButtonGroup group = new ButtonGroup();
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -83,11 +91,11 @@ public class HomeFrame extends JFrame {
             sidebar.add(btn, gbc);
             navButtons.add(btn);
         }
-
         gbc.gridy = row;
         gbc.weighty = 1;
         sidebar.add(Box.createVerticalGlue(), gbc);
 
+        // Bottone Logout (versione originale stilizzata)
         gbc.gridy = ++row;
         gbc.weighty = 0;
         JButton logoutBtn = new JButton("Logout");
@@ -95,7 +103,7 @@ public class HomeFrame extends JFrame {
         logoutBtn.setBackground(new Color(220, 53, 69));
         logoutBtn.setForeground(Color.WHITE);
         logoutBtn.setFont(new Font("Tahoma", Font.BOLD, 14));
-        logoutBtn.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
+        logoutBtn.setBorder(BorderFactory.createEmptyBorder(10,14,10,14));
         logoutBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         logoutBtn.addActionListener(e -> {
             int conf = JOptionPane.showConfirmDialog(this, "Vuoi davvero uscire?", "Conferma logout", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
@@ -113,12 +121,12 @@ public class HomeFrame extends JFrame {
         JToggleButton btn = new JToggleButton(text);
         btn.setFocusPainted(false);
         btn.setHorizontalAlignment(SwingConstants.LEFT);
-        btn.setBackground(new Color(245, 245, 247));
-        btn.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
+        btn.setBackground(new Color(245,245,247));
+        btn.setBorder(BorderFactory.createEmptyBorder(10,14,10,14));
         btn.setFont(new Font("Tahoma", Font.PLAIN, 15));
         btn.setOpaque(true);
 
-        Color hover = new Color(228, 230, 235);
+        Color hover = new Color(228,230,235);
         Color selected = new Color(100, 149, 237);
         Color normal = btn.getBackground();
 
@@ -142,158 +150,693 @@ public class HomeFrame extends JFrame {
     private void buildSections() {
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
-        cardPanel.add(buildHomepagePanel(), "Homepage");
-        cardPanel.add(new AnnunciFrame(controller, matricola).buildContentPanel(), "Annunci");
-        cardPanel.add(new OggettiFrame(controller, matricola).buildContentPanel(), "I tuoi oggetti");
-        cardPanel.add(new ProfiloFrame(controller, matricola).buildContentPanel(), "Profilo");
-        cardPanel.add(new ModConsegnaFrame(controller, matricola).buildContentPanel(), "ModConsegna");
+        JPanel homepagePanel = buildHomepagePanel();
+        cardPanel.add(homepagePanel, "Homepage");
+        sectionHandlers.add(new SectionEntry("Homepage", this::refreshDashboard));
+
+        annunciFrame = new AnnunciFrame(controller, matricola);
+        cardPanel.add(annunciFrame.getContentPanel(), "Annunci");
+        sectionHandlers.add(new SectionEntry("Annunci", annunciFrame::refreshContent));
+
+        oggettiFrame = new OggettiFrame(controller, matricola);
+        cardPanel.add(oggettiFrame.getContentPanel(), "I tuoi oggetti");
+        sectionHandlers.add(new SectionEntry("I tuoi oggetti", oggettiFrame::refreshContent));
+
+        profiloFrame = new ProfiloFrame(controller, matricola);
+        cardPanel.add(profiloFrame.getContentPanel(), "Profilo");
+        sectionHandlers.add(new SectionEntry("Profilo", profiloFrame::refreshContent));
+
+        modConsegnaFrame = new ModConsegnaFrame(controller, matricola);
+        cardPanel.add(modConsegnaFrame.getContentPanel(), "ModConsegna");
+        sectionHandlers.add(new SectionEntry("ModConsegna", modConsegnaFrame::refreshContent));
         add(cardPanel, BorderLayout.CENTER);
     }
 
-
-        // === HOMEPAGE ===
     private JPanel buildHomepagePanel() {
-        JPanel homepage = new JPanel(new BorderLayout());
-        homepage.setBackground(Color.WHITE);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBackground(Color.WHITE);
 
+        // Header
         JPanel header = new JPanel(new BorderLayout());
-        header.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+        header.setBorder(BorderFactory.createEmptyBorder(18,18,12,18));
         header.setBackground(Color.WHITE);
-        JLabel titolo = new JLabel("Benvenuto, " + usernameDisplay + "!");
-        titolo.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        header.add(titolo, BorderLayout.WEST);
-        homepage.add(header, BorderLayout.NORTH);
+    JLabel benv = new JLabel("Benvenuto " + usernameDisplay + "!");
+        benv.setFont(new Font("Tahoma", Font.BOLD, 30));
+        header.add(benv, BorderLayout.WEST);
+        wrapper.add(header, BorderLayout.NORTH);
 
-        JPanel content = new JPanel();
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        content.setBorder(BorderFactory.createEmptyBorder(10, 30, 30, 30));
-        content.setBackground(Color.WHITE);
-        homepage.add(content, BorderLayout.CENTER);
+        // Center content with GridBag
+        JPanel content = new JPanel(new GridBagLayout());
+        content.setOpaque(false);
+        wrapper.add(new JScrollPane(content), BorderLayout.CENTER);
 
-        buildKPIPanel(content);
-        buildRecentAnnunci(content);
-        buildMieOfferte(content);
-        buildOfferteDaGestire(content);
-
-        return homepage;
-    }
-
-    // === KPI PANEL ===
-    private void buildKPIPanel(JPanel parent) {
-        kpiPanel = new JPanel(new GridLayout(1, 3, 20, 0));
-        kpiPanel.setBackground(Color.WHITE);
-        kpiPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
-        parent.add(kpiPanel);
-        parent.add(Box.createVerticalStrut(20));
-
-        String[] titles = {"Annunci attivi", "Oggetti in tuo possesso", "Offerte ricevute"};
-        kpiCardContainers = new JPanel[titles.length];
-        for (int i = 0; i < titles.length; i++) {
-            JPanel container = buildKPICard(titles[i], "0");
-            kpiPanel.add(container);
-            kpiCardContainers[i] = container;
+        // Prepare panels placeholders updated by refreshDashboard()
+    kpiPanel = new JPanel(new GridLayout(1,4,12,0));
+        kpiPanel.setOpaque(false);
+        kpiCardContainers = new JPanel[4];
+        for (int i=0;i<4;i++) {
+            kpiCardContainers[i] = buildKpiCard("--","--");
+            kpiPanel.add(kpiCardContainers[i]);
         }
+
+    recentAnnunciPanel = buildListPanel("I tuoi annunci");
+    mieOffertePanel = buildListPanel("Le tue offerte");
+    offerteDaGestirePanel = buildListPanel("Offerte da Gestire");
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx=0; gbc.gridy=0; gbc.gridwidth=3; gbc.weightx=1; gbc.fill=GridBagConstraints.HORIZONTAL; gbc.insets=new Insets(0,18,20,18);
+        content.add(kpiPanel, gbc);
+
+        gbc.gridwidth=1; gbc.gridy=1; gbc.gridx=0; gbc.weighty=1; gbc.fill=GridBagConstraints.BOTH; gbc.insets=new Insets(0,18,18,12);
+        content.add(recentAnnunciPanel, gbc);
+        gbc.gridx=1; gbc.insets=new Insets(0,0,18,12);
+        content.add(mieOffertePanel, gbc);
+        gbc.gridx=2; gbc.insets=new Insets(0,0,18,18);
+        content.add(offerteDaGestirePanel, gbc);
+
+    // Wiring selezione esclusiva tra le tre liste
+    wireMutualSelection();
+
+        // Wrapper azioni dinamico (inizialmente nascosto)
+    dynamicActionsWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT,8,4));
+    dynamicActionsWrapper.setOpaque(false);
+    // Altezza fissa per evitare "saltelli" quando compaiono/scompaiono i pulsanti
+    Dimension actionPref = new Dimension(10, 46); // larghezza verrà espansa dal BorderLayout
+    dynamicActionsWrapper.setPreferredSize(actionPref);
+    dynamicActionsWrapper.setMinimumSize(actionPref);
+    dynamicActionsWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
+        wrapper.add(dynamicActionsWrapper, BorderLayout.SOUTH);
+
+        SwingUtilities.invokeLater(this::refreshDashboard);
+        return wrapper;
     }
 
-    private JPanel buildKPICard(String title, String value) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(220, 220, 220), 1, true),
-                BorderFactory.createEmptyBorder(15, 20, 15, 20)
-        ));
-        panel.setBackground(Color.WHITE);
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        JLabel valueLabel = new JLabel(value);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        panel.add(titleLabel, BorderLayout.NORTH);
-        panel.add(valueLabel, BorderLayout.CENTER);
+
+    private JPanel kpiPanel;
+    private JPanel[] kpiCardContainers;
+    private JPanel recentAnnunciPanel;
+    private JPanel mieOffertePanel;
+    private JPanel offerteDaGestirePanel;
+    private JPanel dynamicActionsWrapper;
+    private JButton eliminaBtn;
+    private JButton modificaBtn;
+    private JButton accettaBtn;
+    private JButton rifiutaBtn;
+
+
+    private JPanel buildKpiCard(String value, String label) {
+        JPanel panel = new JPanel(new BorderLayout(0,4)) {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),18,18);
+                g2.dispose();
+            }
+        };
+        panel.setOpaque(false);
+        panel.setBackground(new Color(250,250,252));
+        panel.setBorder(new EmptyBorder(14,18,14,18));
+        panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        panel.addMouseListener(new MouseAdapter() {
+            Color base = panel.getBackground();
+            @Override public void mouseEntered(MouseEvent e) { panel.setBackground(new Color(245,245,250)); panel.repaint(); }
+            @Override public void mouseExited(MouseEvent e) { panel.setBackground(base); panel.repaint(); }
+        });
+        JLabel val = new JLabel(value, SwingConstants.LEFT);
+        val.setFont(new Font("Tahoma", Font.BOLD, 30));
+        JLabel lab = new JLabel(label.toUpperCase());
+        lab.setFont(new Font("Tahoma", Font.PLAIN, 11));
+        lab.setForeground(new Color(120,120,125));
+        panel.add(val, BorderLayout.CENTER);
+        panel.add(lab, BorderLayout.SOUTH);
+        panel.putClientProperty("valueLabel", val);
+        panel.putClientProperty("nameLabel", lab);
+        panel.putClientProperty("elevated", Boolean.TRUE);
         return panel;
     }
 
-    // === SEZIONE ANNUNCI RECENTI ===
-    private void buildRecentAnnunci(JPanel parent) {
-        JLabel lbl = new JLabel("Annunci recenti");
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        parent.add(lbl);
-        parent.add(Box.createVerticalStrut(10));
-
-        recentAnnunciPanel = new JPanel(new GridLayout(0, 3, 15, 15));
-        recentAnnunciPanel.setBackground(Color.WHITE);
-        parent.add(recentAnnunciPanel);
-        parent.add(Box.createVerticalStrut(25));
+    private JPanel buildListPanel(String title) {
+        JPanel container = new JPanel(new BorderLayout());
+        container.setBackground(Color.WHITE);
+        container.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(0,0,0,0),
+                BorderFactory.createLineBorder(new Color(235,235,238))));
+        JLabel t = new JLabel("  " + title);
+        t.setFont(new Font("Tahoma", Font.BOLD, 14));
+        t.setBorder(BorderFactory.createMatteBorder(0,0,1,0,new Color(230,230,233)));
+        container.add(t, BorderLayout.NORTH);
+    JList<String> list = new JList<>();
+        list.setFont(new Font("Tahoma", Font.PLAIN, 13));
+        list.setFixedCellHeight(-1); // variable height for card style
+        list.setCellRenderer(new DashboardListCardRenderer());
+        container.add(new JScrollPane(list), BorderLayout.CENTER);
+        container.putClientProperty("jlist", list);
+        // Listener per aggiornare pulsanti azione in base al pannello e selezione
+        list.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) updateActionButtonsState();
+        });
+        return container;
     }
 
-    // === SEZIONE MIE OFFERTE ===
-    private void buildMieOfferte(JPanel parent) {
-        JLabel lbl = new JLabel("Le tue offerte");
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        parent.add(lbl);
-        parent.add(Box.createVerticalStrut(10));
-
-        mieOffertePanel = new JPanel(new GridLayout(0, 3, 15, 15));
-        mieOffertePanel.setBackground(Color.WHITE);
-        parent.add(mieOffertePanel);
-        parent.add(Box.createVerticalStrut(25));
+    private void updateKpi(int index, String value, String label) {
+        JPanel card = kpiCardContainers[index];
+        JLabel val = (JLabel) card.getClientProperty("valueLabel");
+        JLabel lab = (JLabel) card.getClientProperty("nameLabel");
+        val.setText(value);
+        lab.setText(label.toUpperCase());
     }
 
-    // === SEZIONE OFFERTE DA GESTIRE ===
-    
-    private void buildOfferteDaGestire(JPanel parent) {
-        JLabel lbl = new JLabel("Offerte da gestire");
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        parent.add(lbl);
-        parent.add(Box.createVerticalStrut(10));
+    private void refreshDashboard() {
+        try {
+            int annunciAttiviMiei = controller.contaAnnunciAttiviCreatore(matricola);
+            int offerteMieAttesa = controller.contaOfferteMieInAttesa(matricola);
+            int offerteRicevuteAttesa = controller.contaOfferteRicevuteInAttesa(matricola);
+            String ultimoAnnuncioData = controller.dataUltimoAnnuncioCreato(matricola);
 
-        offerteDaGestirePanel = new JPanel(new GridLayout(0, 3, 15, 15));
-        offerteDaGestirePanel.setBackground(Color.WHITE);
-        parent.add(offerteDaGestirePanel);
-        parent.add(Box.createVerticalStrut(25));
+            updateKpi(0, String.valueOf(annunciAttiviMiei), "Miei annunci Attivi");
+            updateKpi(1, String.valueOf(offerteMieAttesa), "Offerte (mie) in attesa");
+            updateKpi(2, String.valueOf(offerteRicevuteAttesa), "Offerte ricevute attesa");
+            updateKpi(3, ultimoAnnuncioData, "Ultimo annuncio");
 
-        dynamicActionsWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        dynamicActionsWrapper.setBackground(Color.WHITE);
-        parent.add(dynamicActionsWrapper);
+            List<String> ultimiAnnunci = controller.ultimiAnnunciCreatore(matricola,5);
+            setListData(recentAnnunciPanel, ultimiAnnunci);
 
-        eliminaBtn = createActionButton("Elimina", new Color(220, 53, 69));
-        accettaBtn = createActionButton("Accetta", new Color(40, 167, 69));
-        rifiutaBtn = createActionButton("Rifiuta", new Color(255, 193, 7));
+            List<String> mieOfferte = controller.ultimeOfferteUtente(matricola,5);
+            setListData(mieOffertePanel, mieOfferte);
 
-        dynamicActionsWrapper.add(eliminaBtn);
-        dynamicActionsWrapper.add(accettaBtn);
-        dynamicActionsWrapper.add(rifiutaBtn);
+            List<String> gestire = controller.offerteDaGestire(matricola,5);
+            setListData(offerteDaGestirePanel, gestire);
+
+            updateActionButtonsState();
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Errore caricamento dashboard: " + ex.getMessage());
+        }
     }
 
-    private JButton createActionButton(String text, Color color) {
-        JButton btn = new JButton(text);
-        btn.setFocusPainted(false);
-        btn.setBackground(color);
-        btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Tahoma", Font.BOLD, 14));
-        btn.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return btn;
+    @SuppressWarnings("unchecked")
+    private JList<String> getJList(JPanel listPanel) {
+        return (JList<String>) listPanel.getClientProperty("jlist");
     }
 
-    // === NAVIGAZIONE ===
-    private void selectSection(String section) {
-        cardLayout.show(cardPanel, section);
-        for (JToggleButton btn : navButtons) {
-            if (btn.getText().equals(section)) {
-                btn.setSelected(true);
-            } else {
-                btn.setSelected(false);
+    private void setListData(JPanel panel, List<String> values) {
+        JList<String> list = getJList(panel);
+        if (list != null) {
+            list.setListData(values.toArray(String[]::new));
+        }
+    }
+
+    private void ensureActionButtons() {
+        if (eliminaBtn != null) return; // già creati
+        eliminaBtn = createPrimaryActionButton("Elimina selezionato");
+        modificaBtn = createPrimaryActionButton("Modifica selezionato");
+        accettaBtn = createPrimaryActionButton("Accetta");
+        rifiutaBtn = createPrimaryActionButton("Rifiuta");
+        eliminaBtn.addActionListener(e -> onElimina());
+        modificaBtn.addActionListener(e -> onModifica());
+        accettaBtn.addActionListener(e -> onAccetta());
+        rifiutaBtn.addActionListener(e -> onRifiuta());
+    }
+
+    // Stile uniforme: stesso background / font bold / foreground bianco del bottone "Aggiorna"
+    private JButton createPrimaryActionButton(String text) {
+        JButton b = new JButton(text);
+        b.setFont(new Font("Tahoma", Font.BOLD, 14));
+        b.setForeground(Color.WHITE);
+        b.setBackground(new Color(100, 149, 237));
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setMargin(new Insets(6,14,6,14));
+        return b;
+    }
+
+    private void updateActionButtonsState() {
+        if (dynamicActionsWrapper == null) return;
+        ensureActionButtons();
+    dynamicActionsWrapper.removeAll();
+        // Determina quale lista ha focus/selezione
+        JList<String> annunciList = getJList(recentAnnunciPanel);
+        JList<String> mieOffList = getJList(mieOffertePanel);
+        JList<String> gestireList = getJList(offerteDaGestirePanel);
+        String selected = null;
+        boolean fromAnnunci = false;
+        boolean fromMieOfferte = false;
+        boolean fromGestire = false;
+        if (annunciList.getSelectedValue() != null) { selected = annunciList.getSelectedValue(); fromAnnunci = true; }
+        else if (mieOffList.getSelectedValue() != null) { selected = mieOffList.getSelectedValue(); fromMieOfferte = true; }
+        else if (gestireList.getSelectedValue() != null) { selected = gestireList.getSelectedValue(); fromGestire = true; }
+        if (selected == null) {
+            // Nessuna selezione: area resta vuota ma mantiene l'altezza
+            dynamicActionsWrapper.revalidate();
+            dynamicActionsWrapper.repaint();
+            return;
+        }
+        // Formati attuali:
+        // Annuncio: Titolo [Tipo] Stato - dd/MM
+        // Offerta mia / da gestire: ID_OFFERTA [Tipo] Stato
+        // Decidiamo: se stringa inizia con "OFF-" -> offerta, se no annuncio.
+        boolean isOfferta = selected.startsWith("OFF-");
+        if (isOfferta) {
+            String stato = null;
+            int lastSpace = selected.lastIndexOf(' ');
+            if (lastSpace > -1) stato = selected.substring(lastSpace+1).trim();
+            if (stato != null && stato.equalsIgnoreCase("Attesa")) {
+                if (fromMieOfferte) { dynamicActionsWrapper.add(modificaBtn); dynamicActionsWrapper.add(eliminaBtn); }
+                if (fromGestire) { dynamicActionsWrapper.add(accettaBtn); dynamicActionsWrapper.add(rifiutaBtn); }
+            }
+        } else {
+            if (fromAnnunci) { dynamicActionsWrapper.add(modificaBtn); dynamicActionsWrapper.add(eliminaBtn); }
+        }
+        // Non nascondiamo: wrapper rimane sempre visibile per stabilità layout
+        dynamicActionsWrapper.revalidate();
+        dynamicActionsWrapper.repaint();
+    }
+
+    // Garantisce che solo una lista abbia una selezione attiva alla volta
+    private void wireMutualSelection() {
+        JList<String> lAnn = getJList(recentAnnunciPanel);
+        JList<String> lMie = getJList(mieOffertePanel);
+        JList<String> lGest = getJList(offerteDaGestirePanel);
+        javax.swing.event.ListSelectionListener listenerAnn = e -> {
+            if (!e.getValueIsAdjusting() && lAnn.getSelectedIndex() >= 0) {
+                lMie.clearSelection();
+                lGest.clearSelection();
+                updateActionButtonsState();
+            }
+        };
+        javax.swing.event.ListSelectionListener listenerMie = e -> {
+            if (!e.getValueIsAdjusting() && lMie.getSelectedIndex() >= 0) {
+                lAnn.clearSelection();
+                lGest.clearSelection();
+                updateActionButtonsState();
+            }
+        };
+        javax.swing.event.ListSelectionListener listenerGest = e -> {
+            if (!e.getValueIsAdjusting() && lGest.getSelectedIndex() >= 0) {
+                lAnn.clearSelection();
+                lMie.clearSelection();
+                updateActionButtonsState();
+            }
+        };
+        lAnn.addListSelectionListener(listenerAnn);
+        lMie.addListSelectionListener(listenerMie);
+        lGest.addListSelectionListener(listenerGest);
+    }
+
+    private String estraiIdDaRiga(String riga) {
+        if (riga == null) return null;
+        // Se offerta: inizia con OFF-
+        if (riga.startsWith("OFF-")) {
+            int space = riga.indexOf(' ');
+            return space>0 ? riga.substring(0, space) : riga; 
+        }
+        // Se annuncio: dalla versione aggiornata, la riga inizia con ID (ANN-...)
+        if (riga.startsWith("ANN-")) {
+            int space = riga.indexOf(' ');
+            return space>0 ? riga.substring(0, space) : riga;
+        }
+        return null;
+    }
+
+    private void onModifica() {
+        // Determina selezione e tipo
+        JList<String> aList = getJList(recentAnnunciPanel);
+        JList<String> mList = getJList(mieOffertePanel);
+        JList<String> gList = getJList(offerteDaGestirePanel);
+        String sel = null; boolean isOfferta=false; boolean isAnnuncio=false; boolean fromMieOfferte=false;
+        if (mList.getSelectedValue()!=null) { sel = mList.getSelectedValue(); isOfferta=true; fromMieOfferte=true; }
+        else if (aList.getSelectedValue()!=null) { sel = aList.getSelectedValue(); isAnnuncio=true; }
+        else if (gList.getSelectedValue()!=null) { sel = gList.getSelectedValue(); isOfferta=true; }
+        if (sel == null) return;
+
+        String id = estraiIdDaRiga(sel);
+        if (id == null) { JOptionPane.showMessageDialog(this, "Impossibile determinare ID"); return; }
+
+        try {
+            if (isOfferta && fromMieOfferte) {
+                // Modifica contenuti offerta (solo in Attesa)
+                String[] fields = controller.recuperaOffertaFields(id);
+                // fields: tipo, prezzo, commento, idOggettoOfferto, stato, idAnnuncio
+                if (!"Attesa".equalsIgnoreCase(fields[4])) {
+                    JOptionPane.showMessageDialog(this, "Offerta non modificabile");
+                    return;
+                }
+
+                final String tipoOfferta = fields[0];
+                final String statoOfferta = fields[4];
+                JPanel p = new JPanel(new GridBagLayout());
+                GridBagConstraints gc = new GridBagConstraints();
+                gc.insets = new Insets(4,4,4,4);
+                gc.fill = GridBagConstraints.HORIZONTAL;
+                gc.weightx = 1;
+                int row = 0;
+
+                gc.gridx = 0; gc.gridy = row; gc.gridwidth = 2;
+                p.add(new JLabel("Tipo: " + tipoOfferta), gc);
+                row++;
+                gc.gridy = row;
+                p.add(new JLabel("Stato attuale: " + statoOfferta + " (non modificabile)"), gc);
+                row++;
+                gc.gridwidth = 1;
+
+                JTextField commentoField = new JTextField(fields[2] == null ? "" : fields[2]);
+                JTextField prezzoField = null;
+                JComboBox<String> oggettoCombo = null;
+                java.util.List<String> oggettoIds = java.util.Collections.emptyList();
+
+                if ("Vendita".equalsIgnoreCase(tipoOfferta)) {
+                    prezzoField = new JTextField("-".equals(fields[1]) ? "" : fields[1]);
+                    gc.gridx = 0; gc.gridy = row; p.add(new JLabel("Prezzo offerto (€):"), gc);
+                    gc.gridx = 1; p.add(prezzoField, gc); row++;
+                }
+
+                gc.gridx = 0; gc.gridy = row; p.add(new JLabel("Commento:"), gc);
+                gc.gridx = 1; p.add(commentoField, gc); row++;
+
+                if ("Scambio".equalsIgnoreCase(tipoOfferta)) {
+                    java.util.List<String> records = new java.util.ArrayList<>();
+                    java.util.List<String> labels = new java.util.ArrayList<>();
+                    java.util.List<String> ids = new java.util.ArrayList<>();
+                    try {
+                        records = controller.oggettiUtenteFormattati(matricola);
+                    } catch (Exception ex) {
+                        records = new java.util.ArrayList<>();
+                    }
+                    for (String rec : records) {
+                        String idOg = controller.estraiIdOggetto(rec);
+                        ids.add(idOg);
+                        labels.add(controller.formatOggettoLabel(rec));
+                    }
+                    String idAttuale = fields[3];
+                    if ((ids.isEmpty() || (idAttuale != null && !ids.contains(idAttuale))) && idAttuale != null && !idAttuale.isBlank()) {
+                        ids.add(idAttuale);
+                        labels.add(idAttuale + " (attuale)");
+                    }
+                    oggettoIds = ids;
+                    if (labels.isEmpty()) {
+                        oggettoCombo = new JComboBox<>(new String[] { "(Nessun oggetto disponibile)" });
+                        oggettoCombo.setEnabled(false);
+                    } else {
+                        oggettoCombo = new JComboBox<>(labels.toArray(new String[0]));
+                        if (idAttuale != null) {
+                            int toSelect = ids.indexOf(idAttuale);
+                            if (toSelect >= 0) oggettoCombo.setSelectedIndex(toSelect);
+                        }
+                    }
+                    gc.gridx = 0; gc.gridy = row; p.add(new JLabel("Oggetto da scambiare:"), gc);
+                    gc.gridx = 1; p.add(oggettoCombo, gc); row++;
+                }
+
+                Object[] options = { "Conferma", "Annulla" };
+                int res = JOptionPane.showOptionDialog(this, p, "Modifica Offerta " + id,
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+                if (res == 0) {
+                    String commentoStr = commentoField.getText().trim();
+                    if (commentoStr.isEmpty()) commentoStr = null;
+
+                    Float prezzoVal = null;
+                    if ("Vendita".equalsIgnoreCase(tipoOfferta)) {
+                        if (prezzoField == null) throw new IllegalStateException("Campo prezzo mancante");
+                        String prezzoStr = prezzoField.getText().trim();
+                        if (prezzoStr.isEmpty()) throw new IllegalArgumentException("Prezzo richiesto per Vendita");
+                        try {
+                            prezzoVal = Float.parseFloat(prezzoStr.replace(',','.'));
+                        } catch (NumberFormatException nfe) {
+                            throw new IllegalArgumentException("Formato prezzo non valido");
+                        }
+                    }
+
+                    String idObjVal = null;
+                    if ("Scambio".equalsIgnoreCase(tipoOfferta)) {
+                        if (oggettoCombo == null || !oggettoCombo.isEnabled()) {
+                            throw new IllegalArgumentException("Nessun oggetto disponibile per lo scambio");
+                        }
+                        int selIndex = oggettoCombo.getSelectedIndex();
+                        if (selIndex < 0 || selIndex >= oggettoIds.size()) {
+                            throw new IllegalArgumentException("Selezione oggetto non valida");
+                        }
+                        idObjVal = oggettoIds.get(selIndex);
+                    }
+
+                    controller.aggiornaOfferta(id, matricola, prezzoVal, idObjVal, commentoStr);
+                    refreshDashboard();
+                }
+            } else if (isAnnuncio) {
+                String[] a = controller.recuperaAnnuncioFields(id);
+                String titolo0 = a[0];
+                String descr0 = a[1];
+                String categoria0 = a[2];
+                String stato0 = a[3];
+                String tipo0 = a[4];
+                String prezzo0 = a[5];
+
+                java.util.List<String> categorie = controller.elencoCategorieAnnuncio();
+
+                JPanel panel = new JPanel(new BorderLayout(8, 8));
+                panel.add(new JLabel("Modifica annuncio " + id + " (" + tipo0 + ")"), BorderLayout.NORTH);
+
+                JTextArea descrArea = new JTextArea(descr0, 5, 30);
+                descrArea.setLineWrap(true);
+                descrArea.setWrapStyleWord(true);
+                panel.add(new JScrollPane(descrArea), BorderLayout.CENTER);
+
+                JPanel form = new JPanel(new GridBagLayout());
+                GridBagConstraints gc = new GridBagConstraints();
+                gc.insets = new Insets(4, 4, 4, 4);
+                gc.fill = GridBagConstraints.HORIZONTAL;
+                gc.weightx = 1;
+
+                int row = 0;
+                JTextField titoloField = new JTextField(titolo0);
+                JComboBox<String> categoriaBox = new JComboBox<>(categorie.toArray(String[]::new));
+                categoriaBox.setSelectedItem(categoria0);
+                JTextField prezzoField = null;
+
+                gc.gridx = 0; gc.gridy = row; form.add(new JLabel("Titolo:"), gc);
+                gc.gridx = 1; form.add(titoloField, gc); row++;
+
+                gc.gridx = 0; gc.gridy = row; form.add(new JLabel("Categoria:"), gc);
+                gc.gridx = 1; form.add(categoriaBox, gc); row++;
+
+                if ("Vendita".equalsIgnoreCase(tipo0)) {
+                    prezzoField = new JTextField(prezzo0 != null && !"-".equals(prezzo0) ? prezzo0 : "");
+                    gc.gridx = 0; gc.gridy = row; form.add(new JLabel("Prezzo (€):"), gc);
+                    gc.gridx = 1; form.add(prezzoField, gc); row++;
+                }
+
+                panel.add(form, BorderLayout.SOUTH);
+
+                Object[] options = { "Conferma", "Annulla" };
+                int res = JOptionPane.showOptionDialog(this, panel, "Modifica annuncio",
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+                if (res == 0) {
+                    String nuovoTitolo = titoloField.getText() != null ? titoloField.getText().trim() : "";
+                    if (nuovoTitolo.isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "Il titolo non può essere vuoto.");
+                        return;
+                    }
+                    String nuovaDescrizione = descrArea.getText();
+                    String nuovaCategoria = (String) categoriaBox.getSelectedItem();
+                    String prezzoStr = "-";
+                    if (prezzoField != null) {
+                        String rawPrezzo = prezzoField.getText();
+                        String sanitized = rawPrezzo == null ? "" : rawPrezzo.replace("€", "").trim();
+                        sanitized = sanitized.replaceAll("\\s+", "");
+                        if (!sanitized.isEmpty() && !"-".equals(sanitized)) {
+                            sanitized = sanitized.replace(',', '.');
+                            try {
+                                BigDecimal prezzoVal = new BigDecimal(sanitized);
+                                if (prezzoVal.compareTo(BigDecimal.ZERO) <= 0) {
+                                    JOptionPane.showMessageDialog(this, "Il prezzo deve essere maggiore di zero.");
+                                    return;
+                                }
+                                prezzoStr = prezzoVal.toPlainString();
+                            } catch (NumberFormatException nfe) {
+                                JOptionPane.showMessageDialog(this, "Formato prezzo non valido. Usa solo cifre ed eventualmente virgola.");
+                                return;
+                            }
+                        }
+                    }
+
+                    controller.aggiornaAnnuncio(id, nuovoTitolo, nuovaDescrizione, nuovaCategoria, stato0, prezzoStr);
+                    refreshDashboard();
+                }
+            }
+        } catch (Exception ex) {
+            StringBuilder msg = new StringBuilder();
+            msg.append(ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
+            Throwable cause = ex.getCause();
+            if (cause != null && cause.getMessage() != null) {
+                msg.append("\nCausa: ").append(cause.getMessage());
+            }
+            JOptionPane.showMessageDialog(this, "Errore modifica: " + msg);
+        }
+    }
+
+    private void onElimina() {
+        String id = null; boolean isOfferta=false; boolean isAnnuncio=false;
+        JList<String> aList = getJList(recentAnnunciPanel);
+        JList<String> mList = getJList(mieOffertePanel);
+        if (mList.getSelectedValue()!=null) { id = estraiIdDaRiga(mList.getSelectedValue()); isOfferta=true; }
+        else if (aList.getSelectedValue()!=null) { /* manca ID annuncio nel formato corrente */ }
+        if (id==null && isOfferta) { JOptionPane.showMessageDialog(this, "Impossibile determinare ID offerta"); return; }
+        int conferma = JOptionPane.showConfirmDialog(this, "Confermi eliminazione?", "Conferma", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (conferma != JOptionPane.YES_OPTION) return;
+        try {
+            if (isOfferta) {
+                controller.ritiraOfferta(id, matricola); // elimina via ritira (cancella in Attesa)
+                refreshDashboard();
+            } else if (isAnnuncio) {
+                // controller.eliminaAnnuncio(idAnnuncio);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Errore eliminazione: "+ex.getMessage());
+        }
+    }
+
+    private void onAccetta() {
+        JList<String> gList = getJList(offerteDaGestirePanel);
+        String sel = gList.getSelectedValue();
+        if (sel==null) return;
+        String id = estraiIdDaRiga(sel);
+        if (id==null) { JOptionPane.showMessageDialog(this, "ID offerta non trovato"); return; }
+        int conferma = JOptionPane.showConfirmDialog(this, "Accettare l'offerta?", "Conferma", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (conferma != JOptionPane.YES_OPTION) return;
+        try {
+            controller.accettaOfferta(id, matricola);
+            refreshDashboard();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Errore accettazione: "+ex.getMessage());
+        }
+    }
+
+    private void onRifiuta() {
+        JList<String> gList = getJList(offerteDaGestirePanel);
+        String sel = gList.getSelectedValue();
+        if (sel==null) return;
+        String id = estraiIdDaRiga(sel);
+        if (id==null) { JOptionPane.showMessageDialog(this, "ID offerta non trovato"); return; }
+        int conferma = JOptionPane.showConfirmDialog(this, "Rifiutare l'offerta?", "Conferma", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (conferma != JOptionPane.YES_OPTION) return;
+        try {
+            controller.rifiutaOfferta(id, matricola);
+            refreshDashboard();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Errore rifiuto: "+ex.getMessage());
+        }
+    }
+
+
+
+    private JPanel buildPlaceholder(String name) {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(Color.WHITE);
+        JLabel l = new JLabel(name, SwingConstants.CENTER);
+        l.setFont(new Font("Tahoma", Font.PLAIN, 26));
+        p.add(l, BorderLayout.CENTER);
+        return p;
+    }
+
+    // (Logica annunci rimossa da HomeFrame)
+
+    private void selectSection(String name) {
+        if (cardLayout != null && cardPanel != null) {
+            cardLayout.show(cardPanel, name);
+            for (SectionEntry entry : sectionHandlers) {
+                if (entry.name.equals(name) && entry.refresher != null) {
+                    SwingUtilities.invokeLater(entry.refresher);
+                    break;
+                }
+            }
+        }
+        for (JToggleButton b : navButtons) {
+            if (b.getText().equals(name)) {
+                if (!b.isSelected()) b.setSelected(true);
             }
         }
     }
 
-    // === METODI DI SUPPORTO ===
-    public void aggiornaKPI(int annunci, int oggetti, int offerte) {
-        JLabel l1 = (JLabel) ((BorderLayout) kpiCardContainers[0].getLayout()).getLayoutComponent(BorderLayout.CENTER);
-        JLabel l2 = (JLabel) ((BorderLayout) kpiCardContainers[1].getLayout()).getLayoutComponent(BorderLayout.CENTER);
-        JLabel l3 = (JLabel) ((BorderLayout) kpiCardContainers[2].getLayout()).getLayoutComponent(BorderLayout.CENTER);
-        l1.setText(String.valueOf(annunci));
-        l2.setText(String.valueOf(oggetti));
-        l3.setText(String.valueOf(offerte));
+    private static class SectionEntry {
+        final String name;
+        final Runnable refresher;
+
+        SectionEntry(String name, Runnable refresher) {
+            this.name = name;
+            this.refresher = refresher;
+        }
+    }
+
+    // Renderer card per liste dashboard (annunci, offerte, da gestire)
+    private static class DashboardListCardRenderer extends JPanel implements ListCellRenderer<String> {
+        private final JLabel primary = new JLabel();
+        private final JLabel secondary = new JLabel();
+        private final JPanel badgePanel = new JPanel(new FlowLayout(FlowLayout.LEFT,4,0));
+
+        DashboardListCardRenderer() {
+            setLayout(new BorderLayout(6,4));
+            setOpaque(true);
+            setBorder(new EmptyBorder(8,10,8,10));
+            primary.setFont(new Font("Tahoma", Font.BOLD, 13));
+            secondary.setFont(new Font("Tahoma", Font.PLAIN, 11));
+            secondary.setForeground(new Color(110,110,115));
+            badgePanel.setOpaque(false);
+            JPanel top = new JPanel(new BorderLayout());
+            top.setOpaque(false);
+            top.add(primary, BorderLayout.CENTER);
+            top.add(badgePanel, BorderLayout.EAST);
+            add(top, BorderLayout.NORTH);
+            add(secondary, BorderLayout.SOUTH);
+        }
+
+        private JLabel badge(String txt, Color bg) {
+            JLabel l = new JLabel(txt.toUpperCase());
+            l.setFont(new Font("Tahoma", Font.BOLD, 9));
+            l.setForeground(Color.WHITE);
+            l.setOpaque(true);
+            l.setBackground(bg);
+            l.setBorder(new EmptyBorder(2,6,2,6));
+            return l;
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<? extends String> list, String value, int index, boolean isSelected, boolean cellHasFocus) {
+            // Heuristics: Offerta se inizia con OFF-
+            boolean isOfferta = value != null && value.startsWith("OFF-");
+            primary.setText(value != null ? value : "");
+            // Rimuove completamente la label secondaria (né "Annuncio" né "Offerta")
+            secondary.setText("");
+            secondary.setVisible(false);
+
+            badgePanel.removeAll();
+            if (isOfferta) {
+                Color c = new Color(0,120,212);
+                if (value.contains(" Attesa")) c = new Color(255,140,0);
+                else if (value.contains(" Accettata")) c = new Color(46,160,67);
+                else if (value.contains(" Rifiutata")) c = new Color(200,60,60);
+                badgePanel.add(badge("OFF", c));
+            } else {
+                // estrai tipo tra [] se presente
+                int lb = value!=null? value.indexOf('['):-1;
+                int rb = value!=null? value.indexOf(']'):-1;
+                if (lb>-1 && rb>lb) {
+                    String tipo = value.substring(lb+1, rb).trim();
+                    Color c;
+                    switch (tipo.toLowerCase()) {
+                        case "vendita": c = new Color(46,160,67); break;
+                        case "scambio": c = new Color(0,120,212); break;
+                        case "regalo": c = new Color(218,112,37); break;
+                        default: c = new Color(108,117,125); break;
+                    }
+                    badgePanel.add(badge(tipo, c));
+                }
+            }
+
+            setBackground(isSelected ? new Color(218,230,247) : Color.WHITE);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            return this;
+        }
     }
 
 }

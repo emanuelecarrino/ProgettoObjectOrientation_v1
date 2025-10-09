@@ -150,6 +150,11 @@ public class Controller {
 		}
 	}
 
+	public void aggiornaProfilo(String matricola, String nome, String cognome, String email, String username, String password, String dataNascita, String genere) throws ApplicationException {
+		UtenteDTO u = new UtenteDTO(nome, cognome, email, matricola, username, password, dataNascita, genere);
+		aggiornaProfilo(u);
+	}
+
 	// Eliminazione utente
 	public void eliminaUtente(String matricola) throws ApplicationException {
 		try {
@@ -259,7 +264,7 @@ public class Controller {
 	}
 
 	
-	public AnnuncioDTO creaAnnuncioDaUI(String titolo, String descrizione, String tipoStr, String categoriaStr, String prezzoStr, String idOggetto, String creatore) throws ApplicationException {
+	public AnnuncioDTO creaAnnuncio(String titolo, String descrizione, String tipoStr, String categoriaStr, String prezzoStr, String idOggetto, String creatore) throws ApplicationException {
 		try {
 			if (isBlank(tipoStr)) throw new ValidationException("Errore su Tipo");
 			TipoAnnuncioDTO tipoEnum = null;
@@ -422,6 +427,42 @@ public class Controller {
 			throw new PersistenceException("Errore aggiornamento annuncio", sql);
 		} catch (IllegalArgumentException iae) {
 			throw new ValidationException(iae.getMessage());
+		}
+	}
+
+	// Wrapper UI per aggiornare un annuncio usando stringhe/valori primitivi
+	public AnnuncioDTO aggiornaAnnuncio(String ID_Annuncio, String nuovoTitolo, String nuovaDescrizione,
+									String categoriaStr, String statoStr, String prezzoStr) throws ApplicationException {
+		try {
+			if (isBlank(ID_Annuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			if (isBlank(nuovoTitolo)) throw new ValidationException("Errore su Titolo");
+			AnnuncioDTO esistente = annuncioDAO.getAnnuncioById(ID_Annuncio.trim());
+			if (esistente == null) throw new NotFoundException("Annuncio non trovato");
+
+			CategoriaAnnuncioDTO categoria = null;
+			for (CategoriaAnnuncioDTO c : CategoriaAnnuncioDTO.values()) if (c.name().equalsIgnoreCase(categoriaStr)) { categoria = c; break; }
+			if (categoria == null) throw new ValidationException("Categoria non valida");
+
+			StatoAnnuncioDTO stato = null;
+			for (StatoAnnuncioDTO s : StatoAnnuncioDTO.values()) if (s.name().equalsIgnoreCase(statoStr)) { stato = s; break; }
+			if (stato == null) throw new ValidationException("Stato non valido");
+
+			java.math.BigDecimal prezzo = null;
+			if (esistente.getTipoAnnuncio() == TipoAnnuncioDTO.Vendita) {
+				if (prezzoStr != null && !prezzoStr.trim().isEmpty() && !"-".equals(prezzoStr.trim())) {
+					try {
+						prezzo = new java.math.BigDecimal(prezzoStr.trim().replace(',', '.'));
+					} catch (NumberFormatException nfe) {
+						throw new ValidationException("Formato prezzo non valido");
+					}
+				}
+			}
+
+			return aggiornaAnnuncio(ID_Annuncio.trim(), nuovoTitolo, nuovaDescrizione, categoria, stato, prezzo);
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore aggiornamento annuncio (UI)", sql);
 		}
 	}
 
@@ -761,6 +802,37 @@ public class Controller {
 		}
 	}
 
+	// La UI deve passare solo String / numeri primitivi senza conoscere gli enum
+	public OffertaDTO creaOfferta(String idAnnuncio, String offerente, String tipoStr, String prezzoStr, String commento, String idOggettoOfferto) throws ApplicationException {
+		try {
+			if (isBlank(tipoStr)) throw new ValidationException("Errore su Tipo");
+			TipoOffertaDTO tipo = null;
+			// match case-insensitive contro i valori enum
+			for (TipoOffertaDTO t : TipoOffertaDTO.values()) {
+				if (t.name().equalsIgnoreCase(tipoStr.trim())) { tipo = t; break; }
+			}
+			if (tipo == null) throw new ValidationException("Tipo offerta non valido");
+
+			Float prezzo = null;
+			if (tipo == TipoOffertaDTO.Vendita) {
+				if (prezzoStr == null || prezzoStr.trim().isEmpty()) throw new ValidationException("Prezzo richiesto");
+				try {
+					prezzo = Float.parseFloat(prezzoStr.trim());
+				} catch (NumberFormatException nfe) {
+					throw new ValidationException("Formato prezzo non valido");
+				}
+			}
+			String idOggetto = null;
+			if (tipo == TipoOffertaDTO.Scambio) {
+				if (idOggettoOfferto == null || idOggettoOfferto.trim().isEmpty()) throw new ValidationException("ID Oggetto offerto richiesto");
+				idOggetto = idOggettoOfferto.trim();
+			}
+			return creaOfferta(idAnnuncio, offerente, prezzo, commento, tipo, idOggetto);
+		} catch (ValidationException | NotFoundException | AuthenticationException e) {
+			throw e;
+		}
+	}
+
 	public List<OffertaDTO> cercaOffertePerAnnuncio(String ID_Annuncio) throws ApplicationException {
 		try {
 			if (isBlank(ID_Annuncio)) throw new ValidationException("Errore su ID_Annuncio");
@@ -993,7 +1065,8 @@ public class Controller {
 			java.util.List<String> out = new java.util.ArrayList<>();
 			int i=0;
 			for (AnnuncioDTO a : miei) {
-				out.add(a.getTitolo()+" ["+a.getTipoAnnuncio().name()+"] "+a.getStato().name()+" - "+a.getDataPubblicazione().format(DASHBOARD_DATE_FMT));
+				// Includiamo l'ID all'inizio per permettere operazioni (elimina/modifica) dalla Home
+				out.add(a.getIdAnnuncio()+" "+a.getTitolo()+" ["+a.getTipoAnnuncio().name()+"] "+a.getStato().name()+" - "+a.getDataPubblicazione().format(DASHBOARD_DATE_FMT));
 				if (++i>=limit) break;
 			}
 			return out;
@@ -1177,38 +1250,67 @@ public class Controller {
         return p.length > 0 ? p[0] : null;
     }
 
+	// Restituisce tutti gli stati annuncio disponibili (nomi enum) per uso UI
+	public java.util.List<String> elencoStatiAnnuncio() {
+		java.util.List<String> out = new java.util.ArrayList<>();
+		for (StatoAnnuncioDTO s : StatoAnnuncioDTO.values()) out.add(s.name());
+		return out;
+	}
 
-	// La UI deve passare solo String / numeri primitivi senza conoscere gli enum
-	public OffertaDTO creaOffertaDaUI(String idAnnuncio, String offerente, String tipoStr, String prezzoStr, String commento, String idOggettoOfferto) throws ApplicationException {
+	// Fornisce i campi principali dell'offerta per precompilare una dialog di modifica
+	// Ordine: tipo, prezzo, commento, idOggettoOfferto, stato, idAnnuncio
+	public String[] recuperaOffertaFields(String idOfferta) throws ApplicationException {
 		try {
-			if (isBlank(tipoStr)) throw new ValidationException("Errore su Tipo");
-			TipoOffertaDTO tipo = null;
-			// match case-insensitive contro i valori enum
-			for (TipoOffertaDTO t : TipoOffertaDTO.values()) {
-				if (t.name().equalsIgnoreCase(tipoStr.trim())) { tipo = t; break; }
+			if (isBlank(idOfferta)) throw new ValidationException("Errore su ID_Offerta");
+			OffertaDTO o = offertaDAO.getOffertaById(idOfferta.trim());
+			if (o == null) throw new NotFoundException("Offerta non trovata");
+			String prezzo = String.valueOf(o.getPrezzoOfferta());
+			// per Regalo/Scambio prezzo può essere 0, per assenza usiamo "-"
+			if (o.getTipo() != TipoOffertaDTO.Vendita) {
+				prezzo = "-";
 			}
-			if (tipo == null) throw new ValidationException("Tipo offerta non valido");
-
-			Float prezzo = null;
-			if (tipo == TipoOffertaDTO.Vendita) {
-				if (prezzoStr == null || prezzoStr.trim().isEmpty()) throw new ValidationException("Prezzo richiesto");
-				try {
-					prezzo = Float.parseFloat(prezzoStr.trim());
-				} catch (NumberFormatException nfe) {
-					throw new ValidationException("Formato prezzo non valido");
-				}
-			}
-			String idOggetto = null;
-			if (tipo == TipoOffertaDTO.Scambio) {
-				if (idOggettoOfferto == null || idOggettoOfferto.trim().isEmpty()) throw new ValidationException("ID Oggetto offerto richiesto");
-				idOggetto = idOggettoOfferto.trim();
-			}
-			return creaOfferta(idAnnuncio, offerente, prezzo, commento, tipo, idOggetto);
-		} catch (ValidationException | NotFoundException | AuthenticationException e) {
+			return new String[]{
+				o.getTipo().name(),
+				prezzo,
+				o.getCommento(),
+				o.getIdOggettoOfferto(),
+				o.getStato().name(),
+				o.getIdAnnuncio()
+			};
+		} catch (ValidationException | NotFoundException e) {
 			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore recupero offerta", sql);
 		}
 	}
 
+	// Fornisce i campi principali dell'annuncio per precompilare una dialog di modifica
+	// Ordine: titolo, descrizione, categoria, stato, tipo, prezzo, dataPubblicazione, creatore, idOggetto
+	public String[] recuperaAnnuncioFields(String idAnnuncio) throws ApplicationException {
+		try {
+			if (isBlank(idAnnuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			AnnuncioDTO a = annuncioDAO.getAnnuncioById(idAnnuncio.trim());
+			if (a == null) throw new NotFoundException("Annuncio non trovato");
+			String prezzo = a.getPrezzoVendita()==null? "-" : a.getPrezzoVendita().toPlainString();
+			return new String[]{
+				a.getTitolo(),
+				a.getDescrizione()==null? "" : a.getDescrizione(),
+				a.getCategoria().name(),
+				a.getStato().name(),
+				a.getTipoAnnuncio().name(),
+				prezzo,
+				a.getDataPubblicazione()==null? "" : a.getDataPubblicazione().toString(),
+				a.getCreatore(),
+				a.getIdOggetto()
+			};
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore recupero annuncio", sql);
+		}
+	}
+
+	// La UI deve passare solo String / numeri primitivi senza conoscere gli enum
 	public java.util.List<String> oggettiUtenteFormattati(String proprietario) throws ApplicationException {
 		try {
 			if (isBlank(proprietario)) throw new ValidationException("Errore su FK_Utente");
@@ -1248,6 +1350,37 @@ public class Controller {
 		int val = counter.incrementAndGet();
 		return prefix + String.format("%05d", val);
 	}
+
+	// Recupera UtenteDTO per matricola (comodo wrapper per la UI)
+    public UtenteDTO trovaUtentePerMatricola(String matricola) throws ApplicationException {
+        try {
+            if (isBlank(matricola)) throw new ValidationException("Errore su Matricola");
+            UtenteDTO u = utenteDAO.getUtenteByMatricola(matricola.trim());
+            if (u == null) throw new NotFoundException("Utente non trovato");
+            return u;
+        } catch (ValidationException | NotFoundException e) {
+            throw e;
+        } catch (SQLException sql) {
+            throw new PersistenceException("Errore recupero utente", sql);
+        }
+    }
+
+    /**
+     * Restituisce i campi del profilo come array di String (ordine: nome,cognome,email,username,password,dataNascita,genere)
+     * Usato dalla UI per evitare di importare il DTO
+     */
+    public String[] recuperaProfiloFields(String matricola) throws ApplicationException {
+        UtenteDTO u = trovaUtentePerMatricola(matricola);
+        return new String[]{
+            u.getNome(),
+            u.getCognome(),
+            u.getEmail(),
+            u.getUsername(),
+            u.getPassword(),
+            u.getDataNascita(),
+            u.getGenere()
+        };
+    }
 
 }
 

@@ -15,6 +15,7 @@ import java.util.List;
 public class OggettiFrame extends JFrame {
     private final Controller controller;
     private final String matricola;
+    private final JPanel contentPanel;
 
     // Stato UI
     private DefaultListModel<String> listModel;
@@ -28,7 +29,8 @@ public class OggettiFrame extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(800, 560);
         setLocationRelativeTo(null);
-        setContentPane(buildContentPanel());
+        this.contentPanel = buildContentPanel();
+        setContentPane(contentPanel);
     }
 
     public JPanel buildContentPanel() {
@@ -70,15 +72,34 @@ public class OggettiFrame extends JFrame {
         String sel = list.getSelectedValue();
         if (sel != null) tentaEliminaOggetto(sel);
     });
+    JButton editBtn = createPrimaryButton("Modifica selezionato");
+    editBtn.setEnabled(false);
+    editBtn.addActionListener((ActionEvent e) -> {
+        String sel = list.getSelectedValue();
+        if (sel != null) apriDialogModificaOggetto(sel);
+    });
     list.addListSelectionListener(e -> {
-        if (!e.getValueIsAdjusting()) delBtn.setEnabled(list.getSelectedIndex() >= 0);
+        if (!e.getValueIsAdjusting()) {
+            boolean any = list.getSelectedIndex() >= 0;
+            delBtn.setEnabled(any);
+            editBtn.setEnabled(any);
+        }
     });
     rightActions.add(delBtn);
+    rightActions.add(editBtn);
     bottom.add(rightActions, BorderLayout.EAST);
     root.add(bottom, BorderLayout.SOUTH);
 
         SwingUtilities.invokeLater(this::refreshData);
         return root;
+    }
+
+    public JPanel getContentPanel() {
+        return contentPanel;
+    }
+
+    public void refreshContent() {
+        refreshData();
     }
 
     // Auto refresh: quando la finestra torna attiva
@@ -119,6 +140,52 @@ public class OggettiFrame extends JFrame {
         }
     }
 
+    private void apriDialogModificaOggetto(String rawRecord) {
+        if (rawRecord == null) return;
+        String[] p = rawRecord.split("\\|", -1);
+        String id = p.length>0? p[0]:null;
+        String nome0 = p.length>1? p[1]:"";
+        int numProp0 = 1; try { numProp0 = p.length>2? Integer.parseInt(p[2]):1; } catch (Exception ignore) {}
+        String cond0 = p.length>3? p[3]:"";
+        String dim0 = p.length>4? p[4]:"";
+        String peso0 = p.length>5? p[5]:"";
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.insets = new Insets(4,4,4,4);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1; int row=0;
+        JTextField nomeField = new JTextField(nome0);
+    JLabel numPropLabel = new JLabel(String.valueOf(numProp0));
+        JTextField condField = new JTextField(cond0);
+        JTextField dimField = new JTextField(dim0);
+        JTextField pesoField = new JTextField("-".equals(peso0)? "" : peso0);
+        gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Nome:"), gc); gc.gridx=1; panel.add(nomeField, gc); row++;
+    gc.gridx=0; gc.gridy=row; panel.add(new JLabel("# Proprietari:"), gc); gc.gridx=1; panel.add(numPropLabel, gc); row++;
+        gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Condizione:"), gc); gc.gridx=1; panel.add(condField, gc); row++;
+        gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Dimensione (cm):"), gc); gc.gridx=1; panel.add(dimField, gc); row++;
+        gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Peso (kg):"), gc); gc.gridx=1; panel.add(pesoField, gc); row++;
+        int res = JOptionPane.showConfirmDialog(this, panel, "Modifica Oggetto "+id, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (res == JOptionPane.OK_OPTION) {
+            try {
+                String nome = nomeField.getText();
+                int numProp = numProp0;
+                String cond = condField.getText();
+                String dim = dimField.getText();
+                String pesoTxt = pesoField.getText().trim();
+                Float peso = null;
+                if (!pesoTxt.isEmpty()) {
+                    try { peso = Float.parseFloat(pesoTxt.replace(",",".")); } catch (NumberFormatException nfe) { throw new IllegalArgumentException("Formato peso non valido"); }
+                }
+                controller.aggiornaOggetto(id, nome, numProp, cond, dim, peso);
+                refreshData();
+                JOptionPane.showMessageDialog(this, "Oggetto aggiornato");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Errore aggiornamento: " + ex.getMessage());
+            }
+        }
+    }
+
     private JButton createPrimaryButton(String text) {
         JButton b = new JButton(text);
         b.setFont(new Font("Tahoma", Font.BOLD, 13));
@@ -139,13 +206,13 @@ public class OggettiFrame extends JFrame {
         int row = 0;
 
         JTextField nomeField = new JTextField();
-    JSpinner numPropSpinner = new JSpinner(new SpinnerNumberModel(1,1,999,1));
+        JLabel numPropValue = new JLabel("1");
         JTextField condField = new JTextField();
         JTextField dimField = new JTextField();
         JTextField pesoField = new JTextField();
 
-        gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Nome:"), gc); gc.gridx=1; panel.add(nomeField, gc); row++;
-        gc.gridx=0; gc.gridy=row; panel.add(new JLabel("# Proprietari:"), gc); gc.gridx=1; panel.add(numPropSpinner, gc); row++;
+    gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Nome:"), gc); gc.gridx=1; panel.add(nomeField, gc); row++;
+    gc.gridx=0; gc.gridy=row; panel.add(new JLabel("# Proprietari:"), gc); gc.gridx=1; panel.add(numPropValue, gc); row++;
         gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Condizione:"), gc); gc.gridx=1; panel.add(condField, gc); row++;
         gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Dimensione (cm):"), gc); gc.gridx=1; panel.add(dimField, gc); row++;
         gc.gridx=0; gc.gridy=row; panel.add(new JLabel("Peso (kg):"), gc); gc.gridx=1; panel.add(pesoField, gc); row++;
@@ -154,7 +221,7 @@ public class OggettiFrame extends JFrame {
         if (res == JOptionPane.OK_OPTION) {
             try {
                 String nome = nomeField.getText();
-                int numProp = (Integer) numPropSpinner.getValue();
+                int numProp = 1;
                 String cond = condField.getText();
                 String dim = dimField.getText();
                 String pesoTxt = pesoField.getText().trim();
