@@ -207,18 +207,23 @@ public class ProfiloFrame extends JFrame {
             String email = safeTrim(emailField.getText());
             String username = safeTrim(usernameField.getText());
             String genere = normalizeGenere((String) genereBox.getSelectedItem());
-            String dataIso = composeBirthDateIso();
+            String dataIso;
+            try {
+                dataIso = composeBirthDateIso();
+            } catch (IllegalArgumentException iae) {
+                showErrorDialog("Impossibile aggiornare il profilo", iae.getMessage());
+                return;
+            }
 
             if (currentPassword == null || currentPassword.isBlank()) {
-                throw new IllegalStateException("Password corrente non disponibile. Ricarica il profilo e riprova.");
+                showErrorDialog("Impossibile aggiornare il profilo", "Password corrente non disponibile. Ricarica il profilo e riprova.");
+                return;
             }
 
             controller.aggiornaProfilo(matricola, nome, cognome, email, username, currentPassword, dataIso, genere);
             currentUsername = username;
             showInfoDialog("Profilo aggiornato con successo.");
             loadProfilo();
-        } catch (IllegalArgumentException ex) {
-            showErrorDialog("Impossibile aggiornare il profilo", ex);
         } catch (Exception ex) {
             showErrorDialog("Impossibile aggiornare il profilo", ex);
         }
@@ -387,7 +392,7 @@ public class ProfiloFrame extends JFrame {
 
     private void openPasswordDialog() {
         if (currentUsername == null || currentUsername.isBlank()) {
-            showErrorDialog("Impossibile aggiornare la password", new IllegalStateException("Username non disponibile."));
+            showErrorDialog("Impossibile aggiornare la password", "Username non disponibile.");
             return;
         }
 
@@ -434,13 +439,16 @@ public class ProfiloFrame extends JFrame {
                 String confermaStr = new String(conferma).trim();
 
                 if (currentStr.isEmpty() || nuovaStr.isEmpty() || confermaStr.isEmpty()) {
-                    throw new IllegalArgumentException("Compila tutti i campi della password.");
+                    showErrorDialog("Impossibile aggiornare la password", "Compila tutti i campi della password.");
+                    return;
                 }
                 if (!nuovaStr.equals(confermaStr)) {
-                    throw new IllegalArgumentException("Le nuove password non coincidono.");
+                    showErrorDialog("Impossibile aggiornare la password", "Le nuove password non coincidono.");
+                    return;
                 }
                 if (nuovaStr.length() < 6) {
-                    throw new IllegalArgumentException("La nuova password deve contenere almeno 6 caratteri.");
+                    showErrorDialog("Impossibile aggiornare la password", "La nuova password deve contenere almeno 6 caratteri.");
+                    return;
                 }
 
                 controller.cambiaPassword(currentUsername, currentStr, nuovaStr);
@@ -579,64 +587,20 @@ public class ProfiloFrame extends JFrame {
         dismissModalOverlay(parent);
     }
 
-    private void showErrorDialog(String titolo, Throwable ex) {
+    private void showErrorDialog(String titolo, Exception ex) {
         Component parent = getDialogParent();
-        String messaggio = estraiMessaggioPulito(ex);
-        if (messaggio == null || messaggio.isBlank()) {
-            messaggio = "Operazione non riuscita.";
-        }
-        JOptionPane.showMessageDialog(parent, titolo + ": " + messaggio, "Errore", JOptionPane.ERROR_MESSAGE);
+        String msg = ex != null ? ex.getMessage() : null;
+        if (msg == null || msg.isBlank()) msg = "Operazione non riuscita.";
+        JOptionPane.showMessageDialog(parent, titolo + ": " + msg, "Errore", JOptionPane.ERROR_MESSAGE);
         dismissModalOverlay(parent);
     }
 
-    private String estraiMessaggioPulito(Throwable ex) {
-        if (ex == null) return null;
-
-        String messaggio = normalizzaMessaggio(ex.getMessage());
-
-        if (ex instanceof ApplicationException) {
-            if (isMessaggioGenerico(messaggio)) {
-                String daCausa = estraiMessaggioPulito(ex.getCause());
-                if (daCausa != null && !daCausa.isBlank()) {
-                    return daCausa;
-                }
-            }
-            if (messaggio != null && !messaggio.isBlank()) {
-                return messaggio;
-            }
-        }
-
-        if (messaggio != null && !messaggio.isBlank()) {
-            return messaggio;
-        }
-
-        if (ex.getCause() != null && ex.getCause() != ex) {
-            return estraiMessaggioPulito(ex.getCause());
-        }
-
-        return ex.getClass().getSimpleName();
-    }
-
-    private String normalizzaMessaggio(String raw) {
-        if (raw == null) return null;
-        String trimmed = raw.strip();
-        if (trimmed.isEmpty()) return null;
-        int newline = trimmed.indexOf('\n');
-        if (newline >= 0) {
-            trimmed = trimmed.substring(0, newline).strip();
-        }
-        if (trimmed.startsWith("ERRORE:")) {
-            trimmed = trimmed.substring("ERRORE:".length()).strip();
-        } else if (trimmed.startsWith("ERROR:")) {
-            trimmed = trimmed.substring("ERROR:".length()).strip();
-        }
-        return trimmed;
-    }
-
-    private boolean isMessaggioGenerico(String msg) {
-        if (msg == null) return true;
-        String lower = msg.toLowerCase();
-        return lower.startsWith("errore") || lower.contains("persistence") || lower.contains("applicativo");
+    // Overload per messaggi UI specifici senza creare nuove Exception
+    private void showErrorDialog(String titolo, String messaggio) {
+        Component parent = getDialogParent();
+        String msg = (messaggio != null && !messaggio.isBlank()) ? messaggio : "Operazione non riuscita.";
+        JOptionPane.showMessageDialog(parent, titolo + ": " + msg, "Errore", JOptionPane.ERROR_MESSAGE);
+        dismissModalOverlay(parent);
     }
 
     private void dismissModalOverlay(Component parentCandidate) {

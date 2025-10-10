@@ -384,7 +384,7 @@ public class ModConsegnaFrame extends JFrame {
                     headerMeta.setText(metaText + "  •  dettagli non disponibili");
                 }
             } else {
-                showError("Errore nel recupero della consegna", ex);
+                JOptionPane.showMessageDialog(this, "Errore nel recupero della consegna: " + ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
             }
         }
 
@@ -492,7 +492,8 @@ public class ModConsegnaFrame extends JFrame {
             }
             refreshContentPreservingSelection(annuncio.getIdAnnuncio());
         } catch (ApplicationException ex) {
-            showError("Errore nel salvataggio della consegna", ex);
+            // mostra esclusivamente il messaggio dell'eccezione del controller
+            JOptionPane.showMessageDialog(this, "Errore nel salvataggio della consegna: " + ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -514,7 +515,7 @@ public class ModConsegnaFrame extends JFrame {
             showInfo("Consegna rimossa");
             refreshContentPreservingSelection(annuncio.getIdAnnuncio());
         } catch (ApplicationException ex) {
-            showError("Errore nella rimozione della consegna", ex);
+            JOptionPane.showMessageDialog(this, "Errore nella rimozione della consegna: " + ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -567,7 +568,7 @@ public class ModConsegnaFrame extends JFrame {
                 onAnnuncioSelected(null);
             }
         } catch (ApplicationException ex) {
-            showError("Errore nel caricamento degli annunci", ex);
+            JOptionPane.showMessageDialog(this, "Errore nel caricamento degli annunci: " + ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -617,9 +618,7 @@ public class ModConsegnaFrame extends JFrame {
         }
     }
 
-    private void showError(String message, Exception ex) {
-        JOptionPane.showMessageDialog(this, message + "\n" + ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
-    }
+    // Rimosso showError composito: usiamo direttamente i messaggi del controller dove serve
 
     private void showWarning(String message) {
         JOptionPane.showMessageDialog(this, message, "Attenzione", JOptionPane.WARNING_MESSAGE);

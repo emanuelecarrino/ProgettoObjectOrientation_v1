@@ -1,7 +1,6 @@
 package frames;
 
 import dto.Controller;
-import exception.ApplicationException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,7 +74,7 @@ public class HomeFrame extends JFrame {
         "Annunci",
         "I tuoi oggetti",
         "Profilo",
-        "ModConsegna"
+        "Consegna"
     };
 
         ButtonGroup group = new ButtonGroup();
@@ -168,8 +167,8 @@ public class HomeFrame extends JFrame {
         sectionHandlers.add(new SectionEntry("Profilo", profiloFrame::refreshContent));
 
         modConsegnaFrame = new ModConsegnaFrame(controller, matricola);
-        cardPanel.add(modConsegnaFrame.getContentPanel(), "ModConsegna");
-        sectionHandlers.add(new SectionEntry("ModConsegna", modConsegnaFrame::refreshContent));
+        cardPanel.add(modConsegnaFrame.getContentPanel(), "Consegna");
+        sectionHandlers.add(new SectionEntry("Consegna", modConsegnaFrame::refreshContent));
         add(cardPanel, BorderLayout.CENTER);
     }
 
@@ -349,65 +348,16 @@ public class HomeFrame extends JFrame {
         }
     }
 
-    private void showErrorDialog(Component parent, String titolo, Throwable ex) {
-        String messaggio = estraiMessaggioPulito(ex);
-        if (messaggio == null || messaggio.isBlank()) {
-            messaggio = "Operazione non riuscita. Riprova più tardi.";
-        }
-        JOptionPane.showMessageDialog(parent, titolo + ": " + messaggio, "Errore", JOptionPane.ERROR_MESSAGE);
+    private void showErrorDialog(Component parent, String titolo, Exception ex) {
+        String msg = ex != null ? ex.getMessage() : null;
+        if (msg == null || msg.isBlank()) msg = "Operazione non riuscita. Riprova più tardi.";
+        JOptionPane.showMessageDialog(parent, titolo + ": " + msg, "Errore", JOptionPane.ERROR_MESSAGE);
     }
 
-    private String estraiMessaggioPulito(Throwable ex) {
-        if (ex == null) return null;
-
-        String messaggio = normalizzaMessaggio(ex.getMessage());
-
-        if (ex instanceof ApplicationException) {
-            if (isMessaggioGenerico(messaggio)) {
-                String daCausa = estraiMessaggioPulito(ex.getCause());
-                if (daCausa != null && !daCausa.isBlank()) {
-                    return daCausa;
-                }
-            }
-            if (messaggio != null && !messaggio.isBlank()) {
-                return messaggio;
-            }
-        }
-
-        if (messaggio != null && !messaggio.isBlank()) {
-            return messaggio;
-        }
-
-        if (ex.getCause() != null && ex.getCause() != ex) {
-            return estraiMessaggioPulito(ex.getCause());
-        }
-
-        return ex.getClass().getSimpleName();
-    }
-
-    private String normalizzaMessaggio(String raw) {
-        if (raw == null) return null;
-        String trimmed = raw.strip();
-        if (trimmed.isEmpty()) return null;
-        int newline = trimmed.indexOf('\n');
-        if (newline >= 0) {
-            trimmed = trimmed.substring(0, newline).strip();
-        }
-        if (trimmed.startsWith("ERRORE:")) {
-            trimmed = trimmed.substring("ERRORE:".length()).strip();
-        } else if (trimmed.startsWith("ERROR:")) {
-            trimmed = trimmed.substring("ERROR:".length()).strip();
-        }
-        return trimmed;
-    }
-
-    private boolean isMessaggioGenerico(String msg) {
-        if (msg == null) return true;
-        String lower = msg.toLowerCase();
-        return lower.startsWith("errore persistenza")
-                || lower.startsWith("errore modifica")
-                || lower.startsWith("errore creazione")
-                || lower.startsWith("errore applicativo");
+    // Overload: mostra un messaggio diretto senza creare eccezioni lato UI
+    private void showErrorDialog(Component parent, String titolo, String messaggio) {
+        String msg = (messaggio != null && !messaggio.isBlank()) ? messaggio : "Operazione non riuscita.";
+        JOptionPane.showMessageDialog(parent, titolo + ": " + msg, "Errore", JOptionPane.ERROR_MESSAGE);
     }
 
     private void ensureActionButtons() {
@@ -609,24 +559,33 @@ public class HomeFrame extends JFrame {
 
                     Float prezzoVal = null;
                     if ("Vendita".equalsIgnoreCase(tipoOfferta)) {
-                        if (prezzoField == null) throw new IllegalStateException("Campo prezzo mancante");
+                        if (prezzoField == null) {
+                            showErrorDialog(this, "Impossibile completare la modifica", "Campo prezzo mancante");
+                            return;
+                        }
                         String prezzoStr = prezzoField.getText().trim();
-                        if (prezzoStr.isEmpty()) throw new IllegalArgumentException("Prezzo richiesto per Vendita");
+                        if (prezzoStr.isEmpty()) {
+                            showErrorDialog(this, "Impossibile completare la modifica", "Prezzo richiesto per Vendita");
+                            return;
+                        }
                         try {
                             prezzoVal = Float.parseFloat(prezzoStr.replace(',','.'));
                         } catch (NumberFormatException nfe) {
-                            throw new IllegalArgumentException("Formato prezzo non valido");
+                            showErrorDialog(this, "Impossibile completare la modifica", "Formato prezzo non valido");
+                            return;
                         }
                     }
 
                     String idObjVal = null;
                     if ("Scambio".equalsIgnoreCase(tipoOfferta)) {
                         if (oggettoCombo == null || !oggettoCombo.isEnabled()) {
-                            throw new IllegalArgumentException("Nessun oggetto disponibile per lo scambio");
+                            showErrorDialog(this, "Impossibile completare la modifica", "Nessun oggetto disponibile per lo scambio");
+                            return;
                         }
                         int selIndex = oggettoCombo.getSelectedIndex();
                         if (selIndex < 0 || selIndex >= oggettoIds.size()) {
-                            throw new IllegalArgumentException("Selezione oggetto non valida");
+                            showErrorDialog(this, "Impossibile completare la modifica", "Selezione oggetto non valida");
+                            return;
                         }
                         idObjVal = oggettoIds.get(selIndex);
                     }

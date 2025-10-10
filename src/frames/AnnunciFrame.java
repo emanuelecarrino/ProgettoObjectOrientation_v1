@@ -1,7 +1,6 @@
 package frames;
 
 import dto.Controller;
-import exception.ApplicationException;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -168,6 +167,21 @@ public class AnnunciFrame extends JFrame {
             }
         });
 
+        annunciList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                    int index = annunciList.locationToIndex(e.getPoint());
+                    if (index >= 0 && index < annunciUltimaRicercaRaw.size()) {
+                        Rectangle cellBounds = annunciList.getCellBounds(index, index);
+                        if (cellBounds != null && cellBounds.contains(e.getPoint())) {
+                            mostraDettaglioAnnuncio(annunciUltimaRicercaRaw.get(index));
+                        }
+                    }
+                }
+            }
+        });
+
         // --- FOOTER: stato + azioni ---
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setBackground(Color.WHITE);
@@ -232,65 +246,19 @@ public class AnnunciFrame extends JFrame {
     }
 
 
+    
     // === UTIL: gestione messaggi di errore ===
-    private void showErrorDialog(Component parent, String titolo, Throwable ex) {
-        String messaggio = estraiMessaggioPulito(ex);
-        if (messaggio == null || messaggio.isBlank()) {
-            messaggio = "Operazione non riuscita.";
-        }
-        JOptionPane.showMessageDialog(parent, titolo + ": " + messaggio, "Errore", JOptionPane.ERROR_MESSAGE);
+    
+    private void showErrorDialog(Component parent, String titolo, Exception ex) {
+        String msg = ex != null ? ex.getMessage() : null;
+        if (msg == null || msg.isBlank()) msg = "Operazione non riuscita.";
+        JOptionPane.showMessageDialog(parent, titolo + ": " + msg, "Errore", JOptionPane.ERROR_MESSAGE);
     }
 
-    private String estraiMessaggioPulito(Throwable ex) {
-        if (ex == null) return null;
-
-        String messaggio = normalizzaMessaggio(ex.getMessage());
-
-        if (ex instanceof ApplicationException) {
-            if (isMessaggioGenerico(messaggio)) {
-                String daCausa = estraiMessaggioPulito(ex.getCause());
-                if (daCausa != null && !daCausa.isBlank()) {
-                    return daCausa;
-                }
-            }
-            if (messaggio != null && !messaggio.isBlank()) {
-                return messaggio;
-            }
-        }
-
-        if (messaggio != null && !messaggio.isBlank()) {
-            return messaggio;
-        }
-
-        if (ex.getCause() != null && ex.getCause() != ex) {
-            return estraiMessaggioPulito(ex.getCause());
-        }
-
-        return ex.getClass().getSimpleName();
-    }
-
-    private String normalizzaMessaggio(String raw) {
-        if (raw == null) return null;
-        String trimmed = raw.strip();
-        if (trimmed.isEmpty()) return null;
-        int newline = trimmed.indexOf('\n');
-        if (newline >= 0) {
-            trimmed = trimmed.substring(0, newline).strip();
-        }
-        if (trimmed.startsWith("ERRORE:")) {
-            trimmed = trimmed.substring("ERRORE:".length()).strip();
-        } else if (trimmed.startsWith("ERROR:")) {
-            trimmed = trimmed.substring("ERROR:".length()).strip();
-        }
-        return trimmed;
-    }
-
-    private boolean isMessaggioGenerico(String msg) {
-        if (msg == null) return true;
-        String lower = msg.toLowerCase();
-        return lower.startsWith("errore creazione annuncio")
-                || lower.startsWith("errore persistenza")
-                || lower.startsWith("errore applicativo");
+    // Overload per mostrare un messaggio senza creare/propagare eccezioni dal livello UI
+    private void showErrorDialog(Component parent, String titolo, String messaggio) {
+        String msg = (messaggio != null && !messaggio.isBlank()) ? messaggio : "Operazione non riuscita.";
+        JOptionPane.showMessageDialog(parent, titolo + ": " + msg, "Errore", JOptionPane.ERROR_MESSAGE);
     }
 
 
@@ -515,6 +483,105 @@ public class AnnunciFrame extends JFrame {
         try { return new java.math.BigDecimal(s.trim()); } catch (NumberFormatException e) { return null; }
     }
 
+    private void mostraDettaglioAnnuncio(String rawRecord) {
+        if (rawRecord == null) return;
+        String idAnnuncio;
+        try {
+            idAnnuncio = controller.estraiIdAnnuncio(rawRecord);
+        } catch (Exception ex) {
+            showErrorDialog(getDialogParent(), "Annuncio non disponibile", ex);
+            return;
+        }
+        if (idAnnuncio == null || idAnnuncio.isBlank()) {
+            showErrorDialog(getDialogParent(), "Annuncio non disponibile", "ID annuncio mancante");
+            return;
+        }
+
+        Component parent = getDialogParent();
+        try {
+            String[] fields = controller.recuperaAnnuncioFields(idAnnuncio);
+            if (fields == null || fields.length < 6) {
+                showErrorDialog(parent, "Impossibile mostrare i dettagli", "Dati annuncio incompleti");
+                return;
+            }
+
+            String titolo = fields[0];
+            String descrizione = fields[1];
+            String categoria = fields[2];
+            String stato = fields[3];
+            String tipo = fields[4];
+            String prezzo = fields[5];
+            String dataPubblicazione = fields.length > 6 ? fields[6] : "";
+            String creatore = fields.length > 7 ? fields[7] : "";
+            String idOggetto = fields.length > 8 ? fields[8] : "";
+
+            JPanel panel = new JPanel(new BorderLayout(10, 12));
+            panel.setBackground(Color.WHITE);
+            panel.setBorder(new EmptyBorder(16, 18, 16, 18));
+
+            JLabel header = new JLabel(titolo + "  [" + tipo + "]");
+            header.setFont(new Font("Segoe UI", Font.BOLD, 20));
+            panel.add(header, BorderLayout.NORTH);
+
+            String descrizioneVal = (descrizione == null || descrizione.isBlank()) ? "Nessuna descrizione fornita." : descrizione;
+            JTextArea descrArea = new JTextArea(descrizioneVal, 6, 30);
+            descrArea.setLineWrap(true);
+            descrArea.setWrapStyleWord(true);
+            descrArea.setEditable(false);
+            descrArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            descrArea.setBackground(new Color(250, 250, 252));
+            descrArea.setBorder(new EmptyBorder(8, 10, 8, 10));
+            JScrollPane descrScroll = new JScrollPane(descrArea);
+            descrScroll.setBorder(new LineBorder(new Color(230, 232, 236))); 
+            descrScroll.setPreferredSize(new Dimension(420, 140));
+            panel.add(descrScroll, BorderLayout.CENTER);
+
+            JPanel infoGrid = new JPanel(new GridLayout(0, 2, 12, 8));
+            infoGrid.setOpaque(false);
+
+            infoGrid.add(makeInfoLabel("Categoria"));
+            infoGrid.add(makeInfoValue(categoria));
+
+            infoGrid.add(makeInfoLabel("Stato"));
+            infoGrid.add(makeInfoValue(stato));
+
+            infoGrid.add(makeInfoLabel("Prezzo"));
+            String prezzoDisplay = (prezzo == null || prezzo.isBlank() || "-".equals(prezzo)) ? "-" : "€ " + prezzo;
+            infoGrid.add(makeInfoValue(prezzoDisplay));
+
+            infoGrid.add(makeInfoLabel("Pubblicato il"));
+            infoGrid.add(makeInfoValue(dataPubblicazione == null || dataPubblicazione.isBlank() ? "--" : dataPubblicazione));
+
+            infoGrid.add(makeInfoLabel("Creatore"));
+            infoGrid.add(makeInfoValue(creatore));
+
+            infoGrid.add(makeInfoLabel("Oggetto"));
+            infoGrid.add(makeInfoValue(idOggetto == null || idOggetto.isBlank() ? "--" : idOggetto));
+
+            panel.add(infoGrid, BorderLayout.SOUTH);
+
+            JOptionPane.showMessageDialog(parent, panel, "Dettaglio annuncio", JOptionPane.PLAIN_MESSAGE);
+        } catch (Exception ex) {
+            showErrorDialog(parent, "Impossibile mostrare i dettagli", ex);
+        } finally {
+            dismissModalOverlay(parent);
+        }
+    }
+
+    private JLabel makeInfoLabel(String text) {
+        JLabel label = new JLabel(text + ":");
+        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        label.setForeground(new Color(90, 95, 105));
+        return label;
+    }
+
+    private JLabel makeInfoValue(String text) {
+        JLabel value = new JLabel(text != null ? text : "");
+        value.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        value.setForeground(new Color(40, 45, 55));
+        return value;
+    }
+
 
     // === UTIL: area di testo con placeholder ===
     private JTextArea createPlaceholderTextArea(String placeholder, int rows, int cols) {
@@ -614,12 +681,24 @@ public class AnnunciFrame extends JFrame {
 
                 if ("Vendita".equalsIgnoreCase(tipo)) {
                     String pTxt = prezzoField.getText().trim();
-                    if (pTxt.isEmpty()) throw new IllegalArgumentException("Prezzo richiesto");
+                    if (pTxt.isEmpty()) {
+                        showErrorDialog(parentComponent, "Impossibile creare l'offerta", "Prezzo richiesto");
+                        dismissModalOverlay(parentComponent);
+                        return;
+                    }
                     prezzoStr = pTxt;
                 } else if ("Scambio".equalsIgnoreCase(tipo)) {
-                    if (oggettoCombo == null || !oggettoCombo.isEnabled()) throw new IllegalArgumentException("Nessun oggetto disponibile per lo scambio");
+                    if (oggettoCombo == null || !oggettoCombo.isEnabled()) {
+                        showErrorDialog(parentComponent, "Impossibile creare l'offerta", "Nessun oggetto disponibile per lo scambio");
+                        dismissModalOverlay(parentComponent);
+                        return;
+                    }
                     int sel = oggettoCombo.getSelectedIndex();
-                    if (sel < 0 || sel >= mieiOggetti.size()) throw new IllegalArgumentException("Selezione oggetto non valida");
+                    if (sel < 0 || sel >= mieiOggetti.size()) {
+                        showErrorDialog(parentComponent, "Impossibile creare l'offerta", "Selezione oggetto non valida");
+                        dismissModalOverlay(parentComponent);
+                        return;
+                    }
                     ogg = controller.estraiIdOggetto(mieiOggetti.get(sel));
                 }
 
@@ -715,16 +794,33 @@ public class AnnunciFrame extends JFrame {
                 String categoria = (String) catBox.getSelectedItem();
                 String prezzoTxt = prezzoField.getText().trim();
 
-                if (oggettoCombo == null || !oggettoCombo.isEnabled()) throw new IllegalArgumentException("Nessun oggetto selezionabile");
+                if (oggettoCombo == null || !oggettoCombo.isEnabled()) {
+                    showErrorDialog(parent, "Impossibile creare l'annuncio", "Nessun oggetto selezionabile");
+                    dismissModalOverlay(parent);
+                    return;
+                }
                 int selO = oggettoCombo.getSelectedIndex();
-                if (selO < 0 || selO >= oggettiUser.size()) throw new IllegalArgumentException("Selezione oggetto non valida");
+                if (selO < 0 || selO >= oggettiUser.size()) {
+                    showErrorDialog(parent, "Impossibile creare l'annuncio", "Selezione oggetto non valida");
+                    dismissModalOverlay(parent);
+                    return;
+                }
                 String idOggetto = controller.estraiIdOggetto(oggettiUser.get(selO));
 
                 java.math.BigDecimal prezzo = null;
                 if ("Vendita".equalsIgnoreCase(tipo)) {
-                    if (prezzoTxt.isEmpty()) throw new IllegalArgumentException("Prezzo richiesto per Vendita");
-                    try { prezzo = new java.math.BigDecimal(prezzoTxt.replace(",", ".")); } 
-                    catch (NumberFormatException nfe) { throw new IllegalArgumentException("Formato prezzo non valido"); }
+                    if (prezzoTxt.isEmpty()) {
+                        showErrorDialog(parent, "Impossibile creare l'annuncio", "Prezzo richiesto per Vendita");
+                        dismissModalOverlay(parent);
+                        return;
+                    }
+                    try {
+                        prezzo = new java.math.BigDecimal(prezzoTxt.replace(",", "."));
+                    } catch (NumberFormatException nfe) {
+                        showErrorDialog(parent, "Impossibile creare l'annuncio", "Formato prezzo non valido");
+                        dismissModalOverlay(parent);
+                        return;
+                    }
                 }
 
                 // delega al controller la creazione (UI -> controller)

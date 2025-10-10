@@ -255,7 +255,8 @@ public class Controller {
 		} catch (ValidationException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore persistenza creazione annuncio", sql);
+			rethrowSql(sql, "Errore persistenza creazione annuncio");
+			return null; // unreachable, per compilatore
 		} catch (IllegalArgumentException iae) {
 			throw new ValidationException(iae.getMessage());
 		}
@@ -420,7 +421,8 @@ public class Controller {
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore aggiornamento annuncio", sql);
+			rethrowSql(sql, "Errore aggiornamento annuncio");
+			return null; // unreachable
 		} catch (IllegalArgumentException iae) {
 			throw new ValidationException(iae.getMessage());
 		}
@@ -458,7 +460,8 @@ public class Controller {
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore aggiornamento annuncio (UI)", sql);
+			rethrowSql(sql, "Errore aggiornamento annuncio (UI)");
+			return null; // unreachable
 		}
 	}
 
@@ -473,7 +476,7 @@ public class Controller {
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore eliminazione annuncio", sql);
+			rethrowSql(sql, "Errore eliminazione annuncio");
 		} catch (IllegalArgumentException iae) {
 			throw new ValidationException(iae.getMessage());
 		}
@@ -517,7 +520,8 @@ public class Controller {
 		} catch (ValidationException e) {
 			throw e;
 		} catch (SQLException sql) { 
-			throw new PersistenceException("Errore creazione oggetto", sql);
+			rethrowSql(sql, "Errore creazione oggetto");
+			return null; // unreachable
 		} catch (IllegalArgumentException iae) {
 			throw new ValidationException(iae.getMessage());
 		}
@@ -540,7 +544,8 @@ public class Controller {
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore aggiornamento oggetto", sql);
+			rethrowSql(sql, "Errore aggiornamento oggetto");
+			return null; // unreachable
 		} catch (IllegalArgumentException iae) {
 			throw new ValidationException(iae.getMessage());
 		}
@@ -554,7 +559,7 @@ public class Controller {
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore eliminazione oggetto", sql);
+			rethrowSql(sql, "Errore eliminazione oggetto");
 		} catch (IllegalArgumentException iae) {
 			throw new ValidationException(iae.getMessage());
 		}
@@ -661,7 +666,8 @@ public class Controller {
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore creazione consegna", sql);
+			rethrowSql(sql, "Errore creazione consegna");
+			return null; // unreachable
 		}
 	}
 
@@ -720,7 +726,8 @@ public class Controller {
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore aggiornamento consegna", sql);
+			rethrowSql(sql, "Errore aggiornamento consegna");
+			return null; // unreachable
 		}
 	}
 
@@ -732,7 +739,7 @@ public class Controller {
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore eliminazione consegna", sql);
+			rethrowSql(sql, "Errore eliminazione consegna");
 		}
 	}
 
@@ -804,7 +811,8 @@ public class Controller {
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore creazione offerta", sql);
+			rethrowSql(sql, "Errore creazione offerta");
+			return null; // unreachable
 		}
 	}
 
@@ -905,7 +913,8 @@ public class Controller {
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore rifiuto offerta", sql);
+			rethrowSql(sql, "Errore rifiuto offerta");
+			return null; // unreachable
 		}
 	}
 
@@ -924,7 +933,7 @@ public class Controller {
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore ritiro offerta", sql);
+			rethrowSql(sql, "Errore ritiro offerta");
 		}
 	}
 
@@ -981,7 +990,8 @@ public class Controller {
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore aggiornamento offerta", sql);
+			rethrowSql(sql, "Errore aggiornamento offerta");
+			return null; // unreachable
 		}
 	}
 
@@ -1009,6 +1019,19 @@ public class Controller {
 			message = message.substring("ERRORE:".length()).strip();
 		}
 		return message.isEmpty() ? null : message;
+	}
+
+	// Converte SQLException in messaggi utente: se presente un messaggio pulito (trigger/RAISE), propaga come ValidationException;
+	// in alternativa mappa alcune SQLSTATE note; altrimenti ritorna PersistenceException con contesto.
+	private void rethrowSql(SQLException sql, String defaultMessage) throws ApplicationException {
+		String clean = extractSqlMessage(sql);
+		if (clean != null && !clean.isBlank()) {
+			throw new ValidationException(clean);
+		}
+		if (isUniqueViolation(sql)) {
+			throw new DuplicateResourceException("Violazione unicità");
+		}
+		throw new PersistenceException(defaultMessage, sql);
 	}
 
 

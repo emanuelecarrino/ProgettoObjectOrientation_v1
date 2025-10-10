@@ -119,16 +119,10 @@ public class LoginFrame extends JFrame {
                     dispose();
 				} catch (ApplicationException ex) {
 					lblMessage.setForeground(Color.RED);
-					String msg = ex.getMessage();
-					if (ex.getCause() != null && ex.getCause().getMessage() != null) {
-						msg += ": " + ex.getCause().getMessage();
-					}
-					lblMessage.setText(msg);
-					ex.printStackTrace();
+					lblMessage.setText(ex.getMessage());
 				} catch (Exception ex) {
 					lblMessage.setForeground(Color.RED);
 					lblMessage.setText("Errore inatteso: " + ex.getMessage());
-					ex.printStackTrace();
                 }
 			}
 		});
@@ -252,9 +246,7 @@ public class LoginFrame extends JFrame {
 				JOptionPane.showMessageDialog(this, "Registrazione completata. Ora puoi accedere.", "Successo", JOptionPane.INFORMATION_MESSAGE);
 				dispose();
 			} catch (exception.ApplicationException ex) {
-				String msg = ex.getMessage();
-				if (ex.getCause() != null && ex.getCause().getMessage() != null) msg += ": " + ex.getCause().getMessage();
-				JOptionPane.showMessageDialog(this, msg, "Errore", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(this, ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
 			}
 		}
 

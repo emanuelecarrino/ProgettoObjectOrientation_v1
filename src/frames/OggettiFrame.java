@@ -141,7 +141,7 @@ public class OggettiFrame extends JFrame {
             if (statusLabel != null) statusLabel.setText("Oggetti: " + raw.size());
         } catch (Exception ex) {
             Component parent = getDialogParent();
-            JOptionPane.showMessageDialog(parent, "Errore caricamento oggetti: " + ex.getMessage());
+            JOptionPane.showMessageDialog(parent, ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
             dismissModalOverlay(parent);
         }
     }
@@ -166,7 +166,7 @@ public class OggettiFrame extends JFrame {
                 JOptionPane.showMessageDialog(parent, "Oggetto eliminato");
                 dismissModalOverlay(parent);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(parent, "Errore eliminazione: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
                 dismissModalOverlay(parent);
             }
         }
@@ -209,14 +209,18 @@ public class OggettiFrame extends JFrame {
                 String pesoTxt = pesoField.getText().trim();
                 Float peso = null;
                 if (!pesoTxt.isEmpty()) {
-                    try { peso = Float.parseFloat(pesoTxt.replace(",",".")); } catch (NumberFormatException nfe) { throw new IllegalArgumentException("Formato peso non valido"); }
+                    try { peso = Float.parseFloat(pesoTxt.replace(",",".")); } catch (NumberFormatException nfe) {
+                        JOptionPane.showMessageDialog(parent, "Formato peso non valido", "Errore", JOptionPane.ERROR_MESSAGE);
+                        dismissModalOverlay(parent);
+                        return;
+                    }
                 }
                 controller.aggiornaOggetto(id, nome, numProp, cond, dim, peso);
                 refreshData();
                 JOptionPane.showMessageDialog(parent, "Oggetto aggiornato");
                 dismissModalOverlay(parent);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(parent, "Errore aggiornamento: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
                 dismissModalOverlay(parent);
             }
         }
@@ -265,14 +269,18 @@ public class OggettiFrame extends JFrame {
                 String pesoTxt = pesoField.getText().trim();
                 Float peso = null;
                 if (!pesoTxt.isEmpty()) {
-                    try { peso = Float.parseFloat(pesoTxt.replace(",",".")); } catch (NumberFormatException nfe) { throw new IllegalArgumentException("Formato peso non valido"); }
+                    try { peso = Float.parseFloat(pesoTxt.replace(",",".")); } catch (NumberFormatException nfe) {
+                        JOptionPane.showMessageDialog(parent, "Formato peso non valido", "Errore", JOptionPane.ERROR_MESSAGE);
+                        dismissModalOverlay(parent);
+                        return;
+                    }
                 }
                 controller.creaOggetto(nome, numProp, cond, dim, peso, matricola);
                 refreshData();
                 JOptionPane.showMessageDialog(parent, "Oggetto creato");
                 dismissModalOverlay(parent);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(parent, "Errore creazione oggetto: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
                 dismissModalOverlay(parent);
             }
         }
