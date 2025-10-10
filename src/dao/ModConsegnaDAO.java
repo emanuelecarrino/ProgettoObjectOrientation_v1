@@ -119,4 +119,21 @@ public class ModConsegnaDAO {
 
 
 
+    public String getUltimoIdConsegna() throws SQLException {
+        String sql = """
+            SELECT ID_Consegna
+            FROM ModConsegna
+            ORDER BY ID_Consegna DESC
+            LIMIT 1
+            """;
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getString("ID_Consegna");
+            }
+            return null;
+        }
+    }
+
+
 }

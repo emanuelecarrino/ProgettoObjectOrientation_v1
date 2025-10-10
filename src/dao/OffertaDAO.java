@@ -144,8 +144,8 @@ public class OffertaDAO {
         
         String sql = """
             UPDATE Offerta
-            SET Stato = ?
-            WHERE ID_Offerta = ? AND Stato = ?
+            SET Stato = ?::statoOfferta
+            WHERE ID_Offerta = ? AND Stato = ?::statoOfferta
             """;
 
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {

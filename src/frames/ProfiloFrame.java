@@ -86,33 +86,18 @@ public class ProfiloFrame extends JFrame {
         left.setBackground(Color.WHITE);
         left.setPreferredSize(new Dimension(260, 0));
 
-        JPanel avatarWrap = new JPanel();
-        avatarWrap.setBackground(Color.WHITE);
-        avatarWrap.setBorder(new EmptyBorder(24, 24, 12, 24));
-
-        JLabel avatar = new JLabel();
-        avatar.setPreferredSize(new Dimension(140, 140));
-        avatar.setHorizontalAlignment(SwingConstants.CENTER);
-        avatar.setVerticalAlignment(SwingConstants.CENTER);
-        avatar.setOpaque(true);
-        avatar.setBackground(new Color(100, 149, 237));
-        avatar.setForeground(Color.WHITE);
-        avatar.setFont(new Font("Segoe UI", Font.BOLD, 36));
-        String initials = matricola != null && matricola.length() > 3
-                ? matricola.substring(0, 3).toUpperCase()
-                : matricola != null ? matricola.toUpperCase() : "?";
-        avatar.setText(initials);
-        avatar.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220), 2, true));
-        avatarWrap.add(avatar);
-        left.add(avatarWrap, BorderLayout.NORTH);
-
         JPanel meta = new JPanel(new GridLayout(0, 1));
         meta.setBackground(Color.WHITE);
-        meta.setBorder(new EmptyBorder(8, 24, 24, 24));
-        JLabel matricolaLabel = new JLabel("Matricola: " + (matricola != null ? matricola : ""));
-        matricolaLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        matricolaLabel.setForeground(new Color(80, 80, 80));
-        meta.add(matricolaLabel);
+    meta.setBorder(new EmptyBorder(24, 24, 24, 24));
+    JLabel title = new JLabel("Profilo personale");
+    title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+    title.setForeground(new Color(60, 70, 80));
+    meta.add(title);
+
+    JLabel matricolaLabel = new JLabel("Matricola: " + (matricola != null ? matricola : ""));
+    matricolaLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+    matricolaLabel.setForeground(new Color(80, 80, 80));
+    meta.add(matricolaLabel);
         left.add(meta, BorderLayout.CENTER);
 
         return left;
@@ -294,7 +279,7 @@ public class ProfiloFrame extends JFrame {
         combo.setBackground(Color.WHITE);
         combo.setOpaque(true);
         combo.setFocusable(true);
-        combo.setBorder(new CompoundBorder(new LineBorder(FIELD_BORDER, 1, true), new EmptyBorder(4, 10, 4, 10)));
+    combo.setBorder(new CompoundBorder(new LineBorder(FIELD_BORDER, 1, true), new EmptyBorder(4, 8, 4, 8)));
         combo.setRenderer(new CoolComboRenderer(combo));
         combo.setUI(new CoolComboUI());
         combo.setMaximumRowCount(12);
@@ -302,12 +287,12 @@ public class ProfiloFrame extends JFrame {
             combo.addFocusListener(new FocusAdapter() {
                 @Override
                 public void focusGained(FocusEvent e) {
-                    combo.setBorder(new CompoundBorder(new LineBorder(FIELD_BORDER_FOCUS, 1, true), new EmptyBorder(4, 10, 4, 10)));
+                    combo.setBorder(new CompoundBorder(new LineBorder(FIELD_BORDER_FOCUS, 1, true), new EmptyBorder(4, 8, 4, 8)));
                 }
 
                 @Override
                 public void focusLost(FocusEvent e) {
-                    combo.setBorder(new CompoundBorder(new LineBorder(FIELD_BORDER, 1, true), new EmptyBorder(4, 10, 4, 10)));
+                    combo.setBorder(new CompoundBorder(new LineBorder(FIELD_BORDER, 1, true), new EmptyBorder(4, 8, 4, 8)));
                 }
             });
             combo.putClientProperty("coolComboStyled", Boolean.TRUE);
@@ -572,7 +557,9 @@ public class ProfiloFrame extends JFrame {
 
     private void applyComponentWidth(JComponent component, int width) {
         int height = 36;
-        Dimension size = new Dimension(width, height);
+        Dimension preferred = component.getPreferredSize();
+        int targetWidth = width > 0 ? Math.max(width, preferred.width) : preferred.width;
+        Dimension size = new Dimension(targetWidth, height);
         component.setPreferredSize(size);
         component.setMinimumSize(size);
         component.setMaximumSize(size);

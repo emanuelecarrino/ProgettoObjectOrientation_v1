@@ -11,8 +11,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.UUID;
-import java.util.ArrayList;
 
 /**
  * Controller applicativo: centralizza la gestione delle eccezioni provenienti dai DAO
@@ -284,10 +282,8 @@ public class Controller {
 			}
 
 			return creaAnnuncio(titolo, descrizione, catEnum, tipoEnum, prezzo, idOggetto, creatore);
-		} catch (ValidationException | NotFoundException e) {
+		} catch (ValidationException | NotFoundException | PersistenceException e) {
 			throw e;
-		} catch (Exception ex) {
-			throw new PersistenceException("Errore creazione annuncio da UI", ex);
 		}
 	}
 
@@ -647,10 +643,17 @@ public class Controller {
 			if (annuncio == null) throw new NotFoundException("Annuncio non trovato");
 			// opzionale: se vuoi impedire più modalità per stesso annuncio
 			// if (modConsegnaDAO.getConsegnaByAnnuncio(ID_Annuncio.trim()) != null) throw new ValidationException("Consegna già definita");
+			if (!ID_COUNTERS.containsKey("CON-")) {
+				String ultimoIdConsegna = modConsegnaDAO.getUltimoIdConsegna();
+				seedCounterFromExistingId("CON-", ultimoIdConsegna);
+			}
 			String ID_Consegna = generaIdConsegna();
 			String notePulite = null;
 			if (note != null) {
-				notePulite = note.trim();
+				String trimmedNote = note.trim();
+				if (!trimmedNote.isEmpty()) {
+					notePulite = trimmedNote;
+				}
 			}
 			ModConsegnaDTO nuovaConsegna = new ModConsegnaDTO(ID_Consegna, ID_Annuncio.trim(), sedeUni.trim(), notePulite, fasciaOraria.trim(), data);
 			modConsegnaDAO.insertModConsegna(nuovaConsegna);
@@ -698,7 +701,10 @@ public class Controller {
 			if (nuovaData == null) throw new ValidationException("Errore su Data");
 			String nuoveNoteTrim = null;
 			if (nuoveNote != null) {
-				nuoveNoteTrim = nuoveNote.trim();
+				String trimmedNote = nuoveNote.trim();
+				if (!trimmedNote.isEmpty()) {
+					nuoveNoteTrim = trimmedNote;
+				}
 			}
 			ModConsegnaDTO consegnaAggiornata = new ModConsegnaDTO(
 					esistente.getIdConsegna(),
@@ -817,7 +823,7 @@ public class Controller {
 			if (tipo == TipoOffertaDTO.Vendita) {
 				if (prezzoStr == null || prezzoStr.trim().isEmpty()) throw new ValidationException("Prezzo richiesto");
 				try {
-					prezzo = Float.parseFloat(prezzoStr.trim());
+					prezzo = Float.valueOf(prezzoStr.trim());
 				} catch (NumberFormatException nfe) {
 					throw new ValidationException("Formato prezzo non valido");
 				}
@@ -873,6 +879,10 @@ public class Controller {
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
+			String clean = extractSqlMessage(sql);
+			if (clean != null && !clean.isBlank()) {
+				throw new ValidationException(clean);
+			}
 			throw new PersistenceException("Errore accettazione offerta", sql);
 		}
 	}
@@ -982,6 +992,23 @@ public class Controller {
 	// Generatore ID Offerta
 	private String generaIdOfferta() {
 		return generaIdSequenziale("OFF-");
+	}
+
+	private String extractSqlMessage(SQLException sql) {
+		if (sql == null) return null;
+		String message = sql.getMessage();
+		if (message == null) return null;
+		message = message.strip();
+		int newline = message.indexOf('\n');
+		if (newline >= 0) {
+			message = message.substring(0, newline).strip();
+		}
+		if (message.startsWith("ERROR:")) {
+			message = message.substring("ERROR:".length()).strip();
+		} else if (message.startsWith("ERRORE:")) {
+			message = message.substring("ERRORE:".length()).strip();
+		}
+		return message.isEmpty() ? null : message;
 	}
 
 
@@ -1098,6 +1125,7 @@ public class Controller {
 			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim());
 			java.util.List<String> out = new java.util.ArrayList<>();
 			for (AnnuncioDTO a : miei) {
+				if (a.getStato() != StatoAnnuncioDTO.Attivo) continue;
 				if (out.size() >= limit) break;
 				List<OffertaDTO> offerte = offertaDAO.getOfferteByAnnuncio(a.getIdAnnuncio());
 				for (OffertaDTO o : offerte) {
@@ -1342,6 +1370,26 @@ public class Controller {
 		if (record == null) return null;
 		String[] p = record.split("\\|", -1);
 		return p.length>0 ? p[0] : null;
+	}
+
+	private void seedCounterFromExistingId(String prefix, String existingId) {
+		if (existingId == null) return;
+		if (!existingId.startsWith(prefix)) return;
+		String numericPart = existingId.substring(prefix.length());
+		try {
+			int numericValue = Integer.parseInt(numericPart);
+			ID_COUNTERS.compute(prefix, (p, counter) -> {
+				if (counter == null) {
+					return new java.util.concurrent.atomic.AtomicInteger(numericValue);
+				}
+				if (counter.get() < numericValue) {
+					counter.set(numericValue);
+				}
+				return counter;
+			});
+		} catch (NumberFormatException ignored) {
+			// formato ID inatteso: lascio il contatore alla generazione di default
+		}
 	}
 
 	private static final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger> ID_COUNTERS = new java.util.concurrent.ConcurrentHashMap<>();
