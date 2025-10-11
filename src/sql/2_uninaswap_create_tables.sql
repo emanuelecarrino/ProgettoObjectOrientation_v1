@@ -77,10 +77,8 @@ CREATE TABLE ModConsegna (
     FK_Annuncio  VARCHAR NOT NULL UNIQUE,
     sedeUni      VARCHAR(30) NOT NULL,
     Data         DATE NOT NULL,
-    oraInizioFasciaOraria VARCHAR(5) NOT NULL,
-    oraFineFasciaOraria  VARCHAR(5) NOT NULL,
     Note         VARCHAR(150),
-    fasciaOraria VARCHAR(30)  -- campo derivato eventuale (DTO lo contiene concatenato), opzionale per futuri usi
+    fasciaOraria VARCHAR(30)
 );
 
 

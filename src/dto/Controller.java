@@ -600,6 +600,12 @@ public class Controller {
 		}
 	}
 
+
+	public String trovaNomeOggettoPerId(String ID_Oggetto) throws ApplicationException {
+		OggettoDTO o = trovaOggettoPerId(ID_Oggetto);
+		return o != null ? o.getNomeOggetto() : null;
+	}
+
 	public List<OggettoDTO> ordinaOggettiPerPeso(String direzione) throws ApplicationException {
 		try {
 			return oggettoDAO.orderOggettiByPeso(direzione);
@@ -696,6 +702,50 @@ public class Controller {
 			throw new PersistenceException("Errore recupero consegna", sql);
 		}
 	}
+
+
+	// Elenco dei ritiri programmati per l'utente (come offerente) su offerte ACCETTATE
+	
+	public java.util.List<String> ritiriProgrammatiPerUtente(String matricolaOfferente) throws ApplicationException {
+		try {
+			if (isBlank(matricolaOfferente)) throw new ValidationException("Errore su FK_Utente");
+			java.util.List<String> out = new java.util.ArrayList<>();
+			java.util.List<OffertaDTO> mie = cercaOffertePerUtente(matricolaOfferente.trim());
+			for (OffertaDTO o : mie) {
+				if (o.getStato() != StatoOffertaDTO.Accettata) continue;
+				try {
+					String[] annFields = recuperaAnnuncioFields(o.getIdAnnuncio());
+					String titolo = (annFields != null && annFields.length > 0) ? annFields[0] : "";
+					ModConsegnaDTO c = trovaConsegnaPerAnnuncio(o.getIdAnnuncio());
+					String data = c.getData() == null ? "-" : c.getData().toString();
+					String sede = c.getSedeUni() == null ? "-" : c.getSedeUni();
+					String fascia = c.getFasciaOraria() == null ? "-" : c.getFasciaOraria();
+					out.add(o.getIdAnnuncio() + "  " + titolo + "  • " + data + "  • " + sede + "  • " + fascia);
+				} catch (NotFoundException nf) {  }
+			}
+			return out;
+		} catch (ValidationException e) { throw e; }
+	}
+
+	// Dettagli consegna per annuncio: [titolo, sede, fascia, data, note, idConsegna]
+	public String[] recuperaConsegnaFieldsPerAnnuncio(String idAnnuncio) throws ApplicationException {
+		try {
+			if (isBlank(idAnnuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			String[] annFields = recuperaAnnuncioFields(idAnnuncio.trim());
+			String titolo = (annFields != null && annFields.length > 0) ? annFields[0] : "";
+			ModConsegnaDTO c = trovaConsegnaPerAnnuncio(idAnnuncio.trim());
+			return new String[]{
+				titolo,
+				(c.getSedeUni()==null?"":c.getSedeUni()),
+				(c.getFasciaOraria()==null?"":c.getFasciaOraria()),
+				(c.getData()==null?"":c.getData().toString()),
+				(c.getNote()==null?"":c.getNote()),
+				(c.getIdConsegna()==null?"":c.getIdConsegna())
+			};
+		} catch (ValidationException | NotFoundException e) { throw e; }
+	}
+
+
 
 	public ModConsegnaDTO aggiornaConsegna(String ID_Consegna, String nuovaSedeUni, String nuoveNote, String nuovaFasciaOraria, LocalDate nuovaData) throws ApplicationException {
 		try {
@@ -868,6 +918,8 @@ public class Controller {
 			throw new PersistenceException("Errore ricerca offerte per utente", sql);
 		}
 	}
+
+	
 
 	public OffertaDTO accettaOfferta(String ID_Offerta, String utente) throws ApplicationException {
 		try {

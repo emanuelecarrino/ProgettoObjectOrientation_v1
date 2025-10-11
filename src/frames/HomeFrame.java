@@ -24,7 +24,8 @@ public class HomeFrame extends JFrame {
     private AnnunciFrame annunciFrame;
     private OggettiFrame oggettiFrame;
     private ProfiloFrame profiloFrame;
-    private ModConsegnaFrame modConsegnaFrame;
+    private ConsegnaFrame consegnaFrame;
+    private RitiroFrame ritiroFrame;
 
     public HomeFrame(Controller controller, String matricola) {
         this.controller = controller;
@@ -74,7 +75,8 @@ public class HomeFrame extends JFrame {
         "Annunci",
         "I tuoi oggetti",
         "Profilo",
-        "Consegna"
+        "Consegna",
+        "Ritiro"
     };
 
         ButtonGroup group = new ButtonGroup();
@@ -166,9 +168,13 @@ public class HomeFrame extends JFrame {
         cardPanel.add(profiloFrame.getContentPanel(), "Profilo");
         sectionHandlers.add(new SectionEntry("Profilo", profiloFrame::refreshContent));
 
-        modConsegnaFrame = new ModConsegnaFrame(controller, matricola);
-        cardPanel.add(modConsegnaFrame.getContentPanel(), "Consegna");
-        sectionHandlers.add(new SectionEntry("Consegna", modConsegnaFrame::refreshContent));
+    consegnaFrame = new ConsegnaFrame(controller, matricola);
+    cardPanel.add(consegnaFrame.getContentPanel(), "Consegna");
+    sectionHandlers.add(new SectionEntry("Consegna", consegnaFrame::refreshContent));
+
+    ritiroFrame = new RitiroFrame(controller, matricola);
+    cardPanel.add(ritiroFrame.getContentPanel(), "Ritiro");
+    sectionHandlers.add(new SectionEntry("Ritiro", ritiroFrame::refreshContent));
         add(cardPanel, BorderLayout.CENTER);
     }
 
@@ -213,6 +219,10 @@ public class HomeFrame extends JFrame {
         content.add(mieOffertePanel, gbc);
         gbc.gridx=2; gbc.insets=new Insets(0,0,18,18);
         content.add(offerteDaGestirePanel, gbc);
+
+    // Double-click su offerte: solo "Le tue offerte" e "Offerte da Gestire" per mostrare il dettaglio offerta
+    attachDoubleClickToMieOfferte();
+    attachDoubleClickToOfferteDaGestire();
 
     // Wiring selezione esclusiva tra le tre liste
     wireMutualSelection();
@@ -424,6 +434,128 @@ public class HomeFrame extends JFrame {
         // Non nascondiamo: wrapper rimane sempre visibile per stabilità layout
         dynamicActionsWrapper.revalidate();
         dynamicActionsWrapper.repaint();
+    }
+
+    // Attiva doppio click solo per la lista "Le tue offerte" per mostrare un dettaglio leggibile
+    private void attachDoubleClickToMieOfferte() {
+        JList<String> list = getJList(mieOffertePanel);
+        if (list == null) return;
+        list.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                    int index = list.locationToIndex(e.getPoint());
+                    if (index >= 0) {
+                        Rectangle cellBounds = list.getCellBounds(index, index);
+                        if (cellBounds != null && cellBounds.contains(e.getPoint())) {
+                            String row = list.getModel().getElementAt(index);
+                            String id = estraiIdDaRiga(row);
+                            if (id != null && id.startsWith("OFF-")) {
+                                mostraDettaglioOfferta(id);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private void attachDoubleClickToOfferteDaGestire() {
+        JList<String> list = getJList(offerteDaGestirePanel);
+        if (list == null) return;
+        list.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                    int index = list.locationToIndex(e.getPoint());
+                    if (index >= 0) {
+                        Rectangle cellBounds = list.getCellBounds(index, index);
+                        if (cellBounds != null && cellBounds.contains(e.getPoint())) {
+                            String row = list.getModel().getElementAt(index);
+                            String id = estraiIdDaRiga(row);
+                            if (id != null && id.startsWith("OFF-")) {
+                                mostraDettaglioOfferta(id);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private void mostraDettaglioOfferta(String idOfferta) {
+        if (idOfferta == null || idOfferta.isBlank()) return;
+        try {
+            String[] fields = controller.recuperaOffertaFields(idOfferta);
+            // Ordine: tipo, prezzo, commento, idOggettoOfferto, stato, idAnnuncio
+            if (fields == null || fields.length < 6) {
+                showErrorDialog(this, "Impossibile mostrare i dettagli", "Dati offerta incompleti");
+                return;
+            }
+            String tipo = fields[0];
+            String prezzo = fields[1];
+            String commento = fields[2];
+            String idOggetto = fields[3];
+            String stato = fields[4];
+            String idAnnuncio = fields[5];
+
+            JPanel panel = new JPanel(new BorderLayout(10, 12));
+            panel.setBackground(Color.WHITE);
+            panel.setBorder(new EmptyBorder(16, 18, 16, 18));
+
+            JLabel header = new JLabel("Offerta " + idOfferta + "  [" + tipo + "]");
+            header.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            panel.add(header, BorderLayout.NORTH);
+
+            String commentoVal = (commento == null || commento.isBlank()) ? "Nessun commento." : commento;
+            JTextArea commentoArea = new JTextArea(commentoVal, 5, 30);
+            commentoArea.setLineWrap(true);
+            commentoArea.setWrapStyleWord(true);
+            commentoArea.setEditable(false);
+            commentoArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            commentoArea.setBackground(new Color(250, 250, 252));
+            commentoArea.setBorder(new EmptyBorder(8, 10, 8, 10));
+            JScrollPane commentoScroll = new JScrollPane(commentoArea);
+            commentoScroll.setBorder(new LineBorder(new Color(230, 232, 236)));
+            commentoScroll.setPreferredSize(new Dimension(420, 120));
+            panel.add(commentoScroll, BorderLayout.CENTER);
+
+            JPanel infoGrid = new JPanel(new GridLayout(0, 2, 12, 8));
+            infoGrid.setOpaque(false);
+
+            infoGrid.add(new JLabel("Stato:"));
+            infoGrid.add(new JLabel(stato));
+
+            // Mostra Prezzo solo per offerte di tipo Vendita e se presente
+            if ("Vendita".equalsIgnoreCase(tipo) && prezzo != null && !prezzo.isBlank() && !"-".equals(prezzo)) {
+                infoGrid.add(new JLabel("Prezzo:"));
+                infoGrid.add(new JLabel("€ " + prezzo));
+            }
+
+            infoGrid.add(new JLabel("Annuncio:"));
+            infoGrid.add(new JLabel(idAnnuncio != null ? idAnnuncio : ""));
+
+            // Mostra Oggetto solo per offerte di tipo Scambio e se presente, usando il nome
+            if ("Scambio".equalsIgnoreCase(tipo) && idOggetto != null && !idOggetto.isBlank()) {
+                String oggettoDisplay = idOggetto;
+                try {
+                    String nomeOggetto = controller.trovaNomeOggettoPerId(idOggetto);
+                    if (nomeOggetto != null && !nomeOggetto.isBlank()) {
+                        oggettoDisplay = nomeOggetto;
+                    }
+                } catch (Exception ignore) {
+                    // fallback: lascia ID
+                }
+                infoGrid.add(new JLabel("Oggetto (scambio):"));
+                infoGrid.add(new JLabel(oggettoDisplay));
+            }
+
+            panel.add(infoGrid, BorderLayout.SOUTH);
+
+            JOptionPane.showMessageDialog(this, panel, "Dettaglio offerta", JOptionPane.PLAIN_MESSAGE);
+        } catch (Exception ex) {
+            showErrorDialog(this, "Impossibile mostrare i dettagli", ex);
+        }
     }
 
     // Garantisce che solo una lista abbia una selezione attiva alla volta

@@ -49,9 +49,5 @@ INSERT INTO Annuncio (ID_Annuncio, Titolo, Descrizione, DataPubblicazione, Categ
 INSERT INTO Offerta (ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, ID_OggettoOfferto) VALUES
 ('OFF-00001', 18.00, 'Prendo subito',           CURRENT_DATE, 'Accettata', 'Vendita', 'N86000005', 'ANN-00001', NULL),
 ('OFF-00002', 17.00, 'Posso offrire 17',       CURRENT_DATE, 'Rifiutata', 'Vendita', 'N86000006', 'ANN-00001', NULL),
-('OFF-00003', NULL,  'Posso dare oggetto in scambio', CURRENT_DATE, 'Attesa',    'Scambio',  'N86000002', 'ANN-00006', 'OBJ007'),
+('OFF-00003', NULL,  'Posso dare oggetto in scambio', CURRENT_DATE, 'Attesa',    'Scambio',  'N86000002', 'ANN-00006', 'OBJ-00007'),
 ('OFF-00004', 24.00, 'Interessato, ci sto',    CURRENT_DATE, 'Attesa',    'Vendita',  'N86000001', 'ANN-00004', NULL);
-
--- MODALITA' CONSEGNA (per annunci con accordo)
-INSERT INTO ModConsegna (ID_Consegna, FK_Annuncio, sedeUni, Data, oraInizioFasciaOraria, oraFineFasciaOraria, Note, fasciaOraria) VALUES
-('MOD001','ANN-00001','Via Esempio 10', CURRENT_DATE + INTERVAL '3 days', '10:00','12:00','Ritiro presso biblioteca di ingegneria','10:00-12:00')

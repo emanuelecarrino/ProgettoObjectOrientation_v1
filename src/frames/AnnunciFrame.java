@@ -545,18 +545,35 @@ public class AnnunciFrame extends JFrame {
             infoGrid.add(makeInfoLabel("Stato"));
             infoGrid.add(makeInfoValue(stato));
 
-            infoGrid.add(makeInfoLabel("Prezzo"));
-            String prezzoDisplay = (prezzo == null || prezzo.isBlank() || "-".equals(prezzo)) ? "-" : "€ " + prezzo;
-            infoGrid.add(makeInfoValue(prezzoDisplay));
+            // Mostra prezzo solo per annunci di tipo Vendita e se presente
+            boolean isVendita = "Vendita".equalsIgnoreCase(tipo);
+            if (isVendita && prezzo != null && !prezzo.isBlank() && !"-".equals(prezzo)) {
+                infoGrid.add(makeInfoLabel("Prezzo"));
+                infoGrid.add(makeInfoValue("€ " + prezzo));
+            }
 
             infoGrid.add(makeInfoLabel("Pubblicato il"));
             infoGrid.add(makeInfoValue(dataPubblicazione == null || dataPubblicazione.isBlank() ? "--" : dataPubblicazione));
 
             infoGrid.add(makeInfoLabel("Creatore"));
-            infoGrid.add(makeInfoValue(creatore));
+            String creatoreDisplay = (creatore != null && creatore.equalsIgnoreCase(matricola)) ? "Tu" : creatore;
+            infoGrid.add(makeInfoValue(creatoreDisplay));
 
             infoGrid.add(makeInfoLabel("Oggetto"));
-            infoGrid.add(makeInfoValue(idOggetto == null || idOggetto.isBlank() ? "--" : idOggetto));
+            String oggettoDisplay = "--";
+            if (idOggetto != null && !idOggetto.isBlank()) {
+                try {
+                    String nomeOggetto = controller.trovaNomeOggettoPerId(idOggetto);
+                    if (nomeOggetto != null && !nomeOggetto.isBlank()) {
+                        oggettoDisplay = nomeOggetto;
+                    } else {
+                        oggettoDisplay = idOggetto;
+                    }
+                } catch (Exception ignore) {
+                    oggettoDisplay = idOggetto;
+                }
+            }
+            infoGrid.add(makeInfoValue(oggettoDisplay));
 
             panel.add(infoGrid, BorderLayout.SOUTH);
 

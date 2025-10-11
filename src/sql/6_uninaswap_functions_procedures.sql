@@ -376,7 +376,7 @@ CREATE OR REPLACE FUNCTION fun_inserisciConsegna(
 )
 RETURNS BOOLEAN AS $$
 BEGIN
-    INSERT INTO ModConsegna (ID_Consegna, sedeUni, oraInizioFasciaOraria, oraFineFasciaOraria, Note, Data, FK_Annuncio)
+    INSERT INTO ModConsegna (ID_Consegna, sedeUni, Note, Data, FK_Annuncio, fasciaOraria)
     VALUES (in_id_consegna, in_sede_uni, in_ora_inizio, in_ora_fine, in_note, in_data, in_id_annuncio);
     
     RETURN TRUE;

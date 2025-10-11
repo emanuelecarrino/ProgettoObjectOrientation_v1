@@ -20,7 +20,7 @@ public class ModConsegnaDAO {
 
         String sql = """ 
             INSERT INTO ModConsegna 
-            (ID_Consegna, ID_Annuncio, sedeUni, note, fasciaOraria, data)
+            (ID_Consegna, FK_Annuncio, sedeUni, note, fasciaOraria, data)
             VALUES (?, ?, ?, ?, ?, ?)
                 """;
 
@@ -51,7 +51,7 @@ public class ModConsegnaDAO {
             ps.setString(1, ID_Consegna);
             try(ResultSet rs = ps.executeQuery()){
                 if(!rs.next()) return null;
-                String ID_Annuncio = rs.getString("ID_Annuncio");
+                String ID_Annuncio = rs.getString("FK_Annuncio");
                 String sedeUni = rs.getString("sedeUni");
                 String note = rs.getString("note");
                 String fasciaOraria = rs.getString("fasciaOraria");
@@ -70,7 +70,7 @@ public class ModConsegnaDAO {
                 
             SELECT *
             FROM ModConsegna
-            WHERE ID_Annuncio = ?
+            WHERE FK_Annuncio = ?
                 """;
 
         try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)){
@@ -91,7 +91,7 @@ public class ModConsegnaDAO {
     public boolean updateModConsegna(ModConsegnaDTO consegna) throws SQLException {
         String sql = """
             UPDATE ModConsegna
-            SET ID_Annuncio = ?, sedeUni = ?, note = ?, fasciaOraria = ?, data = ?
+            SET FK_Annuncio = ?, sedeUni = ?, note = ?, fasciaOraria = ?, data = ?
             WHERE ID_Consegna = ?
             """;
         try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)){

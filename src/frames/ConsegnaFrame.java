@@ -15,7 +15,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModConsegnaFrame extends JFrame {
+public class ConsegnaFrame extends JFrame {
 
     // === COSTANTI DI STILE ===
     private static final Color SURFACE_BG = new Color(250, 251, 253);
@@ -62,7 +62,7 @@ public class ModConsegnaFrame extends JFrame {
 
     private dto.ModConsegnaDTO consegnaCorrente;
 
-    public ModConsegnaFrame(Controller controller, String matricola) {
+    public ConsegnaFrame(Controller controller, String matricola) {
         this.controller = controller;
         this.matricola = matricola;
         setTitle("UninaSwap - Modalità Consegna");
