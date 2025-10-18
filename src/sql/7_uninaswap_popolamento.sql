@@ -34,6 +34,10 @@ INSERT INTO Oggetto (ID_Oggetto, Nome, numProprietari, Condizioni, Dimensione, P
 INSERT INTO Oggetto (ID_Oggetto, Nome, numProprietari, Condizioni, Dimensione, Peso_Kg, FK_Utente) VALUES
 ('OBJ-00007','Cuffie Bluetooth',1,'Nuovo','10x10cm',0.20,'N86000002');
 
+-- Oggetto extra per N86000001 da usare in offerte di scambio (non collegato ad annunci)
+INSERT INTO Oggetto (ID_Oggetto, Nome, numProprietari, Condizioni, Dimensione, Peso_Kg, FK_Utente) VALUES
+('OBJ-00008','Mouse Logitech',1,'Ottimo','12x7cm',0.10,'N86000001');
+
 -- ANNUNCI
 -- ANNUNCI (ID formattati come ANN-xxxxx)
 INSERT INTO Annuncio (ID_Annuncio, Titolo, Descrizione, DataPubblicazione, Categoria, Stato, FK_Utente, FK_Oggetto, Tipo, prezzoVendita) VALUES
@@ -50,4 +54,13 @@ INSERT INTO Offerta (ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Ti
 ('OFF-00001', 18.00, 'Prendo subito',           CURRENT_DATE, 'Accettata', 'Vendita', 'N86000005', 'ANN-00001', NULL),
 ('OFF-00002', 17.00, 'Posso offrire 17',       CURRENT_DATE, 'Rifiutata', 'Vendita', 'N86000006', 'ANN-00001', NULL),
 ('OFF-00003', NULL,  'Posso dare oggetto in scambio', CURRENT_DATE, 'Attesa',    'Scambio',  'N86000002', 'ANN-00006', 'OBJ-00007'),
-('OFF-00004', 24.00, 'Interessato, ci sto',    CURRENT_DATE, 'Attesa',    'Vendita',  'N86000001', 'ANN-00004', NULL);
+('OFF-00004', 24.00, 'Interessato, ci sto',    CURRENT_DATE, 'Rifiutata', 'Vendita',  'N86000001', 'ANN-00004', NULL);
+
+-- Offerte aggiuntive per test REPORT (utente N86000001 come offerente)
+-- Obiettivo: avere totali per tipologia, accettate per tipologia e statistiche su Vendita accettate (min/avg/max)
+INSERT INTO Offerta (ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, ID_OggettoOfferto) VALUES
+('OFF-00005', 23.00, 'Offerta alternativa',          CURRENT_DATE, 'Accettata', 'Vendita', 'N86000001', 'ANN-00004', NULL),
+('OFF-00006', 11.00, 'Troppo alto, propongo 11',     CURRENT_DATE, 'Rifiutata', 'Vendita', 'N86000001', 'ANN-00005', NULL),
+('OFF-00007', 12.50, 'Ok per il prezzo pieno',       CURRENT_DATE, 'Accettata', 'Vendita', 'N86000001', 'ANN-00005', NULL),
+('OFF-00008', NULL,  'Propongo scambio con mio oggetto', CURRENT_DATE, 'Accettata', 'Scambio', 'N86000001', 'ANN-00006', 'OBJ-00008'),
+('OFF-00009', NULL,  'Mi propongo per il ritiro',     CURRENT_DATE, 'Accettata', 'Regalo',  'N86000001', 'ANN-00003', NULL);

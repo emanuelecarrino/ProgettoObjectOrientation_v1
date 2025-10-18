@@ -66,12 +66,6 @@ public class OggettiFrame extends JFrame {
     JButton addBtn = createPrimaryButton("Aggiungi oggetto");
     addBtn.addActionListener(e -> apriDialogNuovoOggetto());
     rightActions.add(addBtn);
-    JButton delBtn = createPrimaryButton("Elimina selezionato");
-    delBtn.setEnabled(false);
-    delBtn.addActionListener(e -> {
-        String sel = list.getSelectedValue();
-        if (sel != null) tentaEliminaOggetto(sel);
-    });
     JButton editBtn = createPrimaryButton("Modifica selezionato");
     editBtn.setEnabled(false);
     editBtn.addActionListener((ActionEvent e) -> {
@@ -81,11 +75,9 @@ public class OggettiFrame extends JFrame {
     list.addListSelectionListener(e -> {
         if (!e.getValueIsAdjusting()) {
             boolean any = list.getSelectedIndex() >= 0;
-            delBtn.setEnabled(any);
             editBtn.setEnabled(any);
         }
     });
-    rightActions.add(delBtn);
     rightActions.add(editBtn);
     bottom.add(rightActions, BorderLayout.EAST);
     root.add(bottom, BorderLayout.SOUTH);
@@ -146,31 +138,7 @@ public class OggettiFrame extends JFrame {
         }
     }
 
-    private void tentaEliminaOggetto(String rawRecord) {
-        if (rawRecord == null) return;
-        // Ora il valore selezionato è il record grezzo, possiamo estrarre l'ID in modo robusto
-        String id = controller.estraiIdOggetto(rawRecord);
-        if (id == null || id.isEmpty()) {
-            Component parent = getDialogParent();
-            JOptionPane.showMessageDialog(parent, "Impossibile derivare ID oggetto da: " + rawRecord);
-            dismissModalOverlay(parent);
-            return;
-        }
-        Component parent = getDialogParent();
-        int res = JOptionPane.showConfirmDialog(parent, "Eliminare oggetto?" , "Conferma eliminazione", JOptionPane.YES_NO_OPTION);
-        dismissModalOverlay(parent);
-        if (res == JOptionPane.YES_OPTION) {
-            try {
-                controller.eliminaOggetto(id); // eliminazione semplice per ID
-                refreshData();
-                JOptionPane.showMessageDialog(parent, "Oggetto eliminato");
-                dismissModalOverlay(parent);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(parent, ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
-                dismissModalOverlay(parent);
-            }
-        }
-    }
+   
 
     private void apriDialogModificaOggetto(String rawRecord) {
         if (rawRecord == null) return;

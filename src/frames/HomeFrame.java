@@ -26,6 +26,7 @@ public class HomeFrame extends JFrame {
     private ProfiloFrame profiloFrame;
     private ConsegnaFrame consegnaFrame;
     private RitiroFrame ritiroFrame;
+    private ReportFrame reportFrame;
 
     public HomeFrame(Controller controller, String matricola) {
         this.controller = controller;
@@ -76,7 +77,8 @@ public class HomeFrame extends JFrame {
         "I tuoi oggetti",
         "Profilo",
         "Consegna",
-        "Ritiro"
+        "Ritiro",
+        "Report"
     };
 
         ButtonGroup group = new ButtonGroup();
@@ -175,6 +177,10 @@ public class HomeFrame extends JFrame {
     ritiroFrame = new RitiroFrame(controller, matricola);
     cardPanel.add(ritiroFrame.getContentPanel(), "Ritiro");
     sectionHandlers.add(new SectionEntry("Ritiro", ritiroFrame::refreshContent));
+
+        reportFrame = new ReportFrame(controller, matricola);
+        cardPanel.add(reportFrame.getContentPanel(), "Report");
+        sectionHandlers.add(new SectionEntry("Report", reportFrame::refreshContent));
         add(cardPanel, BorderLayout.CENTER);
     }
 
@@ -223,6 +229,7 @@ public class HomeFrame extends JFrame {
     // Double-click su offerte: solo "Le tue offerte" e "Offerte da Gestire" per mostrare il dettaglio offerta
     attachDoubleClickToMieOfferte();
     attachDoubleClickToOfferteDaGestire();
+    attachDoubleClickToAnnunci();
 
     // Wiring selezione esclusiva tra le tre liste
     wireMutualSelection();
@@ -429,7 +436,21 @@ public class HomeFrame extends JFrame {
                 if (fromGestire) { dynamicActionsWrapper.add(accettaBtn); dynamicActionsWrapper.add(rifiutaBtn); }
             }
         } else {
-            if (fromAnnunci) { dynamicActionsWrapper.add(modificaBtn); dynamicActionsWrapper.add(eliminaBtn); }
+            if (fromAnnunci) {
+                // Parse stato dell'annuncio tra ']' e ' -'
+                String statoLower = null;
+                int rb = selected.indexOf(']');
+                if (rb > -1) {
+                    int dash = selected.indexOf(" -", rb);
+                    String after = dash > -1 ? selected.substring(rb + 1, dash) : selected.substring(rb + 1);
+                    statoLower = after.trim().toLowerCase();
+                }
+                boolean canModify = "attivo".equals(statoLower);
+                if (canModify) {
+                    dynamicActionsWrapper.add(modificaBtn);
+                    dynamicActionsWrapper.add(eliminaBtn);
+                }
+            }
         }
         // Non nascondiamo: wrapper rimane sempre visibile per stabilità layout
         dynamicActionsWrapper.revalidate();
@@ -481,6 +502,103 @@ public class HomeFrame extends JFrame {
                 }
             }
         });
+    }
+
+    // Doppio click su "I tuoi annunci": se lo stato è non Attivo (Venduto/Scambiato/Regalato/Chiuso) mostra i dettagli
+    private void attachDoubleClickToAnnunci() {
+        JList<String> list = getJList(recentAnnunciPanel);
+        if (list == null) return;
+        list.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                    int index = list.locationToIndex(e.getPoint());
+                    if (index >= 0) {
+                        Rectangle cellBounds = list.getCellBounds(index, index);
+                        if (cellBounds != null && cellBounds.contains(e.getPoint())) {
+                            String row = list.getModel().getElementAt(index);
+                            if (row == null || row.startsWith("OFF-")) return; // safety
+                            String id = estraiIdDaRiga(row);
+                            String stato = estraiStatoAnnuncioDaRiga(row);
+                            if (id != null && stato != null) {
+                                String s = stato.toLowerCase();
+                                if (!s.equals("attivo")) {
+                                    mostraDettaglioAnnuncio(id);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Estrae lo stato dall'etichetta annuncio formattata: "ID Titolo [Tipo] Stato - dd/MM"
+    private String estraiStatoAnnuncioDaRiga(String riga) {
+        if (riga == null) return null;
+        int rb = riga.indexOf(']');
+        if (rb < 0) return null;
+        int dash = riga.indexOf(" -", rb);
+        if (dash < 0) dash = riga.length();
+        String after = riga.substring(rb + 1, dash);
+        return after != null ? after.trim() : null;
+    }
+
+    private void mostraDettaglioAnnuncio(String idAnnuncio) {
+        try {
+            String[] a = controller.recuperaAnnuncioFields(idAnnuncio);
+            if (a == null || a.length < 9) {
+                showErrorDialog(this, "Impossibile mostrare i dettagli", "Dati annuncio incompleti");
+                return;
+            }
+            String titolo = a[0];
+            String descrizione = a[1];
+            String categoria = a[2];
+            String stato = a[3];
+            String tipo = a[4];
+            String prezzo = a[5];
+            String dataPub = a[6];
+            String creatore = a[7];
+            String idOggetto = a[8];
+
+            JPanel panel = new JPanel(new BorderLayout(10, 12));
+            panel.setBackground(Color.WHITE);
+            panel.setBorder(new EmptyBorder(16, 18, 16, 18));
+
+            JLabel header = new JLabel(titolo);
+            header.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            panel.add(header, BorderLayout.NORTH);
+
+            JTextArea descrArea = new JTextArea((descrizione == null || descrizione.isBlank()) ? "Nessuna descrizione." : descrizione, 6, 40);
+            descrArea.setLineWrap(true);
+            descrArea.setWrapStyleWord(true);
+            descrArea.setEditable(false);
+            descrArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            descrArea.setBackground(new Color(250, 250, 252));
+            descrArea.setBorder(new EmptyBorder(8, 10, 8, 10));
+            JScrollPane descrScroll = new JScrollPane(descrArea);
+            descrScroll.setBorder(new LineBorder(new Color(230, 232, 236)));
+            descrScroll.setPreferredSize(new Dimension(460, 140));
+            panel.add(descrScroll, BorderLayout.CENTER);
+
+            JPanel info = new JPanel(new GridLayout(0, 2, 12, 8));
+            info.setOpaque(false);
+            info.add(new JLabel("Tipo:"));
+            info.add(new JLabel(tipo));
+            info.add(new JLabel("Categoria:"));
+            info.add(new JLabel(categoria));
+            info.add(new JLabel("Prezzo:"));
+            info.add(new JLabel((prezzo != null && !prezzo.isBlank() && !"-".equals(prezzo)) ? ("€ " + prezzo) : "-"));
+            info.add(new JLabel("Data pubblicazione:"));
+            info.add(new JLabel(dataPub != null ? dataPub : "-"));
+            info.add(new JLabel("Oggetto:"));
+            info.add(new JLabel(idOggetto != null ? idOggetto : "-"));
+            panel.add(info, BorderLayout.SOUTH);
+
+            JOptionPane.showMessageDialog(this, panel, "Dettaglio annuncio " + idAnnuncio, JOptionPane.PLAIN_MESSAGE);
+        } catch (Exception ex) {
+            showErrorDialog(this, "Impossibile mostrare i dettagli", ex);
+        }
     }
 
     private void mostraDettaglioOfferta(String idOfferta) {
@@ -969,26 +1087,36 @@ public class HomeFrame extends JFrame {
 
             badgePanel.removeAll();
             if (isOfferta) {
-                Color c = new Color(0,120,212);
-                if (value.contains(" Attesa")) c = new Color(255,140,0);
-                else if (value.contains(" Accettata")) c = new Color(46,160,67);
-                else if (value.contains(" Rifiutata")) c = new Color(200,60,60);
-                badgePanel.add(badge("OFF", c));
+                String label = "OFFERTA";
+                Color c = new Color(108,117,125);
+                if (value.contains(" Attesa")) { label = "IN ATTESA"; c = new Color(255,140,0); }
+                else if (value.contains(" Accettata")) { label = "ACCETTATA"; c = new Color(46,160,67); }
+                else if (value.contains(" Rifiutata")) { label = "RIFIUTATA"; c = new Color(200,60,60); }
+                badgePanel.add(badge(label, c));
             } else {
-                // estrai tipo tra [] se presente
-                int lb = value!=null? value.indexOf('['):-1;
-                int rb = value!=null? value.indexOf(']'):-1;
-                if (lb>-1 && rb>lb) {
-                    String tipo = value.substring(lb+1, rb).trim();
-                    Color c;
-                    switch (tipo.toLowerCase()) {
-                        case "vendita": c = new Color(46,160,67); break;
-                        case "scambio": c = new Color(0,120,212); break;
-                        case "regalo": c = new Color(218,112,37); break;
-                        default: c = new Color(108,117,125); break;
+                // Badge sullo STATO annuncio (non il tipo)
+                if (value != null) {
+                    // Rimuove la porzione di stato dal testo (" [Tipo] Stato - dd/MM" => " [Tipo] - dd/MM")
+                    String display = value;
+                    int rb = display.indexOf(']');
+                    if (rb >= 0) {
+                        int dash = display.indexOf(" -", rb);
+                        if (dash > rb) {
+                            String left = display.substring(0, rb + 1);
+                            String right = display.substring(dash);
+                            display = left + right;
+                            primary.setText(display);
+                        }
                     }
-                    badgePanel.add(badge(tipo, c));
                 }
+                String label = null;
+                Color c = new Color(108,117,125);
+                if (value.contains(" Attivo ")) { label = "ATTIVO"; c = new Color(0,120,212); }
+                else if (value.contains(" Venduto ")) { label = "VENDUTO"; c = new Color(46,160,67); }
+                else if (value.contains(" Scambiato ")) { label = "SCAMBIATO"; c = new Color(0,120,212); }
+                else if (value.contains(" Regalato ")) { label = "REGALATO"; c = new Color(218,112,37); }
+                else if (value.contains(" Chiuso ")) { label = "CHIUSO"; c = new Color(108,117,125); }
+                if (label != null) badgePanel.add(badge(label, c));
             }
 
             setBackground(isSelected ? new Color(218,230,247) : Color.WHITE);

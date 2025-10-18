@@ -4,7 +4,7 @@ SET search_path TO uninaswap, public;
 -- Creazione dei vari enum
 
 CREATE TYPE statoOfferta AS ENUM ('Attesa', 'Accettata', 'Rifiutata');
-CREATE TYPE statoAnnuncio AS ENUM ('Attivo', 'Venduto', 'Scambiato', 'Regalato');
+CREATE TYPE statoAnnuncio AS ENUM ('Attivo', 'Venduto', 'Scambiato', 'Regalato', 'Chiuso');
 CREATE TYPE categoriaAnnuncio AS ENUM ('LibriTesto', 'Informatica', 'Abbigliamento', 'Altro');
 CREATE TYPE tipoAnnuncio AS ENUM ('Vendita', 'Scambio', 'Regalo');
 CREATE TYPE tipoOfferta AS ENUM ('Vendita', 'Scambio', 'Regalo');

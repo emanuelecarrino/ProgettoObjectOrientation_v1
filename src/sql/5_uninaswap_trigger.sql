@@ -97,5 +97,22 @@ EXECUTE FUNCTION fun_offertaRipetuta();
 
 CREATE TRIGGER proprietaOggettoAnnuncio_insert
 BEFORE INSERT OR UPDATE ON Annuncio
-FOR EACH ROW EXECUTE FUNCTION fun_proprietaOggettoAnnuncio();
+FOR EACH ROW 
+EXECUTE FUNCTION fun_proprietaOggettoAnnuncio();
+
+
+---- QUINDICESIMO ----
+
+CREATE TRIGGER bloccaAggiornamentoAnnuncioChiuso
+BEFORE UPDATE ON Annuncio
+FOR EACH ROW
+EXECUTE FUNCTION fun_bloccaAggiornamentoAnnuncioChiuso();
+
+
+---- SEDICESIMO ----
+
+CREATE TRIGGER controlloAnnuncioCompletato
+BEFORE INSERT OR UPDATE ON Annuncio
+FOR EACH ROW
+EXECUTE FUNCTION fun_controlloAnnuncioChiuso();
 

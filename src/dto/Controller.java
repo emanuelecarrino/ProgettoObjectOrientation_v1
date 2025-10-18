@@ -483,7 +483,53 @@ public class Controller {
 	}
 
 	private String generaIdAnnuncio(){
+		// Genera finché non trova un ID non presente a DB
+		for (int attempts = 0; attempts < 100000; attempts++) {
+			String candidate = generaIdSequenziale("ANN-");
+			if (!existsAnnuncioId(candidate)) {
+				return candidate;
+			}
+		}
+		// Fallback estremo: in caso di loop esaurito, restituisce comunque un ID sequenziale
 		return generaIdSequenziale("ANN-");
+	}
+
+	// Helpers di esistenza ID
+	private boolean existsAnnuncioId(String id) {
+		try {
+			if (id == null) return false;
+			return annuncioDAO.getAnnuncioById(id) != null;
+		} catch (SQLException e) {
+			// In caso di errore DB, per sicurezza consideriamo esistente per evitare collisioni
+			return true;
+		}
+	}
+
+	private boolean existsOggettoId(String id) {
+		try {
+			if (id == null) return false;
+			return oggettoDAO.getOggettiById(id) != null;
+		} catch (SQLException e) {
+			return true;
+		}
+	}
+
+	private boolean existsConsegnaId(String id) {
+		try {
+			if (id == null) return false;
+			return modConsegnaDAO.getConsegnaById(id) != null;
+		} catch (SQLException e) {
+			return true;
+		}
+	}
+
+	private boolean existsOffertaId(String id) {
+		try {
+			if (id == null) return false;
+			return offertaDAO.getOffertaById(id) != null;
+		} catch (SQLException e) {
+			return true;
+		}
 	}
 
 
@@ -603,7 +649,10 @@ public class Controller {
 
 	public String trovaNomeOggettoPerId(String ID_Oggetto) throws ApplicationException {
 		OggettoDTO o = trovaOggettoPerId(ID_Oggetto);
-		return o != null ? o.getNomeOggetto() : null;
+		if (o != null) {
+			return o.getNomeOggetto();
+		}
+		return null;
 	}
 
 	public List<OggettoDTO> ordinaOggettiPerPeso(String direzione) throws ApplicationException {
@@ -623,6 +672,12 @@ public class Controller {
 	}
 
 	private String generaIdOggetto(){
+		for (int attempts = 0; attempts < 100000; attempts++) {
+			String candidate = generaIdSequenziale("OGG-");
+			if (!existsOggettoId(candidate)) {
+				return candidate;
+			}
+		}
 		return generaIdSequenziale("OGG-");
 	}
 
@@ -715,12 +770,38 @@ public class Controller {
 				if (o.getStato() != StatoOffertaDTO.Accettata) continue;
 				try {
 					String[] annFields = recuperaAnnuncioFields(o.getIdAnnuncio());
-					String titolo = (annFields != null && annFields.length > 0) ? annFields[0] : "";
+					String titolo = "";
+					if (annFields != null && annFields.length > 0) {
+							 titolo = annFields[0];
+					}
+					String statoAnnuncio = "";
+					if (annFields != null && annFields.length > 3) {
+						statoAnnuncio = annFields[3];
+					}
 					ModConsegnaDTO c = trovaConsegnaPerAnnuncio(o.getIdAnnuncio());
-					String data = c.getData() == null ? "-" : c.getData().toString();
-					String sede = c.getSedeUni() == null ? "-" : c.getSedeUni();
-					String fascia = c.getFasciaOraria() == null ? "-" : c.getFasciaOraria();
-					out.add(o.getIdAnnuncio() + "  " + titolo + "  • " + data + "  • " + sede + "  • " + fascia);
+					String data;
+					if (c.getData() == null) {
+						data = "-";
+					} else {
+						data = c.getData().toString();
+					}
+					String sede;
+					if (c.getSedeUni() == null) {
+						sede = "-";
+					} else {
+						sede = c.getSedeUni();
+					}
+					String fascia;
+					if (c.getFasciaOraria() == null) {
+						fascia = "-";
+					} else {
+						fascia = c.getFasciaOraria();
+					}
+					String ritirataBadge = "";
+					if ("Chiuso".equalsIgnoreCase(statoAnnuncio)) {
+						ritirataBadge = "  • Ritirata";
+					}
+					out.add(o.getIdAnnuncio() + "  " + titolo + "  • " + data + "  • " + sede + "  • " + fascia + ritirataBadge);
 				} catch (NotFoundException nf) {  }
 			}
 			return out;
@@ -732,16 +813,26 @@ public class Controller {
 		try {
 			if (isBlank(idAnnuncio)) throw new ValidationException("Errore su ID_Annuncio");
 			String[] annFields = recuperaAnnuncioFields(idAnnuncio.trim());
-			String titolo = (annFields != null && annFields.length > 0) ? annFields[0] : "";
+			String titolo = "";
+			if (annFields != null && annFields.length > 0) {
+				titolo = annFields[0];
+			}
 			ModConsegnaDTO c = trovaConsegnaPerAnnuncio(idAnnuncio.trim());
-			return new String[]{
-				titolo,
-				(c.getSedeUni()==null?"":c.getSedeUni()),
-				(c.getFasciaOraria()==null?"":c.getFasciaOraria()),
-				(c.getData()==null?"":c.getData().toString()),
-				(c.getNote()==null?"":c.getNote()),
-				(c.getIdConsegna()==null?"":c.getIdConsegna())
-			};
+			String sede = c.getSedeUni();
+			if (sede == null) sede = "";
+			String fascia = c.getFasciaOraria();
+			if (fascia == null) fascia = "";
+			String data;
+			if (c.getData() == null) {
+				data = "";
+			} else {
+				data = c.getData().toString();
+			}
+			String note = c.getNote();
+			if (note == null) note = "";
+			String idConsegna = c.getIdConsegna();
+			if (idConsegna == null) idConsegna = "";
+			return new String[]{ titolo, sede, fascia, data, note, idConsegna };
 		} catch (ValidationException | NotFoundException e) { throw e; }
 	}
 
@@ -794,6 +885,13 @@ public class Controller {
 	}
 
 	private String generaIdConsegna() {
+		// Genera finché non trova un ID non presente; il seed da DB (ultimo ID) è effettuato in creaModConsegna quando necessario
+		for (int attempts = 0; attempts < 100000; attempts++) {
+			String candidate = generaIdSequenziale("CON-");
+			if (!existsConsegnaId(candidate)) {
+				return candidate;
+			}
+		}
 		return generaIdSequenziale("CON-");
 	}
 
@@ -853,8 +951,21 @@ public class Controller {
 				oggettoOffertoNew = ID_OggettoOfferto.trim();
 			}
 
-			OffertaDTO offertaCreata = new OffertaDTO(generaIdOfferta(), prezzoOffertaValore==null?0f:prezzoOffertaValore, commentoNew, LocalDate.now(), StatoOffertaDTO.Attesa, 
-			offerente.trim(), tipo, ID_Annuncio.trim(), oggettoOffertoNew);
+			float prezzoOffertaFinale = 0f;
+			if (prezzoOffertaValore != null) {
+				prezzoOffertaFinale = prezzoOffertaValore;
+			}
+			OffertaDTO offertaCreata = new OffertaDTO(
+				generaIdOfferta(),
+				prezzoOffertaFinale,
+				commentoNew,
+				LocalDate.now(),
+				StatoOffertaDTO.Attesa,
+				offerente.trim(),
+				tipo,
+				ID_Annuncio.trim(),
+				oggettoOffertoNew
+			);
 
 			offertaDAO.insertOfferta(offertaCreata);
 			return offertaCreata;
@@ -1053,6 +1164,12 @@ public class Controller {
 
 	// Generatore ID Offerta
 	private String generaIdOfferta() {
+		for (int attempts = 0; attempts < 100000; attempts++) {
+			String candidate = generaIdSequenziale("OFF-");
+			if (!existsOffertaId(candidate)) {
+				return candidate;
+			}
+		}
 		return generaIdSequenziale("OFF-");
 	}
 
@@ -1070,7 +1187,10 @@ public class Controller {
 		} else if (message.startsWith("ERRORE:")) {
 			message = message.substring("ERRORE:".length()).strip();
 		}
-		return message.isEmpty() ? null : message;
+		if (message.isEmpty()) {
+			return null;
+		}
+		return message;
 	}
 
 	// Converte SQLException in messaggi utente: se presente un messaggio pulito (trigger/RAISE), propaga come ValidationException;
@@ -1137,7 +1257,10 @@ public class Controller {
 			for (AnnuncioDTO a : miei) {
 				if (latest == null || a.getDataPubblicazione().isAfter(latest)) latest = a.getDataPubblicazione();
 			}
-			return latest == null ? "--" : latest.format(DASHBOARD_DATE_FMT);
+			if (latest == null) {
+				return "--";
+			}
+			return latest.format(DASHBOARD_DATE_FMT);
 		} catch (ValidationException e) { throw e; }
 		catch (SQLException sql) { throw new PersistenceException("Errore calcolo ultima data annuncio", sql); }
 	}
@@ -1221,10 +1344,16 @@ public class Controller {
             if (userOrEmail == null || userOrEmail.trim().isEmpty()) throw new ValidationException("Errore su Username");
             if (userOrEmail.contains("@")) {
                 UtenteDTO u = utenteDAO.getUtenteByEmail(userOrEmail.trim());
-                return u != null ? u.getMatricola() : null;
+				if (u != null) {
+					return u.getMatricola();
+				}
+				return null;
             } else {
                 UtenteDTO u = utenteDAO.getUtenteByUsername(userOrEmail.trim());
-                return u != null ? u.getMatricola() : null;
+				if (u != null) {
+					return u.getMatricola();
+				}
+				return null;
             }
         } catch (ValidationException e) { throw e; }
         catch (SQLException sql) { throw new PersistenceException("Errore recupero matricola", sql); }
@@ -1236,7 +1365,10 @@ public class Controller {
 		try {
 			if (matricola == null || matricola.trim().isEmpty()) throw new ValidationException("Errore su Matricola");
 			UtenteDTO u = utenteDAO.getUtenteByMatricola(matricola.trim());
-			return u != null ? u.getUsername() : null;
+			if (u != null) {
+				return u.getUsername();
+			}
+			return null;
 		} catch (ValidationException e) { throw e; }
 		catch (SQLException sql) { throw new PersistenceException("Errore recupero username", sql); }
 	}
@@ -1262,7 +1394,11 @@ public class Controller {
 			java.util.List<AnnuncioDTO> elenco = annuncioDAO.getAnnunciAttiviEsclusoCreatore(creatoreDaEscludere.trim());
 			java.util.List<String> out = new java.util.ArrayList<>();
 			for (AnnuncioDTO a : elenco) {
-				out.add(a.getIdAnnuncio() + "|" + a.getTitolo() + "|" + a.getTipoAnnuncio().name() + "|" + a.getCategoria().name() + "|" + (a.getPrezzoVendita()==null?"-":a.getPrezzoVendita()));
+				String prezzo = "-";
+				if (a.getPrezzoVendita() != null) {
+					prezzo = a.getPrezzoVendita().toString();
+				}
+				out.add(a.getIdAnnuncio() + "|" + a.getTitolo() + "|" + a.getTipoAnnuncio().name() + "|" + a.getCategoria().name() + "|" + prezzo);
 			}
 			return out;
 		} catch (ValidationException e) { throw e; }
@@ -1278,7 +1414,11 @@ public class Controller {
 			java.util.List<String> out = new java.util.ArrayList<>();
 			for (AnnuncioDTO a : elenco) {
 				if (a.getStato() != StatoAnnuncioDTO.Attivo) continue; // solo attivi come in precedente versione
-				out.add(a.getIdAnnuncio()+"|"+a.getTitolo()+"|"+a.getTipoAnnuncio().name()+"|"+a.getCategoria().name()+"|"+(a.getPrezzoVendita()==null?"-":a.getPrezzoVendita())+"|"+a.getCreatore());
+				String prezzo = "-";
+				if (a.getPrezzoVendita() != null) {
+					prezzo = a.getPrezzoVendita().toString();
+				}
+				out.add(a.getIdAnnuncio()+"|"+a.getTitolo()+"|"+a.getTipoAnnuncio().name()+"|"+a.getCategoria().name()+"|"+prezzo+"|"+a.getCreatore());
 			}
 			return out;
 		} catch (ValidationException e) { throw e; }
@@ -1288,7 +1428,10 @@ public class Controller {
 	public String estraiCreatoreAnnuncio(String record) {
 		if (record == null) return null;
 		String[] p = record.split("\\|", -1);
-		return p.length>=6 ? p[5] : null;
+		if (p.length >= 6) {
+			return p[5];
+		}
+		return null;
 	}
 
 	// Applica filtri in-memory (tipo/categoria) sulle stringhe annuncio restituite da annunciAltruiAttiviFormattati
@@ -1336,8 +1479,16 @@ public class Controller {
 		String prezzo = p[4];
 		String creatore = p[5];
 		boolean isVenditaConPrezzo = "Vendita".equalsIgnoreCase(tipo) && prezzo != null && !prezzo.equals("-") && !prezzo.isEmpty();
-		String prezzoPart = isVenditaConPrezzo ? (" - €"+prezzo) : "";
-		String who = (viewer != null && viewer.trim().equalsIgnoreCase(creatore)) ? "you" : creatore;
+		String prezzoPart = "";
+		if (isVenditaConPrezzo) {
+			prezzoPart = " - €" + prezzo;
+		}
+		String who;
+		if (viewer != null && viewer.trim().equalsIgnoreCase(creatore)) {
+			who = "you";
+		} else {
+			who = creatore;
+		}
 		// HTML per colorare il creatore in grigio
 		return "<html>"+escapeHtml(titolo)+" ("+escapeHtml(tipo)+")"+prezzoPart+" <span style='color:#777777;font-size:11px;'>"+escapeHtml(who)+"</span></html>";
 	}
@@ -1350,7 +1501,10 @@ public class Controller {
 	public String estraiIdAnnuncio(String record) {
         if (record == null) return null;
         String[] p = record.split("\\|", -1);
-        return p.length > 0 ? p[0] : null;
+		if (p.length > 0) {
+			return p[0];
+		}
+		return null;
     }
 
 	// Restituisce tutti gli stati annuncio disponibili (nomi enum) per uso UI
@@ -1394,15 +1548,26 @@ public class Controller {
 			if (isBlank(idAnnuncio)) throw new ValidationException("Errore su ID_Annuncio");
 			AnnuncioDTO a = annuncioDAO.getAnnuncioById(idAnnuncio.trim());
 			if (a == null) throw new NotFoundException("Annuncio non trovato");
-			String prezzo = a.getPrezzoVendita()==null? "-" : a.getPrezzoVendita().toPlainString();
+			String prezzo;
+			if (a.getPrezzoVendita() == null) {
+				prezzo = "-";
+			} else {
+				prezzo = a.getPrezzoVendita().toPlainString();
+			}
+			String descr = a.getDescrizione();
+			if (descr == null) descr = "";
+			String dataPub = "";
+			if (a.getDataPubblicazione() != null) {
+				dataPub = a.getDataPubblicazione().toString();
+			}
 			return new String[]{
 				a.getTitolo(),
-				a.getDescrizione()==null? "" : a.getDescrizione(),
+				descr,
 				a.getCategoria().name(),
 				a.getStato().name(),
 				a.getTipoAnnuncio().name(),
 				prezzo,
-				a.getDataPubblicazione()==null? "" : a.getDataPubblicazione().toString(),
+				dataPub,
 				a.getCreatore(),
 				a.getIdOggetto()
 			};
@@ -1420,7 +1585,12 @@ public class Controller {
 			java.util.List<OggettoDTO> list = oggettoDAO.getOggettiByPropr(proprietario.trim());
 			java.util.List<String> out = new java.util.ArrayList<>();
 			for (OggettoDTO o : list) {
-				String pesoStr = (o.getPeso()==null?"-":String.valueOf(o.getPeso()));
+				String pesoStr;
+				if (o.getPeso() == null) {
+					pesoStr = "-";
+				} else {
+					pesoStr = String.valueOf(o.getPeso());
+				}
 				out.add(o.getIdOggetto()+"|"+o.getNomeOggetto()+"|"+o.getNumProprietari()+"|"+o.getCondizione()+"|"+o.getDimensione()+"|"+pesoStr);
 			}
 			return out;
@@ -1437,14 +1607,20 @@ public class Controller {
 		String cond = p[3];
 		String dim = p[4];
 		String peso = p[5];
-		String extraPeso = (peso == null || peso.equals("-") || peso.isEmpty())? "" : (" - " + peso + "kg");
+		String extraPeso = "";
+		if (peso != null && !peso.equals("-") && !peso.isEmpty()) {
+			extraPeso = " - " + peso + "kg";
+		}
 		return nome + " ("+cond+") dim:"+dim+extraPeso+" | proprietari:"+numProp;
 	}
 
 	public String estraiIdOggetto(String record) {
 		if (record == null) return null;
 		String[] p = record.split("\\|", -1);
-		return p.length>0 ? p[0] : null;
+		if (p.length > 0) {
+			return p[0];
+		}
+		return null;
 	}
 
 	private void seedCounterFromExistingId(String prefix, String existingId) {
@@ -1504,6 +1680,72 @@ public class Controller {
             u.getGenere()
         };
     }
+
+	// ================== METODI REPORT / STATISTICHE ==================
+
+	// Totale offerte inviate per tipologia per l'offerente passato
+	public java.util.Map<String, Integer> reportTotaleOffertePerTipo(String offerente) throws ApplicationException {
+		try {
+			if (offerente == null || offerente.trim().isEmpty()) throw new ValidationException("Errore su FK_Utente");
+			java.util.List<OffertaDTO> mie = offertaDAO.getOfferteByUtente(offerente.trim());
+			java.util.Map<String, Integer> counts = new java.util.LinkedHashMap<>();
+			counts.put("Vendita", 0);
+			counts.put("Scambio", 0);
+			counts.put("Regalo", 0);
+			for (OffertaDTO o : mie) {
+				String key = o.getTipo().name();
+				counts.computeIfPresent(key, (k,v) -> v + 1);
+			}
+			return counts;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore calcolo offerte per tipologia", sql); }
+	}
+
+	// Offerte accettate per tipologia
+	public java.util.Map<String, Integer> reportOfferteAccettatePerTipo(String offerente) throws ApplicationException {
+		try {
+			if (offerente == null || offerente.trim().isEmpty()) throw new ValidationException("Errore su FK_Utente");
+			java.util.List<OffertaDTO> mie = offertaDAO.getOfferteByUtente(offerente.trim());
+			java.util.Map<String, Integer> counts = new java.util.LinkedHashMap<>();
+			counts.put("Vendita", 0);
+			counts.put("Scambio", 0);
+			counts.put("Regalo", 0);
+			for (OffertaDTO o : mie) {
+				if (o.getStato() != StatoOffertaDTO.Accettata) continue;
+				String key = o.getTipo().name();
+				counts.computeIfPresent(key, (k,v) -> v + 1);
+			}
+			return counts;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore calcolo offerte accettate per tipologia", sql); }
+	}
+
+	// Statistiche prezzo per offerte di Vendita accettate: restituisce [count, min, avg, max]
+	public float[] reportStatPrezziOfferteAccettateVendita(String offerente) throws ApplicationException {
+		try {
+			if (offerente == null || offerente.trim().isEmpty()) throw new ValidationException("Errore su FK_Utente");
+			java.util.List<OffertaDTO> mie = offertaDAO.getOfferteByUtente(offerente.trim());
+			int count = 0;
+			Float min = null;
+			Float max = null;
+			double sum = 0.0;
+			for (OffertaDTO o : mie) {
+				if (o.getStato() != StatoOffertaDTO.Accettata) continue;
+				if (o.getTipo() != TipoOffertaDTO.Vendita) continue;
+				float val = o.getPrezzoOfferta();
+				count++;
+				sum += val;
+				if (min == null || val < min) min = val;
+				if (max == null || val > max) max = val;
+			}
+			float avg = 0f;
+			if (count > 0) avg = (float)(sum / count);
+			float minVal = (min == null ? 0f : min);
+			float maxVal = (max == null ? 0f : max);
+			return new float[]{ (float)count, minVal, avg, maxVal };
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore calcolo statistiche prezzi offerte accettate", sql); }
+	}
 
 }
 

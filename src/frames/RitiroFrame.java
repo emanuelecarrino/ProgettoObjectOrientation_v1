@@ -48,8 +48,8 @@ public class RitiroFrame extends JFrame {
 
 		JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
 		actions.setOpaque(false);
-		JButton ricevutaBtn = createPrimaryButton("Ricevuta");
-		ricevutaBtn.addActionListener(e -> onRicevuta());
+	JButton ricevutaBtn = createPrimaryButton("Ricevuta");
+	ricevutaBtn.addActionListener(e -> onRicevuta());
 		JButton refresh = createPrimaryButton("Aggiorna");
 		refresh.addActionListener(e -> refreshContent());
 		actions.add(ricevutaBtn);
@@ -82,6 +82,17 @@ public class RitiroFrame extends JFrame {
 						}
 					}
 				}
+			}
+		});
+		ritiriList.addListSelectionListener(ev -> {
+			if (!ev.getValueIsAdjusting()) {
+				int idx = ritiriList.getSelectedIndex();
+				boolean disable = false;
+				if (idx >= 0) {
+					String row = listModel.get(idx);
+					if (row != null && row.contains("Ritirata")) disable = true;
+				}
+				ricevutaBtn.setEnabled(!disable);
 			}
 		});
 		listaPanel.add(new JScrollPane(ritiriList), BorderLayout.CENTER);
@@ -121,9 +132,13 @@ public class RitiroFrame extends JFrame {
 				JOptionPane.QUESTION_MESSAGE);
 		if (confirm != JOptionPane.YES_OPTION) return;
 		try {
-			controller.eliminaAnnuncio(idAnn);
+			String[] a = controller.recuperaAnnuncioFields(idAnn);
+			String titolo = a[0];
+			String descr = a[1];
+			String categoria = a[2];
+			String prezzoStr = a[5];
+			controller.aggiornaAnnuncio(idAnn, titolo, descr, categoria, "Chiuso", prezzoStr);
 			refreshContent();
-			JOptionPane.showMessageDialog(this, "Ritiro confermato.", "Informazione", JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception ex) {
 			JOptionPane.showMessageDialog(this, ex.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
 		}

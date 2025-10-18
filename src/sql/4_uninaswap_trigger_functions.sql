@@ -343,16 +343,79 @@ BEGIN
         RAISE EXCEPTION 'Oggetto inesistente';
     END IF;
 
-    -- Blocco cambio oggetto in UPDATE
+    -- Regole:
+    -- - In INSERT: l'oggetto deve appartenere al creatore dell'annuncio (NEW.FK_Utente)
+    -- - In UPDATE: non consentire il cambio dell'oggetto; non imporre più la proprietà
+    --   perché, dopo un'offerta accettata, la proprietà dell'oggetto passa all'acquirente
+    --   e l'UPDATE per portare lo stato a "Chiuso" non deve fallire.
 
-    IF TG_OP = 'UPDATE' AND NEW.FK_Oggetto <> OLD.FK_Oggetto THEN
-        RAISE EXCEPTION 'Cambio oggetto non consentito.';
-    END IF;
-
-    IF owner <> NEW.FK_Utente THEN
-        RAISE EXCEPTION 'L''oggetto non appartiene all''utente.';
+    IF TG_OP = 'INSERT' THEN
+        IF owner <> NEW.FK_Utente THEN
+            RAISE EXCEPTION 'L''oggetto non appartiene all''utente.';
+        END IF;
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF NEW.FK_Oggetto <> OLD.FK_Oggetto THEN
+            RAISE EXCEPTION 'Cambio oggetto non consentito.';
+        END IF;
     END IF;
 
     RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+---- QUINDICESIMA ----
+
+-- Impedisce la modifica (UPDATE) di un annuncio già non attivo
+
+CREATE OR REPLACE FUNCTION fun_bloccaAggiornamentoAnnuncioNonAttivo()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'UPDATE') THEN
+        IF OLD.Stato IN ('Venduto','Scambiato','Regalato','Chiuso') THEN
+            RAISE EXCEPTION 'Annuncio non attivo: modifica non consentita.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+---- SEDICESIMA ----
+
+-- Consente di impostare lo stato 'Chiuso' solo se esiste una ModConsegna associata
+
+CREATE OR REPLACE FUNCTION fun_controlloAnnuncioChiuso()
+RETURNS TRIGGER AS $$
+DECLARE
+    cnt INTEGER;
+BEGIN
+    IF TG_OP = 'INSERT' AND NEW.Stato = 'Chiuso' THEN
+        RAISE EXCEPTION 'Non è consentito inserire un annuncio già in stato Completato (Chiuso).';
+    ELSIF TG_OP = 'UPDATE' AND NEW.Stato = 'Chiuso' THEN
+        SELECT COUNT(*) INTO cnt FROM ModConsegna WHERE FK_Annuncio = NEW.ID_Annuncio;
+        IF cnt = 0 THEN
+            RAISE EXCEPTION 'Per impostare lo stato "Chiuso" deve esistere una modalità di consegna associata.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+---- DICIASSETTESIMA ----
+
+-- Impedisce l'eliminazione (DELETE) di un annuncio se non è Attivo
+
+CREATE OR REPLACE FUNCTION fun_bloccaDeleteAnnuncioNonAttivo()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'DELETE') THEN
+        IF OLD.Stato <> 'Attivo' THEN
+            RAISE EXCEPTION 'Annuncio non attivo: eliminazione non consentita.';
+        END IF;
+    END IF;
+    RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;

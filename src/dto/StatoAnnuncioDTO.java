@@ -4,5 +4,6 @@ public enum StatoAnnuncioDTO{
     Attivo,
     Venduto,
     Scambiato,
-    Regalato
+    Regalato,
+    Chiuso
 }
