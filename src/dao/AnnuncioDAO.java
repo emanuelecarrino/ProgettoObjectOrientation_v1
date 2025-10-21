@@ -178,6 +178,7 @@ public class AnnuncioDAO {
             SELECT *
             FROM Annuncio
             WHERE FK_Utente = ?
+            ORDER BY DataPubblicazione DESC, ID_Annuncio DESC
             """;
 
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
@@ -265,6 +266,7 @@ public class AnnuncioDAO {
             SELECT *
             FROM Annuncio
             WHERE UPPER(Stato::text) = ?
+            ORDER BY DataPubblicazione DESC, ID_Annuncio DESC
             """;
         ArrayList<AnnuncioDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {

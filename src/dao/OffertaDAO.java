@@ -84,7 +84,7 @@ public class OffertaDAO {
             SELECT *
             FROM Offerta
             WHERE FK_Annuncio = ?
-            ORDER BY DataOfferta ASC
+            ORDER BY DataOfferta DESC, ID_Offerta DESC
             """;
 
         ArrayList<OffertaDTO> risultati = new ArrayList<>();
@@ -114,7 +114,7 @@ public class OffertaDAO {
             SELECT *
             FROM Offerta
             WHERE FK_Utente = ?
-            ORDER BY DataOfferta DESC
+            ORDER BY DataOfferta DESC, ID_Offerta DESC
             """;
         ArrayList<OffertaDTO> risultati = new ArrayList<>();
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {

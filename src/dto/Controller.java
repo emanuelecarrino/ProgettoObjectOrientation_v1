@@ -1265,71 +1265,54 @@ public class Controller {
 		catch (SQLException sql) { throw new PersistenceException("Errore calcolo ultima data annuncio", sql); }
 	}
 
-	public List<String> ultimiAnnunci(int limit) throws ApplicationException {
-		if (limit <= 0) limit = 5;
+	public List<String> ultimiAnnunci() throws ApplicationException {
 		try {
-			List<AnnuncioDTO> tutti = annuncioDAO.getAllAnnunci();
-			java.util.List<AnnuncioDTO> copia = new java.util.ArrayList<>(tutti);
-			copia.sort((a,b) -> b.getDataPubblicazione().compareTo(a.getDataPubblicazione()));
+			List<AnnuncioDTO> tutti = annuncioDAO.getAllAnnunci(); // già ordinati dal DAO
 			java.util.List<String> out = new java.util.ArrayList<>();
-			int i=0;
-			for (AnnuncioDTO a : copia) {
+			for (AnnuncioDTO a : tutti) {
 				out.add(a.getTitolo()+" ["+a.getTipoAnnuncio().name()+"] "+a.getStato().name()+" - "+a.getDataPubblicazione().format(DASHBOARD_DATE_FMT));
-				if (++i>=limit) break;
 			}
 			return out;
 		} catch (SQLException sql) { throw new PersistenceException("Errore recupero ultimi annunci", sql); }
 	}
 
-	public List<String> ultimiAnnunciCreatore(String creatore, int limit) throws ApplicationException {
-		if (limit <= 0) limit = 5;
+	public List<String> ultimiAnnunciCreatore(String creatore) throws ApplicationException {
 		try {
 			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
-			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim());
-			miei.sort((a,b) -> b.getDataPubblicazione().compareTo(a.getDataPubblicazione()));
+			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim()); // già ordinati dal DAO
 			java.util.List<String> out = new java.util.ArrayList<>();
-			int i=0;
 			for (AnnuncioDTO a : miei) {
-				// Includiamo l'ID all'inizio per permettere operazioni (elimina/modifica) dalla Home
 				out.add(a.getIdAnnuncio()+" "+a.getTitolo()+" ["+a.getTipoAnnuncio().name()+"] "+a.getStato().name()+" - "+a.getDataPubblicazione().format(DASHBOARD_DATE_FMT));
-				if (++i>=limit) break;
 			}
 			return out;
 		} catch (ValidationException e) { throw e; }
 		catch (SQLException sql) { throw new PersistenceException("Errore recupero ultimi annunci creatore", sql); }
 	}
 
-	public List<String> ultimeOfferteUtente(String offerente, int limit) throws ApplicationException {
-		if (limit <= 0) limit = 5;
+	public List<String> ultimeOfferteUtente(String offerente) throws ApplicationException {
 		try {
 			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
-			List<OffertaDTO> mie = offertaDAO.getOfferteByUtente(offerente.trim());
-			mie.sort((o1,o2) -> o2.getDataOfferta().compareTo(o1.getDataOfferta()));
+			List<OffertaDTO> mie = offertaDAO.getOfferteByUtente(offerente.trim()); // già ordinate dal DAO
 			java.util.List<String> out = new java.util.ArrayList<>();
-			int i=0;
 			for (OffertaDTO o : mie) {
 				out.add(o.getIdOfferta()+" ["+o.getTipo().name()+"] "+o.getStato().name());
-				if (++i>=limit) break;
 			}
 			return out;
 		} catch (ValidationException e) { throw e; }
 		catch (SQLException sql) { throw new PersistenceException("Errore recupero offerte utente", sql); }
 	}
 
-	public List<String> offerteDaGestire(String creatore, int limit) throws ApplicationException {
-		if (limit <= 0) limit = 5;
+	public List<String> offerteDaGestire(String creatore) throws ApplicationException {
 		try {
 			if (isBlank(creatore)) throw new ValidationException("Errore su FK_Utente");
 			List<AnnuncioDTO> miei = annuncioDAO.getAnnunciByCreatore(creatore.trim());
 			java.util.List<String> out = new java.util.ArrayList<>();
 			for (AnnuncioDTO a : miei) {
 				if (a.getStato() != StatoAnnuncioDTO.Attivo) continue;
-				if (out.size() >= limit) break;
 				List<OffertaDTO> offerte = offertaDAO.getOfferteByAnnuncio(a.getIdAnnuncio());
 				for (OffertaDTO o : offerte) {
 					if (o.getStato()==StatoOffertaDTO.Attesa) {
 						out.add(o.getIdOfferta()+" ["+o.getTipo().name()+"] "+o.getStato().name());
-						if (out.size() >= limit) break;
 					}
 				}
 			}

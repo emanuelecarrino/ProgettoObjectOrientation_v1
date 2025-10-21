@@ -337,13 +337,13 @@ public class HomeFrame extends JFrame {
             updateKpi(2, String.valueOf(offerteRicevuteAttesa), "Offerte ricevute attesa");
             updateKpi(3, ultimoAnnuncioData, "Ultimo annuncio");
 
-            List<String> ultimiAnnunci = controller.ultimiAnnunciCreatore(matricola,5);
+            List<String> ultimiAnnunci = controller.ultimiAnnunciCreatore(matricola);
             setListData(recentAnnunciPanel, ultimiAnnunci);
 
-            List<String> mieOfferte = controller.ultimeOfferteUtente(matricola,5);
+            List<String> mieOfferte = controller.ultimeOfferteUtente(matricola);
             setListData(mieOffertePanel, mieOfferte);
 
-            List<String> gestire = controller.offerteDaGestire(matricola,5);
+            List<String> gestire = controller.offerteDaGestire(matricola);
             setListData(offerteDaGestirePanel, gestire);
 
             updateActionButtonsState();
@@ -1089,7 +1089,7 @@ public class HomeFrame extends JFrame {
             if (isOfferta) {
                 String label = "OFFERTA";
                 Color c = new Color(108,117,125);
-                if (value.contains(" Attesa")) { label = "IN ATTESA"; c = new Color(255,140,0); }
+                if (value.contains(" Attesa")) { label = "IN ATTESA"; c = new Color(128,128,128); }
                 else if (value.contains(" Accettata")) { label = "ACCETTATA"; c = new Color(46,160,67); }
                 else if (value.contains(" Rifiutata")) { label = "RIFIUTATA"; c = new Color(200,60,60); }
                 badgePanel.add(badge(label, c));

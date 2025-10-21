@@ -103,14 +103,6 @@ EXECUTE FUNCTION fun_proprietaOggettoAnnuncio();
 
 ---- QUINDICESIMO ----
 
-CREATE TRIGGER bloccaAggiornamentoAnnuncioChiuso
-BEFORE UPDATE ON Annuncio
-FOR EACH ROW
-EXECUTE FUNCTION fun_bloccaAggiornamentoAnnuncioChiuso();
-
-
----- SEDICESIMO ----
-
 CREATE TRIGGER controlloAnnuncioCompletato
 BEFORE INSERT OR UPDATE ON Annuncio
 FOR EACH ROW

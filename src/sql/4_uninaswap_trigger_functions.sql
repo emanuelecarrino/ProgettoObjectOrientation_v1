@@ -367,23 +367,6 @@ $$ LANGUAGE plpgsql;
 
 ---- QUINDICESIMA ----
 
--- Impedisce la modifica (UPDATE) di un annuncio già non attivo
-
-CREATE OR REPLACE FUNCTION fun_bloccaAggiornamentoAnnuncioNonAttivo()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF (TG_OP = 'UPDATE') THEN
-        IF OLD.Stato IN ('Venduto','Scambiato','Regalato','Chiuso') THEN
-            RAISE EXCEPTION 'Annuncio non attivo: modifica non consentita.';
-        END IF;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-
----- SEDICESIMA ----
-
 -- Consente di impostare lo stato 'Chiuso' solo se esiste una ModConsegna associata
 
 CREATE OR REPLACE FUNCTION fun_controlloAnnuncioChiuso()
