@@ -131,7 +131,7 @@ public class AnnunciFrame extends JFrame {
         annunciListModel = new DefaultListModel<>();
         annunciList = new JList<>(annunciListModel);
         annunciList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        annunciList.setFixedCellHeight(-1); // allow variable height
+    annunciList.setFixedCellHeight(-1);
         annunciList.setCellRenderer(new AnnuncioCardRenderer());
         root.add(new JScrollPane(annunciList), BorderLayout.CENTER);
 

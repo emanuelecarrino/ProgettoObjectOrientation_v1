@@ -1,29 +1,20 @@
-package dao;
+package dao.implement;
 
-import dto.AnnuncioDTO;
-import dto.CategoriaAnnuncioDTO;
+import dao.interf.UtenteDAOinterf;
 import dto.DB_Connection;
-import dto.OggettoDTO;
-import dto.StatoAnnuncioDTO;
-import dto.TipoAnnuncioDTO;
 import dto.UtenteDTO;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+public class UtenteDAO implements UtenteDAOinterf {
 
-public class UtenteDAO {
-    
-            private Connection getConnection() throws SQLException {
-                return DB_Connection.getConnection();
-        }
-    
+    private Connection getConnection() throws SQLException {
+        return DB_Connection.getConnection();
+    }
 
+    @Override
     public void insertUtente(UtenteDTO utente) throws SQLException {
         // Assunto: validazione fatta nel Controller
         String sql = """
@@ -49,6 +40,7 @@ public class UtenteDAO {
 
 
 
+    @Override
     public UtenteDTO getUtenteByUsername(String username) throws SQLException {
         String sql = """
             SELECT *
@@ -74,6 +66,7 @@ public class UtenteDAO {
 
 
     
+    @Override
     public UtenteDTO getUtenteByMatricola (String matricola) throws SQLException {
         String sql = """
             SELECT *
@@ -100,6 +93,7 @@ public class UtenteDAO {
     
 
 
+    @Override
     public UtenteDTO getUtenteByEmail(String email) throws SQLException {
         String sql = """
                 SELECT *
@@ -125,6 +119,7 @@ public class UtenteDAO {
 
 
 
+    @Override
     public boolean updateUtente(UtenteDTO utente) throws SQLException {
         String sql = """
             UPDATE Utente
@@ -148,6 +143,7 @@ public class UtenteDAO {
 
 
     
+    @Override
     public boolean deleteUtenteByMatricola(String matricola) throws SQLException {
         String sql = """
             DELETE FROM Utente WHERE Matricola = ?

@@ -1,7 +1,7 @@
 package exception;
 
 /**
- * Base generica per eccezioni applicative controllate.
+ * Base generica per eccezioni
  */
 public class ApplicationException extends Exception {
     public ApplicationException() { super("Errore applicativo"); }

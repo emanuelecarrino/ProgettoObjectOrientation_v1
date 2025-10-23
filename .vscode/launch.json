@@ -2,6 +2,7 @@
     // Launch config that runs the Main class without requiring a managed Java project
     "version": "0.2.0",
     "configurations": [
+        
         {
             "type": "java",
             "name": "HomeFrame",
@@ -16,6 +17,8 @@
             "mainClass": "Main",
             "classPaths": [
                 "${workspaceFolder}\\bin",
+                "${workspaceFolder}\\lib\\jcommon-1.0.24.jar",
+                "${workspaceFolder}\\lib\\jfreechart-1.5.4.jar",
                 "${workspaceFolder}\\lib\\postgresql-42.5.4.jar"
             ],
             "console": "integratedTerminal"

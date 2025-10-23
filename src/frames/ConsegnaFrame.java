@@ -58,7 +58,6 @@ public class ConsegnaFrame extends JFrame {
     private JTextArea noteArea;
     private JButton salvaButton;
     private JButton eliminaButton;
-    private JButton nuovaButton;
 
     private dto.ModConsegnaDTO consegnaCorrente;
 
@@ -257,9 +256,6 @@ public class ConsegnaFrame extends JFrame {
     JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
     actions.setOpaque(false);
 
-    nuovaButton = createSecondaryButton("Nuova consegna");
-    nuovaButton.addActionListener(e -> onNuovaConsegna());
-    actions.add(nuovaButton);
 
     eliminaButton = createDestructiveButton("Elimina consegna");
     eliminaButton.addActionListener(e -> onDeleteConsegna());
@@ -353,10 +349,6 @@ public class ConsegnaFrame extends JFrame {
         noteArea.setEnabled(enabled);
         salvaButton.setEnabled(enabled);
         eliminaButton.setEnabled(enabled && consegnaCorrente != null);
-        if (nuovaButton != null) {
-            boolean hasSelection = annunciList != null && annunciList.getSelectedValue() != null;
-            nuovaButton.setEnabled(hasSelection);
-        }
     }
 
     private void onAnnuncioSelected(dto.AnnuncioDTO annuncio) {

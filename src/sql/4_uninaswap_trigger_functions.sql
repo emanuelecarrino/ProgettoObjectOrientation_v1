@@ -387,7 +387,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
----- DICIASSETTESIMA ----
+---- SEDICESIMA ----
 
 -- Impedisce l'eliminazione (DELETE) di un annuncio se non è Attivo
 

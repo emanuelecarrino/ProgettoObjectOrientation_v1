@@ -54,6 +54,8 @@ public class HomeFrame extends JFrame {
     setResizable(true);
         buildUI();
         setVisible(true);
+
+    this.pack();
     }
 
     private void buildUI() {
@@ -170,13 +172,13 @@ public class HomeFrame extends JFrame {
         cardPanel.add(profiloFrame.getContentPanel(), "Profilo");
         sectionHandlers.add(new SectionEntry("Profilo", profiloFrame::refreshContent));
 
-    consegnaFrame = new ConsegnaFrame(controller, matricola);
-    cardPanel.add(consegnaFrame.getContentPanel(), "Consegna");
-    sectionHandlers.add(new SectionEntry("Consegna", consegnaFrame::refreshContent));
+        consegnaFrame = new ConsegnaFrame(controller, matricola);
+        cardPanel.add(consegnaFrame.getContentPanel(), "Consegna");
+        sectionHandlers.add(new SectionEntry("Consegna", consegnaFrame::refreshContent));
 
-    ritiroFrame = new RitiroFrame(controller, matricola);
-    cardPanel.add(ritiroFrame.getContentPanel(), "Ritiro");
-    sectionHandlers.add(new SectionEntry("Ritiro", ritiroFrame::refreshContent));
+        ritiroFrame = new RitiroFrame(controller, matricola);
+        cardPanel.add(ritiroFrame.getContentPanel(), "Ritiro");
+        sectionHandlers.add(new SectionEntry("Ritiro", ritiroFrame::refreshContent));
 
         reportFrame = new ReportFrame(controller, matricola);
         cardPanel.add(reportFrame.getContentPanel(), "Report");
@@ -389,7 +391,6 @@ public class HomeFrame extends JFrame {
         rifiutaBtn.addActionListener(e -> onRifiuta());
     }
 
-    // Stile uniforme: stesso background / font bold / foreground bianco del bottone "Aggiorna"
     private JButton createPrimaryActionButton(String text) {
         JButton b = new JButton(text);
         b.setFont(new Font("Tahoma", Font.BOLD, 14));

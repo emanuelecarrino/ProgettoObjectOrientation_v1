@@ -32,38 +32,49 @@ public class LoginFrame extends JFrame {
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
 
-		// =================== LABEL TITOLO ===================
+	// Sezione: Titolo
 		JLabel lblTitle = new JLabel("LOGIN");
 		lblTitle.setFont(new Font("Tahoma", Font.BOLD, 24));
 		lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
 		lblTitle.setBounds(centerX - 150, 30, 300, 30);
 		contentPane.add(lblTitle);
 
-		// =================== LABEL USERNAME ===================
+	// Sezione: Username
 		JLabel lblUsername = new JLabel("Username o email:");
 		lblUsername.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblUsername.setBounds(67, 110, 130, 25);
 		contentPane.add(lblUsername);
 
-		// =================== TEXTFIELD USERNAME ===================
+	// Campo input username/email
 		textFieldUsername = new JTextField();
 		textFieldUsername.setBounds(210, 110, 160, 25);
 		contentPane.add(textFieldUsername);
 		textFieldUsername.setColumns(10);
 
-		// =================== LABEL PASSWORD ===================
+	// Sezione: Password
 		JLabel lblPassword = new JLabel("Password:");
 		lblPassword.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblPassword.setBounds(120, 150, 90, 25);
 		contentPane.add(lblPassword);
 
-		// =================== PASSWORD FIELD ===================
+		// Campo input password
 		passwordField = new JPasswordField();
 		passwordField.setBounds(210, 150, 160, 25);
 		contentPane.add(passwordField);
+		// Invio su username passa al campo password
+		textFieldUsername.addActionListener(e -> passwordField.requestFocusInWindow());
 
-		// =================== LINK PASSWORD DIMENTICATA ===================
-		// Registrazione (link) - restore HTML link (blue, underlined)
+		// Invio su password esegue il login
+		passwordField.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+					performLogin();
+				}
+			}
+		});
+
+		// Sezione: Link registrazione
 		JLabel lblForgot = new JLabel("<html><a href=''>Nuovo account? Registrati</a></html>");
 		lblForgot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		lblForgot.setBounds(centerX - 39, 178, 170, 20);
@@ -71,13 +82,12 @@ public class LoginFrame extends JFrame {
 		lblForgot.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				// Apri dialog di registrazione (usa il Controller esistente)
 				new RegistrationDialog(LoginFrame.this, controller).setVisible(true);
 			}
 		});
 		contentPane.add(lblForgot);
 
-		// =================== BUTTON LOGIN ===================
+		// Sezione: Pulsante login
 		JButton btnLogin = new JButton("Accedi");
 		btnLogin.setFont(new Font("Tahoma", Font.BOLD, 13));
 		btnLogin.setBackground(new Color(100, 149, 237));
@@ -86,9 +96,7 @@ public class LoginFrame extends JFrame {
 		btnLogin.setBounds(centerX - 60, 220, 120, 30);
 		contentPane.add(btnLogin);
 
-		// ... registrazione ora accessibile tramite link sotto la password
-
-		// =================== MESSAGGIO ===================
+		// Sezione: Messaggio esito
 		lblMessage = new JLabel("");
 		lblMessage.setHorizontalAlignment(SwingConstants.CENTER);
 		lblMessage.setFont(new Font("Tahoma", Font.BOLD, 12));
@@ -96,43 +104,42 @@ public class LoginFrame extends JFrame {
 		lblMessage.setBounds(50, 250, 380, 25);
 		contentPane.add(lblMessage);
 
-		// =================== EVENTO BOTTONE ===================
-
+		// Azione: click su Accedi
 		btnLogin.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String usernameOrEmail = textFieldUsername.getText();
-				String password = new String(passwordField.getPassword());
-				try {
-                    // Usa direttamente il metodo login del Controller (ritorna UtenteDTO) ma
-                    // qui ignoriamo l'oggetto perché ci serve solo verificare le credenziali.
-                    controller.login(usernameOrEmail, password);
-                    // Recupera SEMPRE la matricola da usare in tutta l'app (filtri annunci/offerte)
-                    String matricola = controller.recuperaMatricolaDaUsernameOEmail(usernameOrEmail.trim());
-                    if (matricola == null) {
-                        throw new ApplicationException("Utente non trovato dopo login");
-                    }
-                    lblMessage.setForeground(new Color(0, 128, 0));
-                    lblMessage.setText("Accesso effettuato.");
-                    // Passiamo SOLO la matricola alla Home (il costruttore userà la stessa per display e filtro)
-                    HomeFrame home = new HomeFrame(controller, matricola);
-                    home.setVisible(true);
-                    dispose();
-				} catch (ApplicationException ex) {
-					lblMessage.setForeground(Color.RED);
-					lblMessage.setText(ex.getMessage());
-				} catch (Exception ex) {
-					lblMessage.setForeground(Color.RED);
-					lblMessage.setText("Errore inatteso: " + ex.getMessage());
-                }
+				performLogin();
 			}
 		});
 	}
 
-	// =================== DIALOG DI REGISTRAZIONE SEMPLICE ===================
+	// Esegue il login e apre la Home
+	private void performLogin() {
+		String usernameOrEmail = textFieldUsername.getText();
+		String password = new String(passwordField.getPassword());
+		try {
+            controller.login(usernameOrEmail, password);
+            String matricola = controller.recuperaMatricolaDaUsernameOEmail(usernameOrEmail.trim());
+            if (matricola == null) {
+                throw new ApplicationException("Utente non trovato dopo login");
+            }
+            lblMessage.setForeground(new Color(0, 128, 0));
+            lblMessage.setText("Accesso effettuato.");
+            HomeFrame home = new HomeFrame(controller, matricola);
+            home.setVisible(true);
+            dispose();
+		} catch (ApplicationException ex) {
+			lblMessage.setForeground(Color.RED);
+			lblMessage.setText(ex.getMessage());
+		} catch (Exception ex) {
+			lblMessage.setForeground(Color.RED);
+			lblMessage.setText("Errore inatteso: " + ex.getMessage());
+        }
+	}
+
+	// Dialog di registrazione
 	private static class RegistrationDialog extends JDialog {
 		private final Controller controller;
 		private JTextField tfNome, tfCognome, tfEmail, tfMatricola, tfUsername;
-		// replaced tfDataNascita with three comboboxes
 		private JComboBox<String> cbDay, cbMonth, cbYear;
 		private JPasswordField pfPassword;
 		private JComboBox<String> cbGenere;
@@ -149,7 +156,6 @@ public class LoginFrame extends JFrame {
 			GridBagConstraints gbc = new GridBagConstraints();
 			gbc.gridx = 0; gbc.gridy = 0; gbc.insets = new Insets(6,6,6,6); gbc.anchor = GridBagConstraints.WEST;
 
-			// Helper per aggiungere campi
 			java.util.function.BiConsumer<String, JComponent> addRow = (label, comp) -> {
 				gbc.gridx = 0; gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE;
 				panel.add(new JLabel(label+":"), gbc);
@@ -164,26 +170,21 @@ public class LoginFrame extends JFrame {
 			tfMatricola = new JTextField();
 			tfUsername = new JTextField();
 			pfPassword = new JPasswordField();
-			// Setup comboboxes for date of birth: day, month, year
 			cbDay = new JComboBox<>();
 			cbMonth = new JComboBox<>();
 			cbYear = new JComboBox<>();
 
-			// populate months (1-12)
 			for (int m = 1; m <= 12; m++) {
 				cbMonth.addItem(String.format("%02d", m));
 			}
 
-			// populate years: reasonable range, e.g., 1900..currentYear
 			int currentYear = java.time.LocalDate.now().getYear();
 			for (int y = currentYear; y >= 1900; y--) {
 				cbYear.addItem(Integer.toString(y));
 			}
 
-			// populate days initially for January (31 days)
 			for (int d = 1; d <= 31; d++) cbDay.addItem(String.format("%02d", d));
 
-			// when month or year changes, adjust days for that month/year
 			ActionListener adjustDays = e -> adjustDaysCombo();
 			cbMonth.addActionListener(adjustDays);
 			cbYear.addActionListener(adjustDays);
@@ -196,7 +197,6 @@ public class LoginFrame extends JFrame {
 			addRow.accept("Matricola", tfMatricola);
 			addRow.accept("Username", tfUsername);
 			addRow.accept("Password", pfPassword);
-			// create a panel to host the three comboboxes side by side
 			JPanel datePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
 			datePanel.add(cbDay);
 			datePanel.add(cbMonth);
@@ -207,16 +207,13 @@ public class LoginFrame extends JFrame {
 			JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
 			JButton annulla = new JButton("Annulla");
 			JButton registra = new JButton("Registra");
-			// Uniform styling: plain font, default background (system look), consistent size
 			Font btnFont = new Font("Tahoma", Font.PLAIN, 13);
 			annulla.setFont(btnFont);
 			registra.setFont(btnFont);
 			annulla.setPreferredSize(new Dimension(100, 28));
 			registra.setPreferredSize(new Dimension(100, 28));
-			// Keep foreground default; do not force bold or colored background
 			annulla.addActionListener(e -> dispose());
 			registra.addActionListener(e -> onRegister());
-			// add buttons with Registra on the right
 			buttons.add(annulla);
 			buttons.add(registra);
 

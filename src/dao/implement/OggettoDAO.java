@@ -1,21 +1,24 @@
-package dao;
+package dao.implement;
 
+import dao.interf.OggettoDAOinterf;
+import dto.DB_Connection;
 import dto.OggettoDTO;
-import java.sql.ResultSet;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.List;
-import java.util.ArrayList;
-import dto.DB_Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
-public class OggettoDAO {
+public class OggettoDAO implements OggettoDAOinterf {
     
     private Connection getConnection() throws SQLException {
         return DB_Connection.getConnection();
     }
 
     //Inserimento oggetto
+    @Override
     public void insertOggetto(OggettoDTO oggetto) throws SQLException {
 
         String sql = """
@@ -35,6 +38,7 @@ public class OggettoDAO {
     }
 
     //Ricerca per proprietario
+    @Override
     public List<OggettoDTO> getOggettiByPropr(String proprietario) throws SQLException {
         String sql = """
                 SELECT *
@@ -59,6 +63,7 @@ public class OggettoDAO {
     }
 
     //Ricerca per nome esatto
+    @Override
     public List<OggettoDTO> getOggettiByNome(String nome) throws SQLException {
         String sql = """
                 SELECT *
@@ -83,6 +88,7 @@ public class OggettoDAO {
     }
 
     //Ricerca per ID Oggetto
+    @Override
     public OggettoDTO getOggettiById(String id) throws SQLException {
         String sql = """
                 SELECT *
@@ -107,6 +113,7 @@ public class OggettoDAO {
     }
 
     //Ricerca ordinata per peso -crescente/decrescente-
+    @Override
     public List<OggettoDTO> orderOggettiByPeso(String ordine) throws SQLException{
         
         String sql = """
@@ -135,6 +142,7 @@ public class OggettoDAO {
 
 
     //Ricerca ordinata per numero di proprietari
+    @Override
     public List<OggettoDTO> orderOggettiByNumPropr() throws SQLException {
         String sql = """
                 SELECT *
@@ -160,6 +168,7 @@ public class OggettoDAO {
 
 
 
+    @Override
     public boolean updateOggetto(OggettoDTO oggetto) throws SQLException {
 
         String sql = """
@@ -180,6 +189,7 @@ public class OggettoDAO {
 
 
 
+    @Override
     public boolean deleteOggettoById(String idOggetto) throws SQLException {
         String sql = "DELETE FROM Oggetto WHERE ID_Oggetto = ?";
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {

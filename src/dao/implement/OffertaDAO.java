@@ -1,9 +1,10 @@
-package dao;
+package dao.implement;
 
+import dao.interf.OffertaDAOinterf;
+import dto.DB_Connection;
 import dto.OffertaDTO;
 import dto.StatoOffertaDTO;
 import dto.TipoOffertaDTO;
-import dto.DB_Connection;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -13,12 +14,13 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class OffertaDAO {
+public class OffertaDAO implements OffertaDAOinterf {
 
     private Connection getConnection() throws SQLException {
         return DB_Connection.getConnection();
     }
 
+    @Override
     public void insertOfferta(OffertaDTO offerta) throws SQLException {
 
         String sql = """
@@ -51,6 +53,7 @@ public class OffertaDAO {
 
 
 
+    @Override
     public OffertaDTO getOffertaById(String ID_Offerta) throws SQLException {
 
         String sql = """
@@ -78,6 +81,7 @@ public class OffertaDAO {
 
 
 
+    @Override
     public List<OffertaDTO> getOfferteByAnnuncio(String ID_Annuncio) throws SQLException {
 
         String sql = """
@@ -109,6 +113,7 @@ public class OffertaDAO {
 
 
     // Recupera tutte le offerte create da un determinato utente (offerente)
+    @Override
     public List<OffertaDTO> getOfferteByUtente(String matricolaOfferente) throws SQLException {
         String sql = """
             SELECT *
@@ -140,6 +145,7 @@ public class OffertaDAO {
     
 
 
+    @Override
     public boolean updateStatoOfferta(String ID_Offerta, StatoOffertaDTO statoCorrente, StatoOffertaDTO statoNuovo) throws SQLException {
         
         String sql = """
@@ -160,6 +166,7 @@ public class OffertaDAO {
 
     // Aggiorna prezzo, commento e oggetto offerto SOLO se stato è ancora ATTESA
     
+    @Override
     public boolean updateOfferta(OffertaDTO offerta) throws SQLException {
         
         String sql = """
@@ -184,6 +191,7 @@ public class OffertaDAO {
 
 
 
+    @Override
     public boolean deleteOffertaById(String ID_Offerta) throws SQLException {
 
         String sql = """

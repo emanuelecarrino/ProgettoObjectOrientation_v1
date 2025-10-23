@@ -108,3 +108,10 @@ BEFORE INSERT OR UPDATE ON Annuncio
 FOR EACH ROW
 EXECUTE FUNCTION fun_controlloAnnuncioChiuso();
 
+
+---- SEDICESIMO ----
+
+CREATE TRIGGER bloccaDeleteAnnuncioNonAttivo
+BEFORE DELETE ON Annuncio
+FOR EACH ROW
+EXECUTE FUNCTION fun_bloccaDeleteAnnuncioNonAttivo();

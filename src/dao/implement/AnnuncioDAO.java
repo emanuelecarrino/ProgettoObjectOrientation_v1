@@ -1,10 +1,11 @@
-package dao;
+package dao.implement;
 
-import dto.DB_Connection;
+import dao.interf.AnnuncioDAOinterf;
 import dto.AnnuncioDTO;
-import dto.TipoAnnuncioDTO;
-import dto.StatoAnnuncioDTO;
 import dto.CategoriaAnnuncioDTO;
+import dto.DB_Connection;
+import dto.StatoAnnuncioDTO;
+import dto.TipoAnnuncioDTO;
 import java.sql.*;
 import java.time.LocalDate;
 import java.math.BigDecimal;
@@ -13,13 +14,14 @@ import java.util.ArrayList;
 
 
 
-public class AnnuncioDAO {
+public class AnnuncioDAO implements AnnuncioDAOinterf {
 
     private Connection getConnection() throws SQLException {
         return DB_Connection.getConnection();
     }
 
 
+    @Override
     public void insertAnnuncio(AnnuncioDTO annuncio) throws SQLException {
         String sql = """
             INSERT INTO Annuncio
@@ -43,6 +45,7 @@ public class AnnuncioDAO {
     }
 
 
+    @Override
     public List<AnnuncioDTO> getAnnunciByTipo(TipoAnnuncioDTO tipo) throws SQLException {
 
         String sql = """
@@ -75,6 +78,7 @@ public class AnnuncioDAO {
 
 
 
+    @Override
     public List<AnnuncioDTO> getAnnunciByCategoria(CategoriaAnnuncioDTO categoria) throws SQLException {
 
         String sql = """
@@ -107,6 +111,7 @@ public class AnnuncioDAO {
 
 
 
+    @Override
     public List<AnnuncioDTO> getAnnunciByTitolo(String ricerca) throws SQLException {
         String trimmed = ricerca.trim();
 
@@ -141,6 +146,7 @@ public class AnnuncioDAO {
 
 
 
+    @Override
     public List<AnnuncioDTO> getAnnunciByPrezzoMax(BigDecimal prezzoMax) throws SQLException {
 
         String sql = """
@@ -172,6 +178,7 @@ public class AnnuncioDAO {
     }
 
 
+    @Override
     public List<AnnuncioDTO> getAnnunciByCreatore(String creatore) throws SQLException {
 
         String sql = """
@@ -203,6 +210,7 @@ public class AnnuncioDAO {
     }
 
     // Annunci attivi escluso un creatore specifico
+    @Override
     public List<AnnuncioDTO> getAnnunciAttiviEsclusoCreatore(String creatore) throws SQLException {
         String sql = """
             SELECT *
@@ -233,6 +241,7 @@ public class AnnuncioDAO {
     }
 
     // Recupera un singolo annuncio per ID 
+    @Override
     public AnnuncioDTO getAnnuncioById(String idAnnuncio) throws SQLException {
         String sql = """
             SELECT *
@@ -261,6 +270,7 @@ public class AnnuncioDAO {
     }
 
     // Elenco di tutti gli annunci ATTIVI 
+    @Override
     public List<AnnuncioDTO> getAllAnnunci() throws SQLException {
         String sql = """
             SELECT *
@@ -290,6 +300,7 @@ public class AnnuncioDAO {
         return risultati;
     }
 
+    @Override
     public boolean updateAnnuncio(AnnuncioDTO annuncio) throws SQLException {
         String sql = """
             UPDATE Annuncio
@@ -309,6 +320,7 @@ public class AnnuncioDAO {
     }
 
 
+    @Override
     public boolean deleteAnnuncio(AnnuncioDTO annuncio) throws SQLException {
         String sql = "DELETE FROM Annuncio WHERE ID_Annuncio = ?";
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
@@ -318,6 +330,7 @@ public class AnnuncioDAO {
     }
 
     // Cancellazione per ID diretta 
+    @Override
     public boolean deleteAnnuncioById(String idAnnuncio) throws SQLException {
         String sql = "DELETE FROM Annuncio WHERE ID_Annuncio = ?";
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {

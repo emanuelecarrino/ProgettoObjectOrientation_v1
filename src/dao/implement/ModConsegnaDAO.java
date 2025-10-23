@@ -1,4 +1,8 @@
-package dao;
+package dao.implement;
+
+import dao.interf.ModConsegnaDAOinterf;
+import dto.DB_Connection;
+import dto.ModConsegnaDTO;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -6,16 +10,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import dto.DB_Connection;
-import dto.ModConsegnaDTO;
 
-public class ModConsegnaDAO {
+public class ModConsegnaDAO implements ModConsegnaDAOinterf {
     
      private Connection getConnection() throws SQLException {
         return DB_Connection.getConnection();
     }
 
 
+    @Override
     public void insertModConsegna(ModConsegnaDTO consegna) throws SQLException {
 
         String sql = """ 
@@ -38,6 +41,7 @@ public class ModConsegnaDAO {
 
 
 
+    @Override
     public ModConsegnaDTO getConsegnaById(String ID_Consegna) throws SQLException{
 
         String sql = """
@@ -64,6 +68,7 @@ public class ModConsegnaDAO {
 
 
     
+    @Override
     public ModConsegnaDTO getConsegnaByAnnuncio(String ID_Annuncio) throws SQLException{
 
         String sql = """
@@ -88,6 +93,7 @@ public class ModConsegnaDAO {
     }
 
 
+    @Override
     public boolean updateModConsegna(ModConsegnaDTO consegna) throws SQLException {
         String sql = """
             UPDATE ModConsegna
@@ -106,6 +112,7 @@ public class ModConsegnaDAO {
     }
 
     // Eliminazione per ID; true se cancellata almeno una riga
+    @Override
     public boolean deleteModConsegnaById(String ID_Consegna) throws SQLException {
         String sql = """
             DELETE FROM ModConsegna
@@ -119,6 +126,7 @@ public class ModConsegnaDAO {
 
 
 
+    @Override
     public String getUltimoIdConsegna() throws SQLException {
         String sql = """
             SELECT ID_Consegna
