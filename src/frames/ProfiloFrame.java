@@ -33,7 +33,6 @@ public class ProfiloFrame extends JFrame {
     private JComboBox<String> meseCombo;
     private JComboBox<String> annoCombo;
 
-    private String currentPassword = "";
     private String currentUsername = "";
 
     private static final Color FIELD_BORDER = new Color(214, 219, 226);
@@ -118,25 +117,24 @@ public class ProfiloFrame extends JFrame {
         cognomeField = createTextField();
         emailField = createTextField();
         usernameField = createTextField();
+
+        for (JTextField tf : new JTextField[]{nomeField, cognomeField, emailField, usernameField}) {
+            tf.setEditable(false);
+            tf.setBorder(null);
+            tf.setOpaque(false);
+        }
+
         genereBox = new JComboBox<>(new String[]{"", "M", "F", "ALTRO"});
         giornoCombo = new JComboBox<>(buildDayModel());
         meseCombo = new JComboBox<>(buildMonthModel());
         annoCombo = new JComboBox<>(buildYearModel());
 
-        for (JTextField tf : new JTextField[]{nomeField, cognomeField, emailField, usernameField}) {
-            tf.setColumns(18);
-            applyComponentWidth(tf, 260);
+        for (JComboBox<?> combo : new JComboBox[]{genereBox, giornoCombo, meseCombo, annoCombo}) {
+            combo.setEnabled(false);
+            combo.setUI(new BasicComboBoxUI());
+            combo.setBorder(null);
+            combo.setOpaque(false);
         }
-
-        for (JComboBox<String> combo : new JComboBox[]{giornoCombo, meseCombo, annoCombo}) {
-            enhanceCombo(combo);
-        }
-        applyComponentWidth(giornoCombo, 72);
-        applyComponentWidth(meseCombo, 72);
-        applyComponentWidth(annoCombo, 88);
-        genereBox.setPrototypeDisplayValue("ALTRO");
-        enhanceCombo(genereBox);
-        applyComponentWidth(genereBox, 110);
 
         addLabeledField(right, gbc, "Nome", nomeField);
         addLabeledField(right, gbc, "Cognome", cognomeField);
@@ -154,29 +152,6 @@ public class ProfiloFrame extends JFrame {
 
         resetDateCombos();
         loadProfilo();
-
-        gbc.gridx = 0;
-        gbc.gridy++;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1.0;
-        gbc.anchor = GridBagConstraints.EAST;
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
-        actions.setBackground(Color.WHITE);
-
-        JButton changePasswordButton = createLinkButton("\uD83D\uDD12 Cambia password");
-        changePasswordButton.addActionListener(e -> openPasswordDialog());
-        actions.add(changePasswordButton);
-
-        JButton saveButton = new JButton("Salva");
-        saveButton.setFocusPainted(false);
-        saveButton.setBackground(new Color(40, 167, 69));
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFont(new Font("Tahoma", Font.BOLD, 14));
-        saveButton.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-        saveButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        saveButton.addActionListener(e -> onSaveProfilo());
-        actions.add(saveButton);
-        right.add(actions, gbc);
 
         return right;
     }
@@ -200,35 +175,6 @@ public class ProfiloFrame extends JFrame {
         gbc.gridy++;
     }
 
-    private void onSaveProfilo() {
-        try {
-            String nome = safeTrim(nomeField.getText());
-            String cognome = safeTrim(cognomeField.getText());
-            String email = safeTrim(emailField.getText());
-            String username = safeTrim(usernameField.getText());
-            String genere = normalizeGenere((String) genereBox.getSelectedItem());
-            String dataIso;
-            try {
-                dataIso = composeBirthDateIso();
-            } catch (IllegalArgumentException iae) {
-                showErrorDialog("Impossibile aggiornare il profilo", iae.getMessage());
-                return;
-            }
-
-            if (currentPassword == null || currentPassword.isBlank()) {
-                showErrorDialog("Impossibile aggiornare il profilo", "Password corrente non disponibile. Ricarica il profilo e riprova.");
-                return;
-            }
-
-            controller.aggiornaProfilo(matricola, nome, cognome, email, username, currentPassword, dataIso, genere);
-            currentUsername = username;
-            showInfoDialog("Profilo aggiornato con successo.");
-            loadProfilo();
-        } catch (Exception ex) {
-            showErrorDialog("Impossibile aggiornare il profilo", ex);
-        }
-    }
-
     private void loadProfilo() {
         try {
             String[] fields = controller.recuperaProfiloFields(matricola);
@@ -240,7 +186,6 @@ public class ProfiloFrame extends JFrame {
             emailField.setText(nullToEmpty(fields[2]));
             currentUsername = nullToEmpty(fields[3]);
             usernameField.setText(currentUsername);
-            currentPassword = nullToEmpty(fields[4]);
             populateDateCombos(fields[5]);
             String genere = normalizeGenere(fields[6]);
             if (!genere.isBlank()) {
@@ -273,215 +218,6 @@ public class ProfiloFrame extends JFrame {
             }
         });
         return field;
-    }
-
-    private void enhanceCombo(JComboBox<?> combo) {
-        if (combo == null) {
-            return;
-        }
-        combo.setFont(BASE_FONT);
-        combo.setForeground(FIELD_TEXT);
-        combo.setBackground(Color.WHITE);
-        combo.setOpaque(true);
-        combo.setFocusable(true);
-    combo.setBorder(new CompoundBorder(new LineBorder(FIELD_BORDER, 1, true), new EmptyBorder(4, 8, 4, 8)));
-        combo.setRenderer(new CoolComboRenderer(combo));
-        combo.setUI(new CoolComboUI());
-        combo.setMaximumRowCount(12);
-        if (combo.getClientProperty("coolComboStyled") == null) {
-            combo.addFocusListener(new FocusAdapter() {
-                @Override
-                public void focusGained(FocusEvent e) {
-                    combo.setBorder(new CompoundBorder(new LineBorder(FIELD_BORDER_FOCUS, 1, true), new EmptyBorder(4, 8, 4, 8)));
-                }
-
-                @Override
-                public void focusLost(FocusEvent e) {
-                    combo.setBorder(new CompoundBorder(new LineBorder(FIELD_BORDER, 1, true), new EmptyBorder(4, 8, 4, 8)));
-                }
-            });
-            combo.putClientProperty("coolComboStyled", Boolean.TRUE);
-        }
-    }
-
-    private JButton createLinkButton(String text) {
-        final String normalHtml = "<html><span style='font-weight:600; color:#3D63F2;'>" + text + "</span></html>";
-        final String hoverHtml = "<html><span style='font-weight:600; color:#1F3FE6; text-decoration:underline;'>" + text + "</span></html>";
-        JButton button = new JButton(normalHtml);
-        button.setFont(BASE_FONT.deriveFont(13f));
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setContentAreaFilled(false);
-        button.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
-        button.setFocusPainted(false);
-        button.setBorderPainted(false);
-    button.setMargin(new Insets(0, 0, 0, 0));
-        button.setOpaque(false);
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setText(hoverHtml);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setText(normalHtml);
-            }
-        });
-        return button;
-    }
-
-    private static class CoolComboUI extends BasicComboBoxUI {
-        @Override
-        protected JButton createArrowButton() {
-            BasicArrowButton arrow = new BasicArrowButton(BasicArrowButton.SOUTH, Color.WHITE, FIELD_BORDER, FIELD_TEXT, Color.WHITE);
-            arrow.setBorder(new EmptyBorder(0, 8, 0, 8));
-            arrow.setFocusPainted(false);
-            arrow.setContentAreaFilled(false);
-            arrow.setOpaque(false);
-            return arrow;
-        }
-    }
-
-    private static class CoolComboRenderer extends DefaultListCellRenderer {
-        private final JComboBox<?> owner;
-
-        private CoolComboRenderer(JComboBox<?> owner) {
-            this.owner = owner;
-        }
-
-        @Override
-        public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                                                       boolean isSelected, boolean cellHasFocus) {
-            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            label.setFont(BASE_FONT);
-            label.setOpaque(true);
-            label.setBorder(new EmptyBorder(6, 12, 6, 12));
-
-            if (isSelected) {
-                label.setBackground(FIELD_SELECTION_BG);
-                label.setForeground(Color.WHITE);
-            } else {
-                label.setBackground(Color.WHITE);
-                label.setForeground(FIELD_TEXT);
-            }
-
-            boolean placeholder = false;
-            if (value instanceof String str) {
-                placeholder = isPlaceholder(str);
-            }
-
-            if (index == 0 || (index == -1 && owner.getSelectedIndex() == 0)) {
-                placeholder = true;
-            }
-
-            if (placeholder && !isSelected) {
-                label.setForeground(FIELD_PLACEHOLDER);
-            }
-
-            return label;
-        }
-
-        private boolean isPlaceholder(String value) {
-            String lower = value.trim().toLowerCase();
-            return lower.isEmpty() || lower.equals("giorno") || lower.equals("mese") || lower.equals("anno")
-                    || lower.equals("tipo") || lower.equals("categoria") || lower.startsWith("(")
-                    || lower.contains("seleziona") || lower.contains("default");
-        }
-    }
-
-    private void openPasswordDialog() {
-        if (currentUsername == null || currentUsername.isBlank()) {
-            showErrorDialog("Impossibile aggiornare la password", "Username non disponibile.");
-            return;
-        }
-
-        JPasswordField currentField = new JPasswordField(12);
-        JPasswordField newField = new JPasswordField(12);
-        JPasswordField confirmField = new JPasswordField(12);
-
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setOpaque(false);
-        GridBagConstraints gc = new GridBagConstraints();
-        gc.insets = new Insets(6, 6, 6, 6);
-        gc.gridx = 0;
-        gc.gridy = 0;
-        gc.anchor = GridBagConstraints.WEST;
-
-        panel.add(new JLabel("Password attuale"), gc);
-        gc.gridx = 1;
-        panel.add(currentField, gc);
-
-        gc.gridx = 0;
-        gc.gridy++;
-        panel.add(new JLabel("Nuova password"), gc);
-        gc.gridx = 1;
-        panel.add(newField, gc);
-
-        gc.gridx = 0;
-        gc.gridy++;
-        panel.add(new JLabel("Conferma nuova password"), gc);
-        gc.gridx = 1;
-        panel.add(confirmField, gc);
-
-    Object[] options = {"Aggiorna", "Annulla"};
-    Component parent = getDialogParent();
-    int res = JOptionPane.showOptionDialog(parent, panel, "Cambia password",
-        JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
-    dismissModalOverlay(parent);
-        if (res == 0) {
-            char[] current = currentField.getPassword();
-            char[] nuova = newField.getPassword();
-            char[] conferma = confirmField.getPassword();
-            try {
-                String currentStr = new String(current).trim();
-                String nuovaStr = new String(nuova).trim();
-                String confermaStr = new String(conferma).trim();
-
-                if (currentStr.isEmpty() || nuovaStr.isEmpty() || confermaStr.isEmpty()) {
-                    showErrorDialog("Impossibile aggiornare la password", "Compila tutti i campi della password.");
-                    return;
-                }
-                if (!nuovaStr.equals(confermaStr)) {
-                    showErrorDialog("Impossibile aggiornare la password", "Le nuove password non coincidono.");
-                    return;
-                }
-                if (nuovaStr.length() < 6) {
-                    showErrorDialog("Impossibile aggiornare la password", "La nuova password deve contenere almeno 6 caratteri.");
-                    return;
-                }
-
-                controller.cambiaPassword(currentUsername, currentStr, nuovaStr);
-                currentPassword = nuovaStr;
-                showInfoDialog("Password aggiornata correttamente.");
-            } catch (Exception ex) {
-                showErrorDialog("Impossibile aggiornare la password", ex);
-            } finally {
-                Arrays.fill(current, '\0');
-                Arrays.fill(nuova, '\0');
-                Arrays.fill(conferma, '\0');
-            }
-        }
-    }
-
-    private String composeBirthDateIso() {
-        if (giornoCombo.getSelectedIndex() <= 0 || meseCombo.getSelectedIndex() <= 0 || annoCombo.getSelectedIndex() <= 0) {
-            throw new IllegalArgumentException("Seleziona giorno, mese e anno di nascita.");
-        }
-
-        String dayStr = (String) giornoCombo.getSelectedItem();
-        String monthStr = (String) meseCombo.getSelectedItem();
-        String yearStr = (String) annoCombo.getSelectedItem();
-
-        try {
-            int day = Integer.parseInt(dayStr);
-            int month = Integer.parseInt(monthStr);
-            int year = Integer.parseInt(yearStr);
-            LocalDate date = LocalDate.of(year, month, day);
-            return date.toString();
-        } catch (NumberFormatException | DateTimeException ex) {
-            throw new IllegalArgumentException("La data di nascita selezionata non è valida.", ex);
-        }
     }
 
     private void populateDateCombos(String isoDate) {
@@ -561,16 +297,6 @@ public class ProfiloFrame extends JFrame {
             case "M", "F", "ALTRO" -> upper;
             default -> "";
         };
-    }
-
-    private void applyComponentWidth(JComponent component, int width) {
-        int height = 36;
-        Dimension preferred = component.getPreferredSize();
-        int targetWidth = width > 0 ? Math.max(width, preferred.width) : preferred.width;
-        Dimension size = new Dimension(targetWidth, height);
-        component.setPreferredSize(size);
-        component.setMinimumSize(size);
-        component.setMaximumSize(size);
     }
 
     private Component getDialogParent() {

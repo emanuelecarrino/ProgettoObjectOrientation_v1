@@ -24,10 +24,10 @@ public class HomeFrame extends JFrame {
     private AnnunciFrame annunciFrame;
     private OggettiFrame oggettiFrame;
     private ProfiloFrame profiloFrame;
-    private ConsegnaFrame consegnaFrame;
-    private RitiroFrame ritiroFrame;
     private ReportFrame reportFrame;
 
+
+    
     public HomeFrame(Controller controller, String matricola) {
         this.controller = controller;
         this.matricola = matricola;
@@ -78,8 +78,6 @@ public class HomeFrame extends JFrame {
         "Annunci",
         "I tuoi oggetti",
         "Profilo",
-        "Consegna",
-        "Ritiro",
         "Report"
     };
 
@@ -172,13 +170,7 @@ public class HomeFrame extends JFrame {
         cardPanel.add(profiloFrame.getContentPanel(), "Profilo");
         sectionHandlers.add(new SectionEntry("Profilo", profiloFrame::refreshContent));
 
-        consegnaFrame = new ConsegnaFrame(controller, matricola);
-        cardPanel.add(consegnaFrame.getContentPanel(), "Consegna");
-        sectionHandlers.add(new SectionEntry("Consegna", consegnaFrame::refreshContent));
-
-        ritiroFrame = new RitiroFrame(controller, matricola);
-        cardPanel.add(ritiroFrame.getContentPanel(), "Ritiro");
-        sectionHandlers.add(new SectionEntry("Ritiro", ritiroFrame::refreshContent));
+        
 
         reportFrame = new ReportFrame(controller, matricola);
         cardPanel.add(reportFrame.getContentPanel(), "Report");
