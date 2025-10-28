@@ -110,6 +110,68 @@ public class Controller {
 		}
 	}
 
+	// Recupera matricola da username o email
+	public String recuperaMatricolaDaUsernameOEmail(String userOrEmail) throws ApplicationException {
+		try {
+			if (userOrEmail == null || userOrEmail.trim().isEmpty()) throw new ValidationException("Errore su Username");
+			if (userOrEmail.contains("@")) {
+				UtenteDTO u = utenteDAO.getUtenteByEmail(userOrEmail.trim());
+				if (u != null) {
+					return u.getMatricola();
+				}
+				return null;
+			} else {
+				UtenteDTO u = utenteDAO.getUtenteByUsername(userOrEmail.trim());
+				if (u != null) {
+					return u.getMatricola();
+				}
+				return null;
+			}
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore recupero matricola", sql); }
+	}
+
+	// Recupera username partendo dalla matricola
+	public String recuperaUsernameDaMatricola(String matricola) throws ApplicationException {
+		try {
+			if (matricola == null || matricola.trim().isEmpty()) throw new ValidationException("Errore su Matricola");
+			UtenteDTO u = utenteDAO.getUtenteByMatricola(matricola.trim());
+			if (u != null) {
+				return u.getUsername();
+			}
+			return null;
+		} catch (ValidationException e) { throw e; }
+		catch (SQLException sql) { throw new PersistenceException("Errore recupero username", sql); }
+	}
+
+	// Recupera UtenteDTO per matricola (wrapper per UI)
+	public UtenteDTO trovaUtentePerMatricola(String matricola) throws ApplicationException {
+		try {
+			if (isBlank(matricola)) throw new ValidationException("Errore su Matricola");
+			UtenteDTO u = utenteDAO.getUtenteByMatricola(matricola.trim());
+			if (u == null) throw new NotFoundException("Utente non trovato");
+			return u;
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore recupero utente", sql);
+		}
+	}
+
+	/** Restituisce i campi del profilo come array di String (ordine: nome,cognome,email,username,password,dataNascita,genere) */
+	public String[] recuperaProfiloFields(String matricola) throws ApplicationException {
+		UtenteDTO u = trovaUtentePerMatricola(matricola);
+		return new String[]{
+			u.getNome(),
+			u.getCognome(),
+			u.getEmail(),
+			u.getUsername(),
+			u.getPassword(),
+			u.getDataNascita(),
+			u.getGenere()
+		};
+	}
+
 	private boolean isBlank(String s){
 		return s == null || s.trim().isEmpty();
 	}
@@ -120,7 +182,7 @@ public class Controller {
 	}
 
 
-
+	
 
 
 
@@ -302,6 +364,102 @@ public class Controller {
 	}
 
 
+	// Elenco tipi annuncio (stringhe enum)
+	public List<String> elencoTipiAnnuncio() {
+		List<String> out = new ArrayList<>();
+		for (TipoAnnuncioDTO t : TipoAnnuncioDTO.values()) out.add(t.name());
+		return out;
+	}
+
+	// Elenco categorie annuncio (stringhe enum)
+	public List<String> elencoCategorieAnnuncio() {
+		List<String> out = new ArrayList<>();
+		for (CategoriaAnnuncioDTO c : CategoriaAnnuncioDTO.values()) out.add(c.name());
+		return out;
+	}
+
+	// Annunci attivi (inclusi i miei) formattati (ID|Titolo|Tipo|Categoria|Prezzo|Creatore)
+	public List<String> annunciAttiviFormattatiInclusiMiei(String creatore) throws ApplicationException {
+		try {
+			List<AnnuncioDTO> elenco = annuncioDAO.getAllAnnunci(); // se getAllAnnunci() restituisce anche non attivi andrebbe filtrato
+			List<String> out = new ArrayList<>();
+			for (AnnuncioDTO a : elenco) {
+				if (a.getStato() != StatoAnnuncioDTO.Attivo) continue; // solo attivi
+				String prezzo = "-";
+				if (a.getPrezzoVendita() != null) {
+					prezzo = a.getPrezzoVendita().toString();
+				}
+				out.add(a.getIdAnnuncio()+"|"+a.getTitolo()+"|"+a.getTipoAnnuncio().name()+"|"+a.getCategoria().name()+"|"+prezzo+"|"+a.getCreatore());
+			}
+			return out;
+		} catch (java.sql.SQLException sql) { throw new PersistenceException("Errore recupero annunci attivi", sql); }
+	}
+
+	// Applica filtri su tipo/categoria a record formattati
+	public List<String> filtraAnnunciFormattati(List<String> annunci, String tipo, String categoria) {
+		if (annunci == null) return Collections.emptyList();
+		List<String> out = new ArrayList<>();
+		for (String r : annunci) {
+			// formato: ID|Titolo|Tipo|Categoria|Prezzo
+			String[] parts = r.split("\\|", -1);
+			if (parts.length < 5) continue;
+			String tipoVal = parts[2];
+			String catVal = parts[3];
+			boolean ok = true;
+			if (tipo != null && !tipo.equals("Tutti") && !tipo.equals(tipoVal)) ok = false;
+			if (categoria != null && !categoria.equals("Tutte") && !categoria.equals(catVal)) ok = false;
+			if (ok) out.add(r);
+		}
+		return out;
+	}
+
+	// Estrae l'ID annuncio dal record formattato
+	public String estraiIdAnnuncio(String record) {
+        if (record == null) return null;
+        String[] p = record.split("\\|", -1);
+		if (p.length > 0) {
+			return p[0];
+		}
+		return null;
+    }
+
+	// Campi principali di un annuncio (per dialog UI)
+	public String[] recuperaAnnuncioFields(String idAnnuncio) throws ApplicationException {
+		try {
+			if (isBlank(idAnnuncio)) throw new ValidationException("Errore su ID_Annuncio");
+			AnnuncioDTO a = annuncioDAO.getAnnuncioById(idAnnuncio.trim());
+			if (a == null) throw new NotFoundException("Annuncio non trovato");
+			String prezzo;
+			if (a.getPrezzoVendita() == null) {
+				prezzo = "-";
+			} else {
+				prezzo = a.getPrezzoVendita().toPlainString();
+			}
+			String descr = a.getDescrizione();
+			if (descr == null) descr = "";
+			String dataPub = "";
+			if (a.getDataPubblicazione() != null) {
+				dataPub = a.getDataPubblicazione().toString();
+			}
+			return new String[]{
+				a.getTitolo(),
+				descr,
+				a.getCategoria().name(),
+				a.getStato().name(),
+				a.getTipoAnnuncio().name(),
+				prezzo,
+				dataPub,
+				a.getCreatore(),
+				a.getIdOggetto()
+			};
+		} catch (ValidationException | NotFoundException e) {
+			throw e;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore recupero annuncio", sql);
+		}
+	}
+
+
 	private String generaIdAnnuncio() throws PersistenceException {
 		for (int attempts = 0; attempts < MAX_ID_ATTEMPTS; attempts++) {
 			String candidate = generaIdConPrefissoENumeri("ANN-");
@@ -313,7 +471,14 @@ public class Controller {
 	}
 
 
-
+	// ====== Exists helpers per verificare collisioni ID ======
+	private boolean existsAnnuncioId(String id) throws PersistenceException {
+		try {
+			return annuncioDAO.getAnnuncioById(id) != null;
+		} catch (SQLException sql) {
+			throw new PersistenceException("Errore verifica unicità ID Annuncio", sql);
+		}
+	}
 
 
 
@@ -352,6 +517,52 @@ public class Controller {
 	public String trovaNomeOggettoPerId(String ID_Oggetto) throws ApplicationException {
 		OggettoDTO o = trovaOggettoPerId(ID_Oggetto);
 		return (o != null) ? o.getNomeOggetto() : null;
+	}
+
+
+	// Oggetti dell'utente formattati (ID|Nome|#Prop|Cond|Dim|Peso)
+	public List<String> oggettiUtenteFormattati(String proprietario) throws ApplicationException {
+		try {
+			List<OggettoDTO> list = cercaOggettiPerProprietario(proprietario);
+			List<String> out = new ArrayList<>();
+			for (OggettoDTO o : list) {
+				String pesoStr;
+				if (o.getPeso() == null) {
+					pesoStr = "-";
+				} else {
+					pesoStr = String.valueOf(o.getPeso());
+				}
+				out.add(o.getIdOggetto()+"|"+o.getNomeOggetto()+"|"+o.getNumProprietari()+"|"+o.getCondizione()+"|"+o.getDimensione()+"|"+pesoStr);
+			}
+			return out;
+		} catch (ValidationException e) { throw e; }
+	}
+
+	// Label leggibile per un oggetto formattato
+	public String formatOggettoLabel(String record) {
+		if (record == null) return "";
+		String[] p = record.split("\\|", -1);
+		if (p.length < 6) return record;
+		String nome = p[1];
+		String numProp = p[2];
+		String cond = p[3];
+		String dim = p[4];
+		String peso = p[5];
+		String extraPeso = "";
+		if (peso != null && !peso.equals("-") && !peso.isEmpty()) {
+			extraPeso = " - " + peso + "kg";
+		}
+		return nome + " ("+cond+") dim:"+dim+extraPeso+" | proprietari:"+numProp;
+	}
+
+	// Estrae l'ID oggetto dal record formattato
+	public String estraiIdOggetto(String record) {
+		if (record == null) return null;
+		String[] p = record.split("\\|", -1);
+		if (p.length > 0) {
+			return p[0];
+		}
+		return null;
 	}
 
 
@@ -593,14 +804,7 @@ public class Controller {
 		return prefisso + String.format("%05d", num);
 	}
 
-	// ====== Exists helpers per verificare collisioni ID ======
-	private boolean existsAnnuncioId(String id) throws PersistenceException {
-		try {
-			return annuncioDAO.getAnnuncioById(id) != null;
-		} catch (SQLException sql) {
-			throw new PersistenceException("Errore verifica unicità ID Annuncio", sql);
-		}
-	}
+	
 
 	private boolean existsOffertaId(String id) throws PersistenceException {
 		try {
@@ -720,106 +924,6 @@ public class Controller {
 	}
 
 
-    public String recuperaMatricolaDaUsernameOEmail(String userOrEmail) throws ApplicationException {
-        try {
-            if (userOrEmail == null || userOrEmail.trim().isEmpty()) throw new ValidationException("Errore su Username");
-            if (userOrEmail.contains("@")) {
-                UtenteDTO u = utenteDAO.getUtenteByEmail(userOrEmail.trim());
-				if (u != null) {
-					return u.getMatricola();
-				}
-				return null;
-            } else {
-                UtenteDTO u = utenteDAO.getUtenteByUsername(userOrEmail.trim());
-				if (u != null) {
-					return u.getMatricola();
-				}
-				return null;
-            }
-        } catch (ValidationException e) { throw e; }
-        catch (SQLException sql) { throw new PersistenceException("Errore recupero matricola", sql); }
-    }
-
-
-
-	public String recuperaUsernameDaMatricola(String matricola) throws ApplicationException {
-		try {
-			if (matricola == null || matricola.trim().isEmpty()) throw new ValidationException("Errore su Matricola");
-			UtenteDTO u = utenteDAO.getUtenteByMatricola(matricola.trim());
-			if (u != null) {
-				return u.getUsername();
-			}
-			return null;
-		} catch (ValidationException e) { throw e; }
-		catch (SQLException sql) { throw new PersistenceException("Errore recupero username", sql); }
-	}
-
-	// Restituisce elenco tipi annuncio disponibili come String (ordine fisso)
-	// Elenco tipi annuncio (stringhe enum)
-	public List<String> elencoTipiAnnuncio() {
-		List<String> out = new ArrayList<>();
-		for (TipoAnnuncioDTO t : TipoAnnuncioDTO.values()) out.add(t.name());
-		return out;
-	}
-
-	// Restituisce elenco categorie annuncio disponibili come String (ordine fisso)
-	// Elenco categorie annuncio (stringhe enum)
-	public List<String> elencoCategorieAnnuncio() {
-		List<String> out = new ArrayList<>();
-		for (CategoriaAnnuncioDTO c : CategoriaAnnuncioDTO.values()) out.add(c.name());
-		return out;
-	}
-
-
-	// Recupera tutti gli annunci attivi (inclusi quelli del creatore) formattati includendo il creatore
-	// Formato: ID|Titolo|Tipo|Categoria|Prezzo|Creatore
-	// Annunci attivi (inclusi i miei) formattati (ID|Titolo|Tipo|Categoria|Prezzo|Creatore)
-	public List<String> annunciAttiviFormattatiInclusiMiei(String creatore) throws ApplicationException {
-		try {
-			List<AnnuncioDTO> elenco = annuncioDAO.getAllAnnunci(); // se getAllAnnunci() restituisce anche non attivi andrebbe filtrato
-			List<String> out = new ArrayList<>();
-			for (AnnuncioDTO a : elenco) {
-				if (a.getStato() != StatoAnnuncioDTO.Attivo) continue; // solo attivi come in precedente versione
-				String prezzo = "-";
-				if (a.getPrezzoVendita() != null) {
-					prezzo = a.getPrezzoVendita().toString();
-				}
-				out.add(a.getIdAnnuncio()+"|"+a.getTitolo()+"|"+a.getTipoAnnuncio().name()+"|"+a.getCategoria().name()+"|"+prezzo+"|"+a.getCreatore());
-			}
-			return out;
-		} catch (java.sql.SQLException sql) { throw new PersistenceException("Errore recupero annunci attivi", sql); }
-	}
-
-	// Estrae il creatore da un record formattato
-
-	// Applica filtri in-memory (tipo/categoria) sulle stringhe annuncio restituite da annunciAltruiAttiviFormattati
-	// Applica filtri su tipo/categoria a record formattati
-	public List<String> filtraAnnunciFormattati(List<String> annunci, String tipo, String categoria) {
-		if (annunci == null) return Collections.emptyList();
-		List<String> out = new ArrayList<>();
-		for (String r : annunci) {
-			// formato: ID|Titolo|Tipo|Categoria|Prezzo
-			String[] parts = r.split("\\|", -1);
-			if (parts.length < 5) continue;
-			String tipoVal = parts[2];
-			String catVal = parts[3];
-			boolean ok = true;
-			if (tipo != null && !tipo.equals("Tutti") && !tipo.equals(tipoVal)) ok = false;
-			if (categoria != null && !categoria.equals("Tutte") && !categoria.equals(catVal)) ok = false;
-			if (ok) out.add(r);
-		}
-		return out;
-	}
-
-	// Estrae l'ID annuncio dal record formattato
-	public String estraiIdAnnuncio(String record) {
-        if (record == null) return null;
-        String[] p = record.split("\\|", -1);
-		if (p.length > 0) {
-			return p[0];
-		}
-		return null;
-    }
 
 	// Fornisce i campi principali dell'offerta per precompilare una dialog di modifica
 	// Ordine: tipo, prezzo, commento, idOggettoOfferto, stato, idAnnuncio
@@ -849,120 +953,8 @@ public class Controller {
 		}
 	}
 
-	// Fornisce i campi principali dell'annuncio per precompilare una dialog di modifica
-	// Ordine: titolo, descrizione, categoria, stato, tipo, prezzo, dataPubblicazione, creatore, idOggetto
-	// Campi principali di un annuncio (per dialog UI)
-	public String[] recuperaAnnuncioFields(String idAnnuncio) throws ApplicationException {
-		try {
-			if (isBlank(idAnnuncio)) throw new ValidationException("Errore su ID_Annuncio");
-			AnnuncioDTO a = annuncioDAO.getAnnuncioById(idAnnuncio.trim());
-			if (a == null) throw new NotFoundException("Annuncio non trovato");
-			String prezzo;
-			if (a.getPrezzoVendita() == null) {
-				prezzo = "-";
-			} else {
-				prezzo = a.getPrezzoVendita().toPlainString();
-			}
-			String descr = a.getDescrizione();
-			if (descr == null) descr = "";
-			String dataPub = "";
-			if (a.getDataPubblicazione() != null) {
-				dataPub = a.getDataPubblicazione().toString();
-			}
-			return new String[]{
-				a.getTitolo(),
-				descr,
-				a.getCategoria().name(),
-				a.getStato().name(),
-				a.getTipoAnnuncio().name(),
-				prezzo,
-				dataPub,
-				a.getCreatore(),
-				a.getIdOggetto()
-			};
-		} catch (ValidationException | NotFoundException e) {
-			throw e;
-		} catch (SQLException sql) {
-			throw new PersistenceException("Errore recupero annuncio", sql);
-		}
-	}
-
-	// La UI deve passare solo String / numeri primitivi senza conoscere gli enum
-	// Oggetti dell'utente formattati (ID|Nome|#Prop|Cond|Dim|Peso)
-	public List<String> oggettiUtenteFormattati(String proprietario) throws ApplicationException {
-		try {
-			List<OggettoDTO> list = cercaOggettiPerProprietario(proprietario);
-			List<String> out = new ArrayList<>();
-			for (OggettoDTO o : list) {
-				String pesoStr;
-				if (o.getPeso() == null) {
-					pesoStr = "-";
-				} else {
-					pesoStr = String.valueOf(o.getPeso());
-				}
-				out.add(o.getIdOggetto()+"|"+o.getNomeOggetto()+"|"+o.getNumProprietari()+"|"+o.getCondizione()+"|"+o.getDimensione()+"|"+pesoStr);
-			}
-			return out;
-		} catch (ValidationException e) { throw e; }
-	}
-
-	// Label leggibile per un oggetto formattato
-	public String formatOggettoLabel(String record) {
-		if (record == null) return "";
-		String[] p = record.split("\\|", -1);
-		if (p.length < 6) return record;
-		String nome = p[1];
-		String numProp = p[2];
-		String cond = p[3];
-		String dim = p[4];
-		String peso = p[5];
-		String extraPeso = "";
-		if (peso != null && !peso.equals("-") && !peso.isEmpty()) {
-			extraPeso = " - " + peso + "kg";
-		}
-		return nome + " ("+cond+") dim:"+dim+extraPeso+" | proprietari:"+numProp;
-	}
-
-	// Estrae l'ID oggetto dal record formattato
-	public String estraiIdOggetto(String record) {
-		if (record == null) return null;
-		String[] p = record.split("\\|", -1);
-		if (p.length > 0) {
-			return p[0];
-		}
-		return null;
-	}
 
 
-	// Recupera UtenteDTO per matricola (comodo wrapper per la UI)
-    public UtenteDTO trovaUtentePerMatricola(String matricola) throws ApplicationException {
-        try {
-            if (isBlank(matricola)) throw new ValidationException("Errore su Matricola");
-            UtenteDTO u = utenteDAO.getUtenteByMatricola(matricola.trim());
-            if (u == null) throw new NotFoundException("Utente non trovato");
-            return u;
-        } catch (ValidationException | NotFoundException e) {
-            throw e;
-        } catch (SQLException sql) {
-            throw new PersistenceException("Errore recupero utente", sql);
-        }
-    }
-
-    /**
-     * Restituisce i campi del profilo come array di String (ordine: nome,cognome,email,username,password,dataNascita,genere)
-     */
-    public String[] recuperaProfiloFields(String matricola) throws ApplicationException {
-        UtenteDTO u = trovaUtentePerMatricola(matricola);
-        return new String[]{
-            u.getNome(),
-            u.getCognome(),
-            u.getEmail(),
-            u.getUsername(),
-            u.getPassword(),
-            u.getDataNascita(),
-            u.getGenere()
-        };
-    }
 
 	// ================== METODI REPORT / STATISTICHE ==================
 
