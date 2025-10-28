@@ -10,10 +10,7 @@ import java.math.BigDecimal;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 
-/**
- * Controller: coordina i DAO e traduce errori in eccezioni dell'app.
- */
-
+//Controller: coordina i DAO e traduce errori in eccezioni dell'app.
 
 public class Controller {
 
@@ -22,36 +19,11 @@ public class Controller {
 	private final AnnuncioDAOinterf annuncioDAO = new AnnuncioDAO();
 	private final OffertaDAOinterf offertaDAO = new OffertaDAO();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
 	// ================== METODI UTENTE ==================
-
-
-
-
 
 	// Registra un nuovo utente con semplici controlli e unicità di base
 	public void registraNuovoUtente(String nome, String cognome, String email, String matricola, String username, 
                                     String password, String dataNascita, String genere) throws ApplicationException {
-	
-
             try {
 			// Controlli base 
 			if (isBlank(nome)) throw new ValidationException("Errore su Nome");
@@ -86,8 +58,6 @@ public class Controller {
 	}
 
 	// Login con username/email e password
-
-
 	public UtenteDTO login(String userOrEmail, String password) throws ApplicationException {
 		try {
 			if (isBlank(userOrEmail)) throw new ValidationException("Errore su Username");
@@ -709,20 +679,20 @@ public class Controller {
 
 
 	// Ritira la propria offerta (solo offerente)
-	public void ritiraOfferta(String ID_Offerta, String offerente) throws ApplicationException {
+	public void eliminaOfferta(String ID_Offerta, String offerente) throws ApplicationException {
 		try {
 			if (isBlank(ID_Offerta)) throw new ValidationException("Errore su ID_Offerta");
 			if (isBlank(offerente)) throw new ValidationException("Errore su FK_Utente");
-			OffertaDTO offertaDaRitirare = offertaDAO.getOffertaById(ID_Offerta.trim());
-			if (offertaDaRitirare == null) throw new NotFoundException("Offerta non trovata");
-			if (!offerente.equals(offertaDaRitirare.getOfferente())) throw new AuthenticationException("Non autorizzato");
-			if (offertaDaRitirare.getStato() != StatoOffertaDTO.Attesa) throw new ValidationException("Offerta non ritirabile");
-			boolean eliminazioneOffertaRiuscita = offertaDAO.deleteOffertaById(offertaDaRitirare.getIdOfferta());
+			OffertaDTO offertaDaEliminare = offertaDAO.getOffertaById(ID_Offerta.trim());
+			if (offertaDaEliminare == null) throw new NotFoundException("Offerta non trovata");
+			if (!offerente.equals(offertaDaEliminare.getOfferente())) throw new AuthenticationException("Non autorizzato");
+			if (offertaDaEliminare.getStato() != StatoOffertaDTO.Attesa) throw new ValidationException("Offerta non eliminabile");
+			boolean eliminazioneOffertaRiuscita = offertaDAO.deleteOffertaById(offertaDaEliminare.getIdOfferta());
 			if (!eliminazioneOffertaRiuscita) throw new NotFoundException("Offerta non trovata");
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
 		} catch (SQLException sql) {
-			throw new PersistenceException("Errore ritiro offerta", sql);
+			throw new PersistenceException("Errore eliminazione offerta", sql);
 		}
 	}
 

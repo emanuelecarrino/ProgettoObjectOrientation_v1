@@ -942,7 +942,7 @@ public class HomeFrame extends JFrame {
         if (conferma != JOptionPane.YES_OPTION) return;
         try {
             if (isOfferta) {
-                controller.ritiraOfferta(id, matricola); // elimina via ritira (cancella in Attesa)
+                controller.eliminaOfferta(id, matricola); // elimina via ritira (cancella in Attesa)
             } else if (isAnnuncio) {
                 controller.eliminaAnnuncio(id);
             }
