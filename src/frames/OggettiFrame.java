@@ -7,16 +7,11 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.List;
 
-/**
- * Pannello "I tuoi oggetti" costruito esternamente a HomeFrame.
- * Usa solo il Controller (niente import di altri DTO) e lavora con stringhe formattate.
- */
 public class OggettiFrame extends JFrame {
     private final Controller controller;
     private final String matricola;
     private final JPanel contentPanel;
 
-    // Stato UI
     private DefaultListModel<String> listModel;
     private JList<String> list;
     private JLabel statusLabel;
@@ -42,15 +37,14 @@ public class OggettiFrame extends JFrame {
         JLabel title = new JLabel("I tuoi oggetti");
         title.setFont(new Font("Tahoma", Font.BOLD, 20));
         header.add(title, BorderLayout.WEST);
-        // Rimosso pulsante "Aggiorna" – il refresh è automatico all'apertura / attivazione finestra e dopo operazioni
         root.add(header, BorderLayout.NORTH);
 
         listModel = new DefaultListModel<>();
         list = new JList<>(listModel);
         list.setFont(new Font("Tahoma", Font.PLAIN, 13));
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        list.setFixedCellHeight(-1); // altezza variabile
-        list.setCellRenderer(new OggettoCardRenderer()); // ora model contiene record raw (con ID)
+        list.setFixedCellHeight(-1);
+        list.setCellRenderer(new OggettoCardRenderer());
 
         root.add(new JScrollPane(list), BorderLayout.CENTER);
 
@@ -154,7 +148,5 @@ public class OggettiFrame extends JFrame {
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             return this;
         }
-
-        // addIfContains non più necessario, sostituito da parsing strutturato
     }
 }

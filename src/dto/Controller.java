@@ -45,13 +45,10 @@ public class Controller {
 
 			UtenteDTO nuovo = new UtenteDTO(nome, cognome, email, matricola, username, password, dataNascita, genere);
 			utenteDAO.insertUtente(nuovo);
-		} catch (DuplicateResourceException | ValidationException e) {
+		} catch (ValidationException e) {
 			throw e; 
 		} catch (SQLException sql) {
-			if (isUniqueViolation(sql)) {
-				throw new DuplicateResourceException("Violazione unicità (inserimento)");
-			}
-			throw new PersistenceException("Errore persistenza registrazione", sql);
+			throw new DuplicateResourceException("Violazione unicità (inserimento)");
 		} catch (IllegalArgumentException x) {
 			throw new ValidationException(x.getMessage());
 		}
@@ -97,17 +94,20 @@ public class Controller {
 				}
 				return null;
 			}
-		} catch (ValidationException e) { throw e; }
-		catch (SQLException sql) { throw new PersistenceException("Errore recupero matricola", sql); }
+		} catch (ValidationException e) { 
+			throw e; 
+		} catch (SQLException sql) { 
+			throw new PersistenceException("Errore recupero matricola", sql); 
+		}
 	}
 
 	// Recupera username partendo dalla matricola
 	public String recuperaUsernameDaMatricola(String matricola) throws ApplicationException {
 		try {
 			if (matricola == null || matricola.trim().isEmpty()) throw new ValidationException("Errore su Matricola");
-			UtenteDTO u = utenteDAO.getUtenteByMatricola(matricola.trim());
-			if (u != null) {
-				return u.getUsername();
+			UtenteDTO utente = utenteDAO.getUtenteByMatricola(matricola.trim());
+			if (utente != null) {
+				return utente.getUsername();
 			}
 			return null;
 		} catch (ValidationException e) { throw e; }
@@ -145,32 +145,6 @@ public class Controller {
 	private boolean isBlank(String s){
 		return s == null || s.trim().isEmpty();
 	}
-
-	// Riconosce violazioni di unicità (PostgreSQL codice 23505)
-	private boolean isUniqueViolation(SQLException ex){
-		return "23505".equals(ex.getSQLState());
-	}
-
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 	// ================== METODI ANNUNCI ==================
@@ -266,7 +240,6 @@ public class Controller {
 					prezzoFinale = esistente.getPrezzoVendita();
 				}
 			}
-
 			String nuovaDescrizionePulita = null;
 			if (nuovaDescrizione != null) {
 				nuovaDescrizionePulita = nuovaDescrizione.trim();
@@ -275,10 +248,9 @@ public class Controller {
 				esistente.getIdAnnuncio(), nuovoTitolo.trim(), nuovaDescrizionePulita, nuovoStato,
 				nuovaCategoria, dataPub, creatore, ID_Oggetto, tipo, prezzoFinale
 			);
-
-					boolean aggiornamentoAnnuncioRiuscito = annuncioDAO.updateAnnuncio(aggiornato);
-					if (!aggiornamentoAnnuncioRiuscito) throw new NotFoundException("Annuncio non trovato");
-					return aggiornato;
+			boolean aggiornamentoAnnuncioRiuscito = annuncioDAO.updateAnnuncio(aggiornato);
+			if (!aggiornamentoAnnuncioRiuscito) throw new NotFoundException("Annuncio non trovato");
+			return aggiornato;
 		} catch (ValidationException | NotFoundException e) {
 			throw e;
 		} catch (SQLException sql) {
@@ -451,8 +423,6 @@ public class Controller {
 	}
 
 
-
-
 	// ================== METODI OGGETTO ==================
 
 	// Elenco oggetti di un proprietario
@@ -466,8 +436,6 @@ public class Controller {
 			throw new PersistenceException("Errore ricerca oggetti per proprietario", sql);
 		}
 	}
-
-
 
 	// Trova oggetto per ID
 	public OggettoDTO trovaOggettoPerId(String ID_Oggetto) throws ApplicationException {
@@ -483,12 +451,10 @@ public class Controller {
 		}
 	}
 
-
 	public String trovaNomeOggettoPerId(String ID_Oggetto) throws ApplicationException {
 		OggettoDTO o = trovaOggettoPerId(ID_Oggetto);
 		return (o != null) ? o.getNomeOggetto() : null;
 	}
-
 
 	// Oggetti dell'utente formattati (ID|Nome|#Prop|Cond|Dim|Peso)
 	public List<String> oggettiUtenteFormattati(String proprietario) throws ApplicationException {
@@ -522,7 +488,7 @@ public class Controller {
 		if (peso != null && !peso.equals("-") && !peso.isEmpty()) {
 			extraPeso = " - " + peso + "kg";
 		}
-		return nome + " ("+cond+") dim:"+dim+extraPeso+" | proprietari:"+numProp;
+		return nome + " (" + cond + ") dim:" + dim + extraPeso + " | proprietari:" + numProp;
 	}
 
 	// Estrae l'ID oggetto dal record formattato
@@ -534,15 +500,6 @@ public class Controller {
 		}
 		return null;
 	}
-
-
-
-
-
-	
-
-
-
 
 
 	// ================== METODI OFFERTA ==================
@@ -600,8 +557,6 @@ public class Controller {
 		}
 	}
 
-	// La UI deve passare solo String / numeri primitivi senza conoscere gli enum
-	// Variante UI: crea offerta a partire da stringhe
 	public OffertaDTO creaOfferta(String idAnnuncio, String offerente, String tipoStr, String prezzoStr, String commento, String idOggettoOfferto) throws ApplicationException {
 		try {
 			TipoOffertaDTO tipo = null;
@@ -625,11 +580,6 @@ public class Controller {
 		}
 	}
 
-	
-
-
-	
-
 	// Accetta un'offerta (solo creatore annuncio)
 	public OffertaDTO accettaOfferta(String ID_Offerta, String utente) throws ApplicationException {
 		try {
@@ -644,7 +594,6 @@ public class Controller {
 			if (annuncio.getStato() != StatoAnnuncioDTO.Attivo) throw new ValidationException("Annuncio non attivo");
 			boolean aggiornamentoStatoAccettazione = offertaDAO.updateStatoOfferta(offertaDaAccettare.getIdOfferta(), StatoOffertaDTO.Attesa, StatoOffertaDTO.Accettata);
 			if (!aggiornamentoStatoAccettazione) throw new ValidationException("Offerta già aggiornata");
-
 			return offertaDAO.getOffertaById(offertaDaAccettare.getIdOfferta());
 		} catch (ValidationException | NotFoundException | AuthenticationException e) {
 			throw e;
@@ -652,8 +601,6 @@ public class Controller {
 			throw new PersistenceException("Errore accettazione offerta", sql);
 		}
 	}
-
-
 
 	// Rifiuta un'offerta (solo creatore annuncio)
 	public OffertaDTO rifiutaOfferta(String ID_Offerta, String utente) throws ApplicationException {
@@ -676,8 +623,6 @@ public class Controller {
 		}
 	}
 
-
-
 	// Ritira la propria offerta (solo offerente)
 	public void eliminaOfferta(String ID_Offerta, String offerente) throws ApplicationException {
 		try {
@@ -695,10 +640,6 @@ public class Controller {
 			throw new PersistenceException("Errore eliminazione offerta", sql);
 		}
 	}
-
-
-
-
 
 	// Aggiorna i contenuti dell'offerta se in Attesa
 	public OffertaDTO aggiornaOfferta(String ID_Offerta, String offerente, Float nuovoPrezzo, String nuovoIdOggettoOfferto, String nuovoCommento) throws ApplicationException {
@@ -752,12 +693,7 @@ public class Controller {
 		}
 	}
 
-
-
-
-
 	// Generatore ID Offerta
-
 	private String generaIdOfferta() throws PersistenceException {
 		for (int attempts = 0; attempts < MAX_ID_ATTEMPTS; attempts++) {
 			String candidate = generaIdConPrefissoENumeri("OFF-");
@@ -768,14 +704,6 @@ public class Controller {
 		throw new PersistenceException("Impossibile generare ID univoco (Offerta)", null);
 	}
 
-	// Genera un ID con prefisso e 5 cifre random (es: ANN-12345)
-	private String generaIdConPrefissoENumeri(String prefisso) {
-		int num = (int)(Math.random() * 100000); // 0..99999
-		return prefisso + String.format("%05d", num);
-	}
-
-	
-
 	private boolean existsOffertaId(String id) throws PersistenceException {
 		try {
 			return offertaDAO.getOffertaById(id) != null;
@@ -784,15 +712,16 @@ public class Controller {
 		}
 	}
 
-
-
-
-
-
 	// ================== METODI UTILITY ==================
 
 	private static final DateTimeFormatter DASHBOARD_DATE_FMT = DateTimeFormatter.ofPattern("dd/MM");
 	private static final int MAX_ID_ATTEMPTS = 5000 ;
+
+	// Genera un ID con prefisso e 5 cifre random (es: ANN-12345)
+	private String generaIdConPrefissoENumeri(String prefisso) {
+		int num = (int)(Math.random() * 100000); // 0..99999
+		return prefisso + String.format("%05d", num);
+	}
 
 	public int contaAnnunciAttiviCreatore(String creatore) throws ApplicationException {
 		try {
@@ -893,18 +822,12 @@ public class Controller {
 		catch (SQLException sql) { throw new PersistenceException("Errore recupero offerte da gestire", sql); }
 	}
 
-
-
-	// Fornisce i campi principali dell'offerta per precompilare una dialog di modifica
-	// Ordine: tipo, prezzo, commento, idOggettoOfferto, stato, idAnnuncio
-	// Campi principali di un'offerta (per dialog UI)
 	public String[] recuperaOffertaFields(String idOfferta) throws ApplicationException {
 		try {
 			if (isBlank(idOfferta)) throw new ValidationException("Errore su ID_Offerta");
 			OffertaDTO o = offertaDAO.getOffertaById(idOfferta.trim());
 			if (o == null) throw new NotFoundException("Offerta non trovata");
 			String prezzo = String.valueOf(o.getPrezzoOfferta());
-			// per Regalo/Scambio prezzo può essere 0, per assenza usiamo "-"
 			if (o.getTipo() != TipoOffertaDTO.Vendita) {
 				prezzo = "-";
 			}
@@ -922,8 +845,6 @@ public class Controller {
 			throw new PersistenceException("Errore recupero offerta", sql);
 		}
 	}
-
-
 
 
 	// ================== METODI REPORT / STATISTICHE ==================
@@ -989,11 +910,6 @@ public class Controller {
 		} catch (ValidationException e) { throw e; }
 		catch (SQLException sql) { throw new PersistenceException("Errore calcolo statistiche prezzi offerte accettate", sql); }
 	}
-
-
-
-
-
 }
 
 
