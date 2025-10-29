@@ -11,10 +11,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
 
-/**
- * Finestra per gestione annunci (ricerca, filtri, creazione annuncio, creazione offerta).
- * Mantiene la logica originale, riorganizzata con commenti-separatore compatti.
- */
+
 public class AnnunciFrame extends JFrame {
 
     // === COSTANTI ===
@@ -41,7 +38,7 @@ public class AnnunciFrame extends JFrame {
     private java.util.List<String> annunciUltimaRicercaRaw = new java.util.ArrayList<>();
 
 
-    // === COSTRUTTORE ===
+    // COSTRUTTORE
     public AnnunciFrame(Controller controller, String matricola) {
         this.controller = controller;
         this.matricola = matricola;
@@ -55,17 +52,18 @@ public class AnnunciFrame extends JFrame {
     }
 
 
-    // === BUILD UI PRINCIPALE ===
+    // BUILD UI PRINCIPALE
+
     public JPanel buildContentPanel() {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(Color.WHITE);
 
-        // --- HEADER: ricerca + filtri + ordine ---
+        // HEADER: ricerca + filtri + ordine
         JPanel header = new JPanel(new BorderLayout(8, 8));
         header.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         header.setBackground(Color.WHITE);
 
-        // sinistra: search
+        // search
         JPanel leftHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftHeader.setOpaque(false);
 
@@ -101,7 +99,8 @@ public class AnnunciFrame extends JFrame {
         leftHeader.add(searchField);
         header.add(leftHeader, BorderLayout.WEST);
 
-        // destra: filtri + ordine
+        // filtri + ordine
+
     JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
     controls.setOpaque(false);
 
@@ -127,7 +126,8 @@ public class AnnunciFrame extends JFrame {
 
         root.add(header, BorderLayout.NORTH);
 
-        // --- CENTRO: lista annunci ---
+        // lista annunci
+
         annunciListModel = new DefaultListModel<>();
         annunciList = new JList<>(annunciListModel);
         annunciList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -135,7 +135,8 @@ public class AnnunciFrame extends JFrame {
         annunciList.setCellRenderer(new AnnuncioCardRenderer());
         root.add(new JScrollPane(annunciList), BorderLayout.CENTER);
 
-        // selezione annuncio => abilita/disabilita pulsante "Offri"
+        // abilita/disabilita pulsante "Offri"
+
         annunciList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int i = annunciList.getSelectedIndex();
@@ -182,7 +183,7 @@ public class AnnunciFrame extends JFrame {
             }
         });
 
-        // --- FOOTER: stato + azioni ---
+        // stato + azioni
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setBackground(Color.WHITE);
         bottom.setBorder(BorderFactory.createEmptyBorder(4, 12, 8, 12));
@@ -247,7 +248,7 @@ public class AnnunciFrame extends JFrame {
 
 
     
-    // === UTIL: gestione messaggi di errore ===
+    // gestione messaggi di errore
     
     private void showErrorDialog(Component parent, String titolo, Exception ex) {
         String msg = ex != null ? ex.getMessage() : null;
@@ -262,7 +263,7 @@ public class AnnunciFrame extends JFrame {
     }
 
 
-    // === METODI DI SUPPORTO COMPONENTI ===
+    // METODI DI SUPPORTO COMPONENTI
     private JButton createPrimaryButton(String text) {
         JButton b = new JButton(text);
         b.setFont(new Font("Tahoma", Font.BOLD, 13));
@@ -416,7 +417,7 @@ public class AnnunciFrame extends JFrame {
     }
 
 
-    // === RICERCA / FILTRI / ORDINAMENTO ===
+    // RICERCA / FILTRI / ORDINAMENTO
     private void eseguiRicerca() {
         try {
             String tipoSel = (String) tipoFilter.getSelectedItem();
@@ -600,7 +601,7 @@ public class AnnunciFrame extends JFrame {
     }
 
 
-    // === UTIL: area di testo con placeholder ===
+    // area di testo con placeholder
     private JTextArea createPlaceholderTextArea(String placeholder, int rows, int cols) {
         JTextArea area = new JTextArea(rows, cols);
         area.setLineWrap(true);
@@ -628,7 +629,7 @@ public class AnnunciFrame extends JFrame {
         });
 
         area.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            private void update() { /* non serve logica aggiuntiva qui */ }
+            private void update() { }
             public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
             public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
             public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
@@ -638,7 +639,7 @@ public class AnnunciFrame extends JFrame {
     }
 
 
-    // === DIALOG: APRI OFFERTA ===
+    // DIALOG: APRI OFFERTA
     private void apriDialogOffri() {
         int idx = annunciList.getSelectedIndex();
         if (idx < 0 || idx >= annunciUltimaRicercaRaw.size()) return;
@@ -733,7 +734,7 @@ public class AnnunciFrame extends JFrame {
     }
 
 
-    // === DIALOG: APRI NUOVO ANNUNCIO ===
+    // DIALOG: APRI NUOVO ANNUNCIO
     private void apriDialogNuovoAnnuncio() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         JPanel fields = new JPanel(new GridBagLayout());
@@ -853,7 +854,7 @@ public class AnnunciFrame extends JFrame {
     }
 
 
-    // === RENDERER ANNUNCIO (card-like) ===
+    // RENDERER ANNUNCIO
     private class AnnuncioCardRenderer extends JPanel implements ListCellRenderer<String> {
         private final JLabel titoloLabel = new JLabel();
         private final JLabel metaLabel = new JLabel();

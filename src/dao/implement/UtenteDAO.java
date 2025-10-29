@@ -16,7 +16,6 @@ public class UtenteDAO implements UtenteDAOinterf {
 
     @Override
     public void insertUtente(UtenteDTO utente) throws SQLException {
-        // Assunto: validazione fatta nel Controller
         String sql = """
             INSERT INTO Utente
             (Nome, Cognome, Email, Matricola, Username, Password, DataNascita, Genere)
@@ -153,13 +152,6 @@ public class UtenteDAO implements UtenteDAOinterf {
             return ps.executeUpdate() > 0;
         }
     }
-
-
-
-
-    // Validazione per l'inserimento di un nuovo utente
-
-    // Rimosse validazioni: demandate al Controller
 
 
 }

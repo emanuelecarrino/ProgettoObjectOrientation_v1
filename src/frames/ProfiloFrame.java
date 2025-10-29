@@ -231,7 +231,6 @@ public class ProfiloFrame extends JFrame {
             selectComboValue(meseCombo, String.format("%02d", date.getMonthValue()));
             selectComboValue(annoCombo, Integer.toString(date.getYear()));
         } catch (DateTimeParseException e) {
-            // lascio selezioni vuote se formato non valido
         }
     }
 

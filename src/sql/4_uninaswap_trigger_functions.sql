@@ -343,12 +343,6 @@ BEGIN
         RAISE EXCEPTION 'Oggetto inesistente';
     END IF;
 
-    -- Regole:
-    -- - In INSERT: l'oggetto deve appartenere al creatore dell'annuncio (NEW.FK_Utente)
-    -- - In UPDATE: non consentire il cambio dell'oggetto; non imporre più la proprietà
-    --   perché, dopo un'offerta accettata, la proprietà dell'oggetto passa all'acquirente
-    --   e l'UPDATE per portare lo stato a "Chiuso" non deve fallire.
-
     IF TG_OP = 'INSERT' THEN
         IF owner <> NEW.FK_Utente THEN
             RAISE EXCEPTION 'L''oggetto non appartiene all''utente.';

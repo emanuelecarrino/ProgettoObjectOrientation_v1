@@ -111,7 +111,7 @@ public class ModConsegnaDAO implements ModConsegnaDAOinterf {
         }
     }
 
-    // Eliminazione per ID; true se cancellata almeno una riga
+    
     @Override
     public boolean deleteModConsegnaById(String ID_Consegna) throws SQLException {
         String sql = """

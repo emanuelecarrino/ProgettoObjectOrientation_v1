@@ -48,8 +48,7 @@ INSERT INTO Annuncio (ID_Annuncio, Titolo, Descrizione, DataPubblicazione, Categ
 ('ANN-00005','Vendo libro di Fisica','Alcune sottolineature', CURRENT_DATE, 'LibriTesto','Attivo','N86000005','OBJ-00005','Vendita', 12.50),
 ('ANN-00006','Scambio tablet Samsung','Cerco laptop o phone', CURRENT_DATE, 'Informatica','Attivo','N86000006','OBJ-00006','Scambio', NULL);
 
--- OFFERTE (uso colonne esplicite per evitare ambiguità)
--- OFFERTE (ID formattati come OFF-xxxxx) - aggiorno i riferimenti a ANN-xxxxx
+-- OFFERTE (ID formattati come OFF-xxxxx)
 INSERT INTO Offerta (ID_Offerta, PrezzoOfferta, Commento, DataOfferta, Stato, Tipo, FK_Utente, FK_Annuncio, ID_OggettoOfferto) VALUES
 ('OFF-00001', 18.00, 'Prendo subito',           CURRENT_DATE, 'Accettata', 'Vendita', 'N86000005', 'ANN-00001', NULL),
 ('OFF-00002', 17.00, 'Posso offrire 17',       CURRENT_DATE, 'Rifiutata', 'Vendita', 'N86000006', 'ANN-00001', NULL),

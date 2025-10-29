@@ -7,11 +7,13 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.List;
 
+
 public class OggettiFrame extends JFrame {
     private final Controller controller;
     private final String matricola;
     private final JPanel contentPanel;
 
+    // Stato UI
     private DefaultListModel<String> listModel;
     private JList<String> list;
     private JLabel statusLabel;
@@ -87,8 +89,11 @@ public class OggettiFrame extends JFrame {
         }
     }
 
-    // Card renderer simile a quelli usati negli annunci/homepage
+
+
+    // Renderer simile a quelli usati negli annunci/homepage
     // Riceve il record grezzo e mostra la versione formattata.
+
     private class OggettoCardRenderer extends JPanel implements ListCellRenderer<String> {
         private final JLabel title = new JLabel();
         private final JLabel subtitle = new JLabel();
@@ -122,14 +127,14 @@ public class OggettiFrame extends JFrame {
 
         @Override
         public Component getListCellRendererComponent(JList<? extends String> list, String value, int index, boolean isSelected, boolean cellHasFocus) {
-            // value è il record raw; lo formattiamo per display
+
             badges.removeAll();
             if (value == null) {
                 title.setText("");
                 subtitle.setText("");
                 return this;
             }
-            // value raw: ID|Nome|NumProp|Condizione|Dimensione|Peso
+            // Formato record ID|Nome|NumProp|Condizione|Dimensione|Peso
             String[] p = value.split("\\|", -1);
             String nome = p.length>1? p[1]:"";
             String numProp = p.length>2? p[2]:"";
@@ -148,5 +153,6 @@ public class OggettiFrame extends JFrame {
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             return this;
         }
+
     }
 }

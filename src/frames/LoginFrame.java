@@ -247,7 +247,7 @@ public class LoginFrame extends JFrame {
 			}
 		}
 
-		// Helper to adjust the days dropdown according to selected month/year
+		// Funzione di supporto per aggiornare il menu a tendina dei giorni in base al mese/anno selezionato
 		private void adjustDaysCombo() {
 			if (cbDay == null || cbMonth == null || cbYear == null) return;
 			String selMonth = (String) cbMonth.getSelectedItem();
@@ -262,7 +262,6 @@ public class LoginFrame extends JFrame {
 			} else if (currentCount > maxDays) {
 				for (int d = currentCount; d > maxDays; d--) cbDay.removeItemAt(d-1);
 			}
-			// ensure selected day is valid
 			if (cbDay.getItemCount() >= 1) {
 				int selIndex = cbDay.getSelectedIndex();
 				if (selIndex == -1) cbDay.setSelectedIndex(0);

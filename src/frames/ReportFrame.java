@@ -14,14 +14,14 @@ public class ReportFrame extends JFrame {
     private JPanel chartsPanel;
 
     // Palette colori coerente tra testo, legenda e grafici
-    private static final Color COL_ACCETTATE = new Color(76, 175, 80);     // green
-    private static final Color COL_RIFIUTATE = new Color(244, 67, 54);     // red
-    private static final Color COL_ATTESA    = new Color(255, 152, 0);     // orange
+    private static final Color COL_ACCETTATE = new Color(76, 175, 80);     // verde
+    private static final Color COL_RIFIUTATE = new Color(244, 67, 54);     // rosso
+    private static final Color COL_ATTESA    = new Color(255, 152, 0);     // arancione
 
-    private static final Color COL_VENDITA   = new Color(33, 150, 243);    // blue
-    private static final Color COL_SCAMBIO   = new Color(156, 39, 176);    // purple
-    private static final Color COL_REGALO    = new Color(0, 150, 136);     // teal
-    private static final Color COL_COMPLETI  = new Color(96, 125, 139);    // blue-grey
+    private static final Color COL_VENDITA   = new Color(33, 150, 243);    // blu
+    private static final Color COL_SCAMBIO   = new Color(156, 39, 176);    // viola
+    private static final Color COL_REGALO    = new Color(0, 150, 136);     // verde acqua
+    private static final Color COL_COMPLETI  = new Color(96, 125, 139);    // grigio
 
     public ReportFrame(Controller controller, String matricolaOfferente) {
         this.controller = controller;
@@ -174,7 +174,7 @@ public class ReportFrame extends JFrame {
         }
     }
 
-    // --- Helpers UI e stile ---
+    // Helpers UI e stile
 
     private JPanel placeholderPanel(String title) {
         JPanel p = new JPanel(new BorderLayout());
@@ -192,7 +192,7 @@ public class ReportFrame extends JFrame {
             jfreeChartCls.getMethod("setAntiAlias", boolean.class).invoke(jfreeChart, true);
             Object plot = jfreeChartCls.getMethod("getPlot").invoke(jfreeChart);
             Class<?> plotCls = plot.getClass();
-            // Section paints
+
             try {
                 plotCls.getMethod("setSectionPaint", Comparable.class, Paint.class)
                         .invoke(plot, "Vendita", COL_VENDITA);
@@ -200,8 +200,7 @@ public class ReportFrame extends JFrame {
                         .invoke(plot, "Scambio", COL_SCAMBIO);
                 plotCls.getMethod("setSectionPaint", Comparable.class, Paint.class)
                         .invoke(plot, "Regalo", COL_REGALO);
-            } catch (NoSuchMethodException ignored) { /* not a PiePlot */ }
-            // background
+            } catch (NoSuchMethodException ignored) { }
             try { plotCls.getMethod("setBackgroundPaint", Paint.class).invoke(plot, Color.WHITE); } catch (Exception ignored) {}
         } catch (Exception ignored) {}
     }
@@ -211,13 +210,11 @@ public class ReportFrame extends JFrame {
             jfreeChartCls.getMethod("setAntiAlias", boolean.class).invoke(jfreeChart, true);
             Object plot = jfreeChartCls.getMethod("getPlot").invoke(jfreeChart);
             Class<?> plotCls = plot.getClass();
-            // Gridlines and background
             try {
                 plotCls.getMethod("setBackgroundPaint", Paint.class).invoke(plot, Color.WHITE);
                 plotCls.getMethod("setRangeGridlinePaint", Paint.class).invoke(plot, new Color(230,230,230));
                 plotCls.getMethod("setDomainGridlinesVisible", boolean.class).invoke(plot, false);
             } catch (Exception ignored) {}
-            // Renderer color (series 0 = Accettate)
             try {
                 Object renderer = plotCls.getMethod("getRenderer").invoke(plot);
                 Class<?> rendererCls = renderer.getClass();
@@ -234,13 +231,11 @@ public class ReportFrame extends JFrame {
         return "<span style='color:" + toHex(color) + "'>■</span>";
     }
 
-    // badge() rimosso su richiesta utente (niente pill/etichetta colorata)
 
     private String toHex(Color c) {
         return String.format("#%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue());
     }
 
-    // Bordi arrotondati soft per dare un tocco moderno
     private static class RoundedPanelBorder extends javax.swing.border.AbstractBorder {
         private final int arc = 12;
         private final Color line = new Color(0,0,0,30);

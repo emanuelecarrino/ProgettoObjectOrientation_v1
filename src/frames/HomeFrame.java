@@ -14,7 +14,6 @@ public class HomeFrame extends JFrame {
 
     private final Controller controller;
     private final String matricola;
-    // Username risolto on-demand per display (può essere null se non trovato)
     private final String usernameDisplay;
     private JPanel sidebar;
     private CardLayout cardLayout;
@@ -42,16 +41,16 @@ public class HomeFrame extends JFrame {
 
         setTitle("Home");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-    // Nuove dimensioni più larghe (fisse) richieste
-    int targetW = 1500;
-    int targetH = 750;
-    int x = Math.max(0, (screen.width - targetW) / 2);
-    int y = Math.max(0, (screen.height - targetH) / 2);
-    setBounds(x, y, targetW, targetH);
-    setMinimumSize(new Dimension(targetW, targetH));
-    // Consenti ingrandimento (anche massimizzazione) ma non rimpicciolire sotto la minimum size
-    setResizable(true);
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        int targetW = 1500;
+        int targetH = 750;
+        int x = Math.max(0, (screen.width - targetW) / 2);
+        int y = Math.max(0, (screen.height - targetH) / 2);
+        setBounds(x, y, targetW, targetH);
+        setMinimumSize(new Dimension(targetW, targetH));
+
+        // Consente ingrandimento ma non rimpicciolimento sotto la minimum size
+        setResizable(true);
         buildUI();
         setVisible(true);
 
@@ -99,7 +98,8 @@ public class HomeFrame extends JFrame {
         gbc.weighty = 1;
         sidebar.add(Box.createVerticalGlue(), gbc);
 
-        // Bottone Logout (versione originale stilizzata)
+        // Bottone Logout
+
         gbc.gridy = ++row;
         gbc.weighty = 0;
         JButton logoutBtn = new JButton("Logout");
@@ -186,18 +186,16 @@ public class HomeFrame extends JFrame {
         JPanel header = new JPanel(new BorderLayout());
         header.setBorder(BorderFactory.createEmptyBorder(18,18,12,18));
         header.setBackground(Color.WHITE);
-    JLabel benv = new JLabel("Benvenuto " + usernameDisplay + "!");
+        JLabel benv = new JLabel("Benvenuto " + usernameDisplay + "!");
         benv.setFont(new Font("Tahoma", Font.BOLD, 30));
         header.add(benv, BorderLayout.WEST);
         wrapper.add(header, BorderLayout.NORTH);
 
-        // Center content with GridBag
         JPanel content = new JPanel(new GridBagLayout());
         content.setOpaque(false);
         wrapper.add(new JScrollPane(content), BorderLayout.CENTER);
 
-        // Prepare panels placeholders updated by refreshDashboard()
-    kpiPanel = new JPanel(new GridLayout(1,4,12,0));
+        kpiPanel = new JPanel(new GridLayout(1,4,12,0));
         kpiPanel.setOpaque(false);
         kpiCardContainers = new JPanel[4];
         for (int i=0;i<4;i++) {
@@ -221,25 +219,25 @@ public class HomeFrame extends JFrame {
         content.add(offerteDaGestirePanel, gbc);
 
     // Double-click su offerte: solo "Le tue offerte" e "Offerte da Gestire" per mostrare il dettaglio offerta
-    attachDoubleClickToMieOfferte();
-    attachDoubleClickToOfferteDaGestire();
-    attachDoubleClickToAnnunci();
+        attachDoubleClickToMieOfferte();
+        attachDoubleClickToOfferteDaGestire();
+        attachDoubleClickToAnnunci();
 
-    // Wiring selezione esclusiva tra le tre liste
-    wireMutualSelection();
+        // Wiring selezione esclusiva tra le tre liste
+        wireMutualSelection();
 
         // Wrapper azioni dinamico (inizialmente nascosto)
-    dynamicActionsWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT,8,4));
-    dynamicActionsWrapper.setOpaque(false);
-    // Altezza fissa per evitare "saltelli" quando compaiono/scompaiono i pulsanti
-    Dimension actionPref = new Dimension(10, 46); // larghezza verrà espansa dal BorderLayout
-    dynamicActionsWrapper.setPreferredSize(actionPref);
-    dynamicActionsWrapper.setMinimumSize(actionPref);
-    dynamicActionsWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
-        wrapper.add(dynamicActionsWrapper, BorderLayout.SOUTH);
+        dynamicActionsWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT,8,4));
+        dynamicActionsWrapper.setOpaque(false);
+        // Altezza fissa per evitare "saltelli" quando compaiono/scompaiono i pulsanti
+        Dimension actionPref = new Dimension(10, 46); // larghezza verrà espansa dal BorderLayout
+        dynamicActionsWrapper.setPreferredSize(actionPref);
+        dynamicActionsWrapper.setMinimumSize(actionPref);
+        dynamicActionsWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
+            wrapper.add(dynamicActionsWrapper, BorderLayout.SOUTH);
 
-        SwingUtilities.invokeLater(this::refreshDashboard);
-        return wrapper;
+            SwingUtilities.invokeLater(this::refreshDashboard);
+            return wrapper;
     }
 
 
@@ -300,11 +298,13 @@ public class HomeFrame extends JFrame {
         container.add(t, BorderLayout.NORTH);
     JList<String> list = new JList<>();
         list.setFont(new Font("Tahoma", Font.PLAIN, 13));
-        list.setFixedCellHeight(-1); // variable height for card style
+        list.setFixedCellHeight(-1);
         list.setCellRenderer(new DashboardListCardRenderer());
         container.add(new JScrollPane(list), BorderLayout.CENTER);
         container.putClientProperty("jlist", list);
+
         // Listener per aggiornare pulsanti azione in base al pannello e selezione
+
         list.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) updateActionButtonsState();
         });
@@ -347,9 +347,12 @@ public class HomeFrame extends JFrame {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private JList<String> getJList(JPanel listPanel) {
-        return (JList<String>) listPanel.getClientProperty("jlist");
+    Object obj = listPanel.getClientProperty("jlist");
+    if (obj instanceof JList) {
+        return (JList<String>) obj;
+    }
+    return null;
     }
 
     private void setListData(JPanel panel, List<String> values) {
@@ -366,13 +369,14 @@ public class HomeFrame extends JFrame {
     }
 
     // Overload: mostra un messaggio diretto senza creare eccezioni lato UI
+
     private void showErrorDialog(Component parent, String titolo, String messaggio) {
         String msg = (messaggio != null && !messaggio.isBlank()) ? messaggio : "Operazione non riuscita.";
         JOptionPane.showMessageDialog(parent, titolo + ": " + msg, "Errore", JOptionPane.ERROR_MESSAGE);
     }
 
     private void ensureActionButtons() {
-        if (eliminaBtn != null) return; // già creati
+        if (eliminaBtn != null) return;
         eliminaBtn = createPrimaryActionButton("Elimina selezionato");
         modificaBtn = createPrimaryActionButton("Modifica selezionato");
         accettaBtn = createPrimaryActionButton("Accetta");
@@ -415,10 +419,11 @@ public class HomeFrame extends JFrame {
             dynamicActionsWrapper.repaint();
             return;
         }
+
         // Formati attuali:
         // Annuncio: Titolo [Tipo] Stato - dd/MM
         // Offerta mia / da gestire: ID_OFFERTA [Tipo] Stato
-        // Decidiamo: se stringa inizia con "OFF-" -> offerta, se no annuncio.
+
         boolean isOfferta = selected.startsWith("OFF-");
         if (isOfferta) {
             String stato = null;
@@ -445,7 +450,7 @@ public class HomeFrame extends JFrame {
                 }
             }
         }
-        // Non nascondiamo: wrapper rimane sempre visibile per stabilità layout
+
         dynamicActionsWrapper.revalidate();
         dynamicActionsWrapper.repaint();
     }
@@ -527,6 +532,7 @@ public class HomeFrame extends JFrame {
     }
 
     // Estrae lo stato dall'etichetta annuncio formattata: "ID Titolo [Tipo] Stato - dd/MM"
+
     private String estraiStatoAnnuncioDaRiga(String riga) {
         if (riga == null) return null;
         int rb = riga.indexOf(']');
@@ -535,6 +541,7 @@ public class HomeFrame extends JFrame {
         if (dash < 0) dash = riga.length();
         String after = riga.substring(rb + 1, dash);
         return after != null ? after.trim() : null;
+
     }
 
     private void mostraDettaglioAnnuncio(String idAnnuncio) {
@@ -709,7 +716,6 @@ public class HomeFrame extends JFrame {
     }
 
     private void onModifica() {
-        // Determina selezione e tipo
         JList<String> aList = getJList(recentAnnunciPanel);
         JList<String> mList = getJList(mieOffertePanel);
         JList<String> gList = getJList(offerteDaGestirePanel);
@@ -942,7 +948,7 @@ public class HomeFrame extends JFrame {
         if (conferma != JOptionPane.YES_OPTION) return;
         try {
             if (isOfferta) {
-                controller.eliminaOfferta(id, matricola); // elimina via ritira (cancella in Attesa)
+                controller.eliminaOfferta(id, matricola);
             } else if (isAnnuncio) {
                 controller.eliminaAnnuncio(id);
             }
@@ -1008,8 +1014,6 @@ public class HomeFrame extends JFrame {
         return p;
     }
 
-    // (Logica annunci rimossa da HomeFrame)
-
     private void selectSection(String name) {
         if (cardLayout != null && cardPanel != null) {
             cardLayout.show(cardPanel, name);
@@ -1071,10 +1075,9 @@ public class HomeFrame extends JFrame {
 
         @Override
         public Component getListCellRendererComponent(JList<? extends String> list, String value, int index, boolean isSelected, boolean cellHasFocus) {
-            // Heuristics: Offerta se inizia con OFF-
+            // Offerta se inizia con OFF-
             boolean isOfferta = value != null && value.startsWith("OFF-");
             primary.setText(value != null ? value : "");
-            // Rimuove completamente la label secondaria (né "Annuncio" né "Offerta")
             secondary.setText("");
             secondary.setVisible(false);
 
@@ -1087,9 +1090,7 @@ public class HomeFrame extends JFrame {
                 else if (value.contains(" Rifiutata")) { label = "RIFIUTATA"; c = new Color(200,60,60); }
                 badgePanel.add(badge(label, c));
             } else {
-                // Badge sullo STATO annuncio (non il tipo)
                 if (value != null) {
-                    // Rimuove la porzione di stato dal testo (" [Tipo] Stato - dd/MM" => " [Tipo] - dd/MM")
                     String display = value;
                     int rb = display.indexOf(']');
                     if (rb >= 0) {
