@@ -3,7 +3,7 @@ package dto;
 import java.time.LocalDate;
 
 public class OffertaDTO {
-    private final String idOfferta;
+    private final String ID_Offerta;
     private float prezzoOfferta;
     private String commento;
     private final LocalDate dataOfferta;
@@ -13,9 +13,9 @@ public class OffertaDTO {
     private final String ID_Annuncio;
     private String ID_OggettoOfferto;
 
-    public OffertaDTO(String idOfferta, float prezzoOfferta, String commento, LocalDate dataOfferta, 
+    public OffertaDTO(String ID_Offerta, float prezzoOfferta, String commento, LocalDate dataOfferta, 
     StatoOffertaDTO stato, String offerente, TipoOffertaDTO tipo, String ID_Annuncio, String ID_OggettoOfferto) {
-        this.idOfferta = idOfferta;
+        this.ID_Offerta = ID_Offerta;
         this.prezzoOfferta = prezzoOfferta;
         this.commento = commento;
         this.dataOfferta = dataOfferta;
@@ -27,7 +27,7 @@ public class OffertaDTO {
     }
 
     public String getIdOfferta(){
-        return this.idOfferta;
+        return this.ID_Offerta;
     }
 
     public float getPrezzoOfferta() {
